@@ -1,0 +1,202 @@
+import { useState, useEffect } from "react";
+import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+
+function useCountUp(target: number, duration = 900, delay = 400) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        setVal(Math.round((1 - Math.pow(1 - p, 3)) * target));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [target, duration, delay]);
+  return val;
+}
+
+const stats = [
+  { label: "달성",   targetVal: 24, suffix: "회", delay: 400 },
+  { label: "연속",   targetVal: 8,  suffix: "일", delay: 550 },
+  { label: "성공률", targetVal: 92, suffix: "%",  delay: 700 },
+];
+
+function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetVal: number; suffix: string; delay: number }) {
+  const val = useCountUp(targetVal, 900, delay);
+  return (
+    <div className="flex-1 rounded-2xl p-3 text-center bg-white/20 border border-white/25">
+      <p className="text-[20px] font-black text-white leading-none">
+        {val}<span className="text-[12px] font-semibold text-white/60 ml-0.5">{suffix}</span>
+      </p>
+      <p className="text-[10px] text-white/50 mt-1">{label}</p>
+    </div>
+  );
+}
+
+export function Profile() {
+  const navigate = useNavigate();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden bg-[#FAFAFA]">
+
+      {/* 히어로 헤더 */}
+      <div
+        className="shrink-0 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(160deg, #FF3355 0%, #CC0030 55%, #A00025 100%)",
+          paddingTop: 52,
+          paddingBottom: 32,
+        }}
+      >
+        {/* 장식 원 */}
+        <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/[0.07]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/[0.06]" />
+
+        <div className="relative z-10 flex flex-col items-center px-5">
+          {/* 아바타 */}
+          <div
+            className="relative mb-4"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "translateY(0) scale(1)" : "translateY(14px) scale(0.88)",
+              transition: "all 0.6s cubic-bezier(0.34,1.56,0.64,1)",
+            }}
+          >
+            <div
+              className="absolute -inset-1 rounded-full"
+              style={{ background: "conic-gradient(from 0deg, rgba(255,255,255,0.8), rgba(255,255,255,0.3), rgba(255,255,255,0.8))", borderRadius: "50%" }}
+            />
+            <div
+              className="relative w-24 h-24 rounded-full bg-cover bg-center"
+              style={{
+                backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
+                outline: "3px solid #FF3355",
+                outlineOffset: 1,
+              }}
+            />
+            <Link
+              to="/profile/edit"
+              className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white"
+              style={{ boxShadow: "0 4px 10px rgba(0,0,0,0.2)", border: "2px solid #FF3355" }}
+            >
+              <Pencil className="w-3 h-3 text-[#FF3355]" />
+            </Link>
+          </div>
+
+          {/* 이름 */}
+          <div
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "translateY(0)" : "translateY(8px)",
+              transition: "all 0.5s 0.15s cubic-bezier(0.4,0,0.2,1)",
+            }}
+          >
+            <h2 className="text-xl font-black text-white text-center">김지수</h2>
+            <div className="flex justify-center mt-1.5">
+              <span className="rounded-lg px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30">
+                Free Plan
+              </span>
+            </div>
+          </div>
+
+          {/* 통계 */}
+          <div
+            className="w-full flex gap-2 mt-5"
+            style={{
+              opacity: mounted ? 1 : 0,
+              transform: mounted ? "translateY(0)" : "translateY(10px)",
+              transition: "all 0.5s 0.25s cubic-bezier(0.4,0,0.2,1)",
+            }}
+          >
+            {stats.map((s) => <StatBadge key={s.label} {...s} />)}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+
+        {/* 복구권 카드 */}
+        <div
+          className="rounded-3xl p-5 relative overflow-hidden flex items-center justify-between bg-white border border-black/[0.04] shadow-[0_4px_20px_rgba(255,51,85,0.08)]"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(14px)",
+            transition: "all 0.5s 0.35s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        >
+          <div
+            className="pointer-events-none absolute -top-8 -right-8 w-40 h-40 rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(255,51,85,0.08) 0%, transparent 70%)", filter: "blur(20px)" }}
+          />
+          <div className="relative z-10">
+            <p className="text-[11px] text-slate-400 mb-1">보유한 복구권</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[44px] font-black text-slate-900 leading-none">2</span>
+              <span className="text-[16px] text-slate-400 ml-1">개</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1.5">실패 시 사용 가능</p>
+          </div>
+          <div className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center bg-[#FFE8EC] border border-[#FFD6DC]">
+            <Ticket className="w-7 h-7 text-[#FF3355]" />
+          </div>
+        </div>
+
+        {/* 설정 */}
+        <div
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(14px)",
+            transition: "all 0.5s 0.45s cubic-bezier(0.4,0,0.2,1)",
+          }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">설정</p>
+          <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
+            {[
+              { icon: Bell, bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정", onClick: () => navigate("/settings/notifications") },
+              { icon: Flag, bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",  onClick: () => navigate("/goals") },
+            ].map(({ icon: Icon, bg, color, label, onClick }, i) => (
+              <div key={label}>
+                {i > 0 && <div className="h-px bg-slate-100 mx-4" />}
+                <button
+                  onClick={onClick}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${bg}`}>
+                    <Icon className={`w-4 h-4 ${color}`} />
+                  </div>
+                  <span className="flex-1 text-left text-[14px] font-semibold text-slate-800">{label}</span>
+                  <ChevronRight className="w-4 h-4 text-slate-300" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2 mt-5">계정</p>
+          <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
+                <LogOut className="w-4 h-4 text-slate-400" />
+              </div>
+              <span className="flex-1 text-left text-[14px] font-semibold text-slate-500">로그아웃</span>
+            </button>
+          </div>
+        </div>
+
+        <p className="text-center text-[11px] text-slate-300 pb-2">JSR v1.0.0</p>
+      </div>
+    </div>
+  );
+}
