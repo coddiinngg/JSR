@@ -1,6 +1,7 @@
-import { ChevronLeft, Bell, Sparkles, Zap } from "lucide-react";
+import { ChevronLeft, Bell, Sparkles, Zap, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useApp, COACH_CONFIGS } from "../../contexts/AppContext";
 
 const suggestions = [
   "30분 러닝",
@@ -9,10 +10,14 @@ const suggestions = [
   "독서 30p",
   "근력 3회",
   "아침 스트레칭",
+  "영어 단어 30개",
+  "저탄고지 식단",
 ];
 
 export function GoalName() {
   const navigate = useNavigate();
+  const { coachType, nickname, addGoal } = useApp();
+  const coachCfg = COACH_CONFIGS[coachType];
   const [name, setName] = useState("");
   const [time, setTime] = useState("07:00");
 
@@ -24,83 +29,116 @@ export function GoalName() {
         <div className="anim-float-r absolute -right-16 top-56 h-56 w-56 rounded-full bg-[#FF3355]/20 blur-2xl" />
       </div>
 
-      <div className="shrink-0 flex items-center justify-between p-4 pb-2">
+      {/* 헤더 */}
+      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 z-10">
         <button
           onClick={() => navigate(-1)}
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
-        <h2 className="pr-10 text-center text-[17px] font-bold tracking-tight text-white/90">GOAL</h2>
+        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">4 / 4</span>
+        <div className="w-10" />
       </div>
 
-      <div className="anim-fade-up relative z-10 px-5 pt-3">
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-9 rounded-full bg-[#FF3355]" />
-          <span className="h-1.5 w-9 rounded-full bg-[#FF3355]" />
-          <span className="h-1.5 w-9 rounded-full bg-[#FF3355]" />
-          <span className="h-1.5 w-9 rounded-full bg-[#FF3355]" />
-        </div>
+      {/* 스텝 바 */}
+      <div className="shrink-0 flex gap-1.5 px-5 pb-1 z-10">
+        {[0, 1, 2, 3].map(i => (
+          <div
+            key={i}
+            className="flex-1 h-1 rounded-full"
+            style={{ background: "#FF3355" }}
+          />
+        ))}
       </div>
 
-      <div className="relative z-10 flex-1 overflow-y-auto px-5 pb-6 pt-5">
-        <div className="anim-fade-up rounded-[30px] border border-white/20 bg-white/10 p-5 backdrop-blur-xl">
-          <div className="mb-5 flex items-center justify-between">
+      {/* 타이틀 */}
+      <div className="shrink-0 px-5 pt-5 pb-4 z-10">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF3355]/70 mb-1.5">목표 이름</p>
+        <h1 className="text-[28px] font-black leading-tight tracking-tight">
+          마지막으로,<br />목표 이름을 정해요
+        </h1>
+      </div>
+
+      <div className="relative z-10 flex-1 overflow-y-auto px-5 pb-6 pt-2">
+        {/* 목표 입력 카드 */}
+        <div className="rounded-[24px] border border-white/15 bg-white/8 p-5 backdrop-blur-xl mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/60">Final</p>
-              <h3 className="mt-1 text-[30px] font-black leading-[0.95]">MAKE IT REAL</h3>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">코치</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-lg">{coachCfg.emoji}</span>
+                <span className="text-[13px] font-bold text-white/70">{coachCfg.label}</span>
+              </div>
             </div>
-            <div className="relative flex size-12 items-center justify-center rounded-2xl bg-[#FF3355]/25">
+            <div className="relative flex size-11 items-center justify-center rounded-2xl bg-[#FF3355]/20">
               <span className="anim-pulse-ring absolute inset-0 rounded-2xl bg-[#FF3355]" />
               <Sparkles className="relative z-10 size-5 text-white" />
             </div>
           </div>
 
           <div className="space-y-3">
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="목표 한 줄"
-              className="h-14 w-full rounded-2xl border border-white/20 bg-white/10 px-4 text-base font-semibold text-white placeholder:text-white/45 focus:border-[#FF3355] focus:outline-none"
-            />
-            <div className="flex h-14 items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 transition-colors focus-within:border-[#FF3355]">
-              <div className="flex items-center gap-2 text-white/85">
+            <div>
+              <label className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-1.5 block">목표 이름</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="예: 30분 유산소"
+                className="h-14 w-full rounded-2xl border border-white/15 bg-white/10 px-4 text-[15px] font-semibold text-white placeholder:text-white/30 focus:border-[#FF3355] focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="flex h-14 items-center justify-between rounded-2xl border border-white/15 bg-white/10 px-4 transition-colors focus-within:border-[#FF3355]">
+              <div className="flex items-center gap-2 text-white/70">
                 <Bell className="h-4 w-4" />
-                <span className="text-sm font-semibold">알림</span>
+                <span className="text-[14px] font-semibold">알림 시간</span>
               </div>
               <input
                 type="time"
                 value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="bg-transparent text-base font-black text-[#FF3355] focus:outline-none"
+                onChange={e => setTime(e.target.value)}
+                className="bg-transparent text-[14px] font-black text-[#FF3355] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {suggestions.map((s, index) => (
+          {/* 제안 태그 */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {suggestions.map((s, idx) => (
               <button
                 key={s}
                 onClick={() => setName(s)}
-                className="anim-pop-in rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/85 transition-all hover:-translate-y-0.5 hover:border-[#FF3355]/80 hover:bg-[#FF3355]/25"
-                style={{ animationDelay: `${0.06 * index}s` }}
+                className="rounded-full border border-white/20 bg-white/8 px-3 py-1.5 text-[12px] font-semibold text-white/70 transition-all hover:border-[#FF3355]/60 hover:bg-[#FF3355]/15 hover:text-white active:scale-95"
               >
                 {s}
               </button>
             ))}
           </div>
         </div>
+
+        {/* 코치 미리보기 메시지 */}
+        {name.trim() && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2.5">코치가 이렇게 말할 거예요</p>
+            <div className="flex items-start gap-2.5">
+              <span className="text-xl shrink-0">{coachCfg.emoji}</span>
+              <p className="text-[13px] text-white/70 leading-relaxed font-medium">
+                "{coachCfg.messages[0].replace("(닉네임)", nickname || "이름")}"
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="relative z-10 shrink-0 px-5 pb-8 pt-4">
+      {/* 하단 버튼 */}
+      <div className="relative z-10 shrink-0 px-5 pb-10 pt-4">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => { addGoal(name.trim(), time); navigate("/"); }}
           disabled={!name.trim()}
-          className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_16px_30px_-10px_rgba(255,51,85,0.65)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:grayscale"
+          className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_16px_30px_-10px_rgba(255,51,85,0.65)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale"
         >
-          <Zap className="size-4 anim-shimmer" />
-          START
+          <CheckCircle2 className="size-5" />
+          목표 시작하기
         </button>
       </div>
     </div>

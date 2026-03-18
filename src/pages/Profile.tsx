@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight } from "lucide-react";
+import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, MessageSquare, Star, UserPlus } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
+import { useApp, COACH_CONFIGS } from "../contexts/AppContext";
+import { CoachCharacter } from "../components/CoachCharacter";
 
 function useCountUp(target: number, duration = 900, delay = 400) {
   const [val, setVal] = useState(0);
@@ -39,6 +41,8 @@ function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetV
 
 export function Profile() {
   const navigate = useNavigate();
+  const { coachType, nickname } = useApp();
+  const coachCfg = COACH_CONFIGS[coachType];
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -62,56 +66,69 @@ export function Profile() {
         <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/[0.07]" />
         <div className="pointer-events-none absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/[0.06]" />
 
-        <div className="relative z-10 flex flex-col items-center px-5">
-          {/* 아바타 */}
-          <div
-            className="relative mb-4"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0) scale(1)" : "translateY(14px) scale(0.88)",
-              transition: "all 0.6s cubic-bezier(0.34,1.56,0.64,1)",
-            }}
-          >
+        <div className="relative z-10 px-5">
+          {/* 아바타 + 캐릭터 행 */}
+          <div className="flex items-end justify-between mb-3">
+            {/* 아바타 */}
             <div
-              className="absolute -inset-1 rounded-full"
-              style={{ background: "conic-gradient(from 0deg, rgba(255,255,255,0.8), rgba(255,255,255,0.3), rgba(255,255,255,0.8))", borderRadius: "50%" }}
-            />
-            <div
-              className="relative w-24 h-24 rounded-full bg-cover bg-center"
+              className="relative"
               style={{
-                backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
-                outline: "3px solid #FF3355",
-                outlineOffset: 1,
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? "translateY(0) scale(1)" : "translateY(14px) scale(0.88)",
+                transition: "all 0.6s cubic-bezier(0.34,1.56,0.64,1)",
               }}
-            />
-            <Link
-              to="/profile/edit"
-              className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white"
-              style={{ boxShadow: "0 4px 10px rgba(0,0,0,0.2)", border: "2px solid #FF3355" }}
             >
-              <Pencil className="w-3 h-3 text-[#FF3355]" />
-            </Link>
-          </div>
+              <div
+                className="absolute -inset-1 rounded-full"
+                style={{ background: "conic-gradient(from 0deg, rgba(255,255,255,0.8), rgba(255,255,255,0.3), rgba(255,255,255,0.8))", borderRadius: "50%" }}
+              />
+              <div
+                className="relative w-20 h-20 rounded-full bg-cover bg-center"
+                style={{
+                  backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
+                  outline: "3px solid #FF3355",
+                  outlineOffset: 1,
+                }}
+              />
+              <Link
+                to="/profile/edit"
+                className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white"
+                style={{ boxShadow: "0 4px 10px rgba(0,0,0,0.2)", border: "2px solid #FF3355" }}
+              >
+                <Pencil className="w-2.5 h-2.5 text-[#FF3355]" />
+              </Link>
+            </div>
 
-          {/* 이름 */}
-          <div
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(8px)",
-              transition: "all 0.5s 0.15s cubic-bezier(0.4,0,0.2,1)",
-            }}
-          >
-            <h2 className="text-xl font-black text-white text-center">김지수</h2>
-            <div className="flex justify-center mt-1.5">
-              <span className="rounded-lg px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30">
+            {/* 이름 + 레벨 (가운데) */}
+            <div
+              className="flex-1 flex flex-col items-center px-2"
+              style={{
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? "translateY(0)" : "translateY(8px)",
+                transition: "all 0.5s 0.15s cubic-bezier(0.4,0,0.2,1)",
+              }}
+            >
+              <h2 className="text-[18px] font-black text-white text-center">{nickname}</h2>
+              <span className="rounded-lg px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30 mt-1">
                 Free Plan
               </span>
+            </div>
+
+            {/* 코치 캐릭터 */}
+            <div
+              style={{
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? "translateY(0) scale(1)" : "translateY(14px) scale(0.7)",
+                transition: "all 0.6s 0.1s cubic-bezier(0.34,1.56,0.64,1)",
+              }}
+            >
+              <CoachCharacter type={coachType} size={72} animated />
             </div>
           </div>
 
           {/* 통계 */}
           <div
-            className="w-full flex gap-2 mt-5"
+            className="w-full flex gap-2"
             style={{
               opacity: mounted ? 1 : 0,
               transform: mounted ? "translateY(0)" : "translateY(10px)",
@@ -159,11 +176,29 @@ export function Profile() {
             transition: "all 0.5s 0.45s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
+          {/* 현재 코치 유형 */}
+          <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04] mb-4 px-4 py-3.5 flex items-center gap-3">
+            <span className="text-2xl">{coachCfg.emoji}</span>
+            <div className="flex-1">
+              <p className="text-[11px] text-slate-400 font-semibold mb-0.5">현재 코치 유형</p>
+              <p className="text-[14px] font-bold text-slate-800">{coachCfg.label}</p>
+            </div>
+            <button
+              onClick={() => navigate("/settings/notifications")}
+              className="text-[12px] font-bold text-[#FF3355] bg-[#FFF0F3] px-3 py-1.5 rounded-full"
+            >
+              변경
+            </button>
+          </div>
+
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">설정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             {[
-              { icon: Bell, bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정", onClick: () => navigate("/settings/notifications") },
-              { icon: Flag, bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",  onClick: () => navigate("/goals") },
+              { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",  onClick: () => navigate("/settings/notifications") },
+              { icon: MessageSquare, bg: "bg-[#FFF0F3]", color: "text-[#FF3355]", label: "코치와 채팅", onClick: () => navigate("/coach/chat") },
+              { icon: Flag,         bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",  onClick: () => navigate("/goals") },
+              { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => navigate("/rewards") },
+              { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",   onClick: () => navigate("/friends/invite") },
             ].map(({ icon: Icon, bg, color, label, onClick }, i) => (
               <div key={label}>
                 {i > 0 && <div className="h-px bg-slate-100 mx-4" />}

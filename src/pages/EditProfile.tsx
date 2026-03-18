@@ -1,109 +1,122 @@
-import { ChevronLeft, Camera } from "lucide-react";
+import { ChevronLeft, Camera, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useApp, COACH_CONFIGS } from "../contexts/AppContext";
+import { CoachCharacter } from "../components/CoachCharacter";
 
 export function EditProfile() {
   const navigate = useNavigate();
+  const { coachType } = useApp();
+  const coachCfg = COACH_CONFIGS[coachType];
   const [name, setName] = useState("김지수");
-  const [username, setUsername] = useState("jisu_kim");
+  const [nickname, setNickname] = useState("jisu_kim");
   const [bio, setBio] = useState("매일 조금씩 더 나아지는 중 🌱");
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => {
+      setSaved(false);
+      navigate(-1);
+    }, 800);
+  };
 
   return (
-    <div className="flex flex-col h-full bg-[#F2F2F7] dark:bg-black overflow-hidden">
+    <div className="flex flex-col h-full bg-[#F5F6FA] overflow-hidden">
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-4 bg-[#F2F2F7]/80 dark:bg-black/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-4 bg-white border-b border-slate-100">
         <button
           onClick={() => navigate(-1)}
-          className="flex size-10 items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors -ml-1"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"
         >
-          <ChevronLeft className="w-6 h-6 text-slate-900 dark:text-white" />
+          <ChevronLeft className="w-5 h-5 text-slate-700" />
         </button>
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white">프로필 수정</h1>
+        <h1 className="text-[17px] font-black text-slate-900">프로필 수정</h1>
         <button
-          onClick={() => navigate(-1)}
-          className="text-sm font-bold text-[#0066FF] px-2"
+          onClick={handleSave}
+          className="h-9 px-4 flex items-center gap-1.5 rounded-full font-bold text-[13px] transition-all active:scale-95"
+          style={{
+            background: saved ? "#22c55e" : "linear-gradient(135deg, #FF3355, #ff5570)",
+            color: "white",
+          }}
         >
-          저장
+          {saved ? <Check className="w-3.5 h-3.5" /> : null}
+          {saved ? "저장됨" : "저장"}
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {/* 프로필 사진 */}
-        <div className="flex flex-col items-center pt-8 pb-6 px-5">
-          <div className="relative mb-6">
+        <div className="flex flex-col items-center pt-8 pb-6 bg-white border-b border-slate-100">
+          <div className="relative mb-3">
             <div
-              className="w-24 h-24 rounded-full ring-4 ring-white dark:ring-slate-800 shadow-lg bg-cover bg-center"
+              className="w-24 h-24 rounded-full bg-cover bg-center"
               style={{
-                backgroundImage:
-                  'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
+                backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
+                border: "3px solid #FF3355",
+                boxShadow: "0 0 0 3px white, 0 6px 20px rgba(255,51,85,0.2)",
               }}
             />
-            <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#0066FF] text-white rounded-full flex items-center justify-center shadow-md border-2 border-[#F2F2F7] dark:border-black">
-              <Camera className="w-3.5 h-3.5" />
+            <button
+              className="absolute bottom-0 right-0 w-9 h-9 flex items-center justify-center rounded-full border-2 border-white shadow-lg text-white"
+              style={{ background: "linear-gradient(135deg, #FF3355, #ff5570)" }}
+            >
+              <Camera className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-sm text-slate-400">사진을 탭해서 변경하세요</p>
+          <p className="text-[12px] text-slate-400 font-medium">탭해서 사진 변경</p>
         </div>
 
         {/* 입력 필드 */}
-        <div className="px-4 space-y-5 pb-8">
+        <div className="px-4 pt-5 space-y-4 pb-8">
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1 mb-2">이름</p>
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden border border-slate-100/80 dark:border-white/5">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">이름</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">닉네임</label>
+            <div className="relative">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-[15px] font-medium">@</span>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="이름을 입력하세요"
-                className="w-full px-4 py-4 text-sm font-medium text-slate-900 dark:text-white bg-transparent focus:outline-none"
+                value={nickname}
+                onChange={e => setNickname(e.target.value)}
+                className="w-full h-14 pl-9 pr-5 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1 mb-2">
-              사용자 이름
-            </p>
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden border border-slate-100/80 dark:border-white/5">
-              <div className="flex items-center px-4 py-4">
-                <span className="text-slate-400 text-sm font-medium mr-1">@</span>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="username"
-                  className="flex-1 text-sm font-medium text-slate-900 dark:text-white bg-transparent focus:outline-none"
-                />
-              </div>
-            </div>
+            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">한 줄 소개</label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              rows={3}
+              maxLength={80}
+              className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors resize-none"
+            />
+            <p className="text-[11px] text-slate-300 text-right mt-1 mr-1">{bio.length}/80</p>
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1 mb-2">
-              한 줄 소개
-            </p>
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden border border-slate-100/80 dark:border-white/5">
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="자신을 소개해보세요"
-                rows={3}
-                className="w-full px-4 py-4 text-sm font-medium text-slate-900 dark:text-white bg-transparent focus:outline-none resize-none"
-              />
-            </div>
-            <p className="text-right text-xs text-slate-400 mt-1 mr-1">{bio.length}/60</p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1 mb-2">
-              계정
-            </p>
-            <div className="bg-white dark:bg-[#1C1C1E] rounded-2xl overflow-hidden border border-slate-100/80 dark:border-white/5">
-              <div className="px-4 py-4">
-                <p className="text-sm font-medium text-slate-900 dark:text-white">jisu@example.com</p>
-                <p className="text-xs text-slate-400 mt-0.5">연결된 이메일</p>
+            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">코치 유형</label>
+            <button
+              onClick={() => navigate("/settings/notifications")}
+              className="w-full bg-white rounded-2xl border border-slate-200 px-4 py-3 flex items-center gap-3 active:bg-slate-50 transition-colors"
+            >
+              <CoachCharacter type={coachType} size={44} animated={false} className="shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-[14px] font-bold text-slate-800">{coachCfg.label}</p>
+                <p className="text-[12px] text-slate-400">탭해서 코치 변경하기</p>
               </div>
-            </div>
+              <span className="text-[12px] font-bold text-[#FF3355] bg-[#FFF0F3] px-2.5 py-1 rounded-full shrink-0">변경</span>
+            </button>
           </div>
         </div>
       </div>

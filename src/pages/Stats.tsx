@@ -1,6 +1,31 @@
 import { useState, useEffect } from "react";
-import { TrendingUp, Flame, Calendar, Trophy, Clock, CheckCircle2, ChevronRight, ImageIcon } from "lucide-react";
+import { TrendingUp, Flame, Calendar, Trophy, Clock, CheckCircle2, ChevronRight, ImageIcon, ChevronLeft, Target } from "lucide-react";
 import { Link } from "react-router-dom";
+
+// 목표별 통계
+const goalStats = [
+  { id: "1", title: "30분 유산소",   color: "#FF3355", colorRgb: "255,51,85",  rate: 80, streak: 8,  total: 24, days: 30 },
+  { id: "2", title: "물 2L 마시기",  color: "#38BDF8", colorRgb: "56,189,248", rate: 65, streak: 5,  total: 18, days: 30 },
+  { id: "3", title: "독서 30페이지", color: "#FB923C", colorRgb: "251,146,60", rate: 15, streak: 0,  total: 3,  days: 20 },
+];
+
+function useCountUp(target: number, duration = 900, delay = 0) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf: number;
+    const t = setTimeout(() => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        setVal(Math.round((1 - Math.pow(1 - p, 3)) * target));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, delay);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, [target, duration, delay]);
+  return val;
+}
 
 const bars = [
   { day: "월", v: 50 },
@@ -12,7 +37,7 @@ const bars = [
   { day: "일", v: 60 },
 ];
 
-// 최근 인증 미리보기 (갤러리 진입 카드용)
+// 최근 인증 미리보기
 const recentThumbs = [
   { id: 1, grad: ["#FF3355","#FF6680"] },
   { id: 2, grad: ["#38BDF8","#0EA5E9"] },
@@ -20,6 +45,63 @@ const recentThumbs = [
   { id: 4, grad: ["#FF3355","#FF6680"] },
   { id: 5, grad: ["#38BDF8","#0EA5E9"] },
 ];
+
+// 3월 달력 히트맵 데이터 (0=없음, 1=낮음, 2=중간, 3=높음)
+const CAL_YEAR = 2026;
+const CAL_MONTH = 2; // 0-indexed (2 = March)
+const calData: Record<number, number> = {
+  1: 3, 2: 2, 3: 3, 4: 1, 5: 0,
+  6: 0, 7: 3, 8: 3, 9: 2, 10: 3, 11: 3, 12: 1,
+  13: 0, 14: 2, 15: 3, 16: 3, 17: 3,
+};
+
+const HEAT_COLORS = [
+  "bg-slate-100",
+  "bg-[#FFD6DC]",
+  "bg-[#FF9DB2]",
+  "bg-[#FF3355]",
+];
+
+interface GoalStat {
+  id: string; title: string; color: string; colorRgb: string;
+  rate: number; streak: number; total: number; days: number;
+}
+
+function GoalRow({ goal, idx, mounted }: { goal: GoalStat; idx: number; mounted: boolean }) {
+  const { id, title, color, colorRgb, rate, streak, total } = goal;
+  const countedRate = useCountUp(mounted ? rate : 0, 1000, idx * 150 + 600);
+  return (
+    <Link to={`/goals/${id}`} className="block active:opacity-70 transition-opacity">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px rgba(${colorRgb},0.5)` }} />
+          <span className="text-[14px] font-bold text-slate-800">{title}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {streak > 0 && (
+            <div className="flex items-center gap-0.5">
+              <Flame className="w-3 h-3 text-orange-400 fill-orange-300" />
+              <span className="text-[11px] text-slate-400">{streak}일</span>
+            </div>
+          )}
+          <span className="text-[14px] font-black tabular-nums" style={{ color }}>{countedRate}%</span>
+        </div>
+      </div>
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: mounted ? `${rate}%` : "0%",
+            background: `linear-gradient(90deg, ${color}, ${color}88)`,
+            transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${idx * 150 + 600}ms`,
+            boxShadow: rate > 20 ? `0 0 8px rgba(${colorRgb},0.35)` : "none",
+          }}
+        />
+      </div>
+      <p className="text-[11px] text-slate-400 mt-1">총 {total}회 달성</p>
+    </Link>
+  );
+}
 
 function Ring({ pct, size = 96 }: { pct: number; size?: number }) {
   const r = (size - 14) / 2;
@@ -45,8 +127,68 @@ function Ring({ pct, size = 96 }: { pct: number; size?: number }) {
   );
 }
 
+function CalendarHeatmap({ mounted }: { mounted: boolean }) {
+  const today = 17; // 오늘 날짜
+  // 2026년 3월 1일은 일요일(0)
+  const firstDow = new Date(CAL_YEAR, CAL_MONTH, 1).getDay();
+  const daysInMonth = new Date(CAL_YEAR, CAL_MONTH + 1, 0).getDate();
+  const dow = ["일", "월", "화", "수", "목", "금", "토"];
+
+  const cells: (number | null)[] = [
+    ...Array(firstDow).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div>
+      {/* 요일 헤더 */}
+      <div className="grid grid-cols-7 mb-1">
+        {dow.map(d => (
+          <div key={d} className="text-center text-[10px] font-bold text-slate-400 py-1">{d}</div>
+        ))}
+      </div>
+      {/* 날짜 그리드 */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`e${i}`} />;
+          const level = calData[day] ?? 0;
+          const isFuture = day > today;
+          const isToday = day === today;
+          return (
+            <div
+              key={day}
+              className={[
+                "aspect-square rounded-lg flex items-center justify-center text-[11px] font-bold transition-all duration-300",
+                isFuture ? "bg-slate-50 text-slate-300" : HEAT_COLORS[level],
+                isToday ? "ring-2 ring-[#FF3355] ring-offset-1" : "",
+                level >= 2 ? "text-white" : level === 1 ? "text-[#FF3355]" : "text-slate-400",
+              ].join(" ")}
+              style={{
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? "scale(1)" : "scale(0.6)",
+                transition: `opacity 0.3s ease ${i * 15}ms, transform 0.3s cubic-bezier(0.34,1.56,0.64,1) ${i * 15}ms`,
+              }}
+            >
+              {day}
+            </div>
+          );
+        })}
+      </div>
+      {/* 범례 */}
+      <div className="flex items-center gap-1.5 mt-3 justify-end">
+        <span className="text-[10px] text-slate-400">적음</span>
+        {HEAT_COLORS.map((c, i) => (
+          <div key={i} className={`w-4 h-4 rounded ${c}`} />
+        ))}
+        <span className="text-[10px] text-slate-400">많음</span>
+      </div>
+    </div>
+  );
+}
+
 export function Stats() {
   const [mounted, setMounted] = useState(false);
+  const [calMonth, setCalMonth] = useState("2026년 3월");
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -64,8 +206,6 @@ export function Stats() {
       <style>{`
         @keyframes st-fade { from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
         @keyframes st-pop  { 0%{opacity:0;transform:scale(0.85);}60%{transform:scale(1.04);}100%{opacity:1;transform:scale(1);} }
-        @keyframes lb-in   { from{opacity:0;transform:scale(0.92);}to{opacity:1;transform:scale(1);} }
-        @keyframes lb-bg   { from{opacity:0;}to{opacity:1;} }
       `}</style>
 
       {/* 헤더 */}
@@ -177,13 +317,92 @@ export function Stats() {
           ))}
         </div>
 
-        {/* ── 인증 갤러리 진입 카드 ── */}
+        {/* 월간 히트맵 달력 */}
+        <div
+          className="bg-white rounded-3xl p-5 border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+          style={slide(440)}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-0.5">월간 달성 현황</p>
+              <h3 className="text-[16px] font-black text-slate-900">{calMonth}</h3>
+            </div>
+            <div className="flex gap-1">
+              <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 active:bg-slate-100 transition-colors">
+                <ChevronLeft className="w-4 h-4 text-slate-400" />
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 active:bg-slate-100 transition-colors">
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+          </div>
+          <CalendarHeatmap mounted={mounted} />
+          <div className="mt-4 pt-4 border-t border-slate-100 flex gap-4">
+            <div className="flex-1 text-center">
+              <p className="text-[22px] font-black text-[#FF3355] leading-none">13</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">달성일</p>
+            </div>
+            <div className="w-px bg-slate-100" />
+            <div className="flex-1 text-center">
+              <p className="text-[22px] font-black text-slate-700 leading-none">4</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">미달성</p>
+            </div>
+            <div className="w-px bg-slate-100" />
+            <div className="flex-1 text-center">
+              <p className="text-[22px] font-black text-slate-300 leading-none">13</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">남은 날</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 목표별 달성률 브레이크다운 */}
+        <div
+          className="bg-white rounded-3xl p-5 border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+          style={slide(500)}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-0.5">목표별 분석</p>
+              <h3 className="text-[16px] font-black text-slate-900">개별 달성률</h3>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-[#FFE8EC] flex items-center justify-center">
+              <Target className="w-4 h-4 text-[#FF3355]" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            {goalStats.map((g, i) => (
+              <GoalRow key={g.id} goal={g} idx={i} mounted={mounted} />
+            ))}
+          </div>
+        </div>
+
+        {/* 주간 리포트 진입 카드 */}
+        <Link
+          to="/stats/weekly-report"
+          className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150"
+          style={slide(510)}
+        >
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #FF3355, #ff5570)", boxShadow: "0 4px 14px rgba(255,51,85,0.3)" }}
+          >
+            <TrendingUp className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-black text-slate-900">주간 리포트</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">이번 주 목표별 달성 분석 보기</p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
+            <ChevronRight className="w-4 h-4 text-[#FF3355]" />
+          </div>
+        </Link>
+
+        {/* 인증 갤러리 진입 카드 */}
         <Link
           to="/gallery"
           className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150"
-          style={slide(480)}
+          style={slide(520)}
         >
-          {/* 썸네일 미리보기 */}
           <div className="flex -space-x-2 shrink-0">
             {recentThumbs.map(({ id, grad }) => (
               <div
@@ -193,7 +412,6 @@ export function Stats() {
               />
             ))}
           </div>
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <ImageIcon className="w-3.5 h-3.5 text-[#FF3355]" />
@@ -201,7 +419,6 @@ export function Stats() {
             </div>
             <p className="text-[12px] text-slate-400">총 15장 · 갤러리에서 확인</p>
           </div>
-
           <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
             <ChevronRight className="w-4 h-4 text-[#FF3355]" />
           </div>

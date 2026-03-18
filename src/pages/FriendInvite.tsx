@@ -1,0 +1,296 @@
+import { useState, useEffect } from "react";
+import { ChevronLeft, Search, UserPlus, Check, Link2, Copy, Users, MessageCircle, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { cn } from "../lib/utils";
+
+interface Friend {
+  id: number;
+  name: string;
+  handle: string;
+  seed: string;
+  mutual: number;
+  invited: boolean;
+}
+
+const SUGGESTED: Friend[] = [
+  { id: 1, name: "박민혁",  handle: "@minhyuk_p", seed: "Aneka",  mutual: 3, invited: false },
+  { id: 2, name: "김소연",  handle: "@soyeon_k",  seed: "Luna",   mutual: 5, invited: false },
+  { id: 3, name: "이지호",  handle: "@jiho_lee",  seed: "Alex",   mutual: 1, invited: false },
+  { id: 4, name: "최민준",  handle: "@minjun_c",  seed: "Leo",    mutual: 2, invited: false },
+  { id: 5, name: "정하은",  handle: "@haeun_j",   seed: "Mia",    mutual: 4, invited: false },
+  { id: 6, name: "유서진",  handle: "@seojin_y",  seed: "Ava",    mutual: 0, invited: false },
+];
+
+const INVITE_CODE = "JSR-OMOM-2026";
+const INVITE_URL  = "https://jsr.app/join/JSR-OMOM-2026";
+
+function Avatar({ seed, size = 40 }: { seed: string; size?: number }) {
+  // Color palette based on seed
+  const colors = ["#FF3355","#38BDF8","#FB923C","#A78BFA","#34d399","#F59E0B"];
+  const idx = seed.charCodeAt(0) % colors.length;
+  const initial = seed[0];
+  return (
+    <div
+      className="rounded-full flex items-center justify-center text-white font-black shrink-0"
+      style={{
+        width: size, height: size,
+        background: `linear-gradient(135deg, ${colors[idx]}, ${colors[(idx + 2) % colors.length]})`,
+        fontSize: size * 0.38,
+        boxShadow: `0 2px 10px ${colors[idx]}40`,
+      }}
+    >
+      {initial}
+    </div>
+  );
+}
+
+export function FriendInvite() {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [friends, setFriends] = useState(SUGGESTED);
+  const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  const filtered = friends.filter(f =>
+    f.name.includes(search) || f.handle.includes(search)
+  );
+
+  function invite(id: number) {
+    setFriends(prev => prev.map(f => f.id === id ? { ...f, invited: true } : f));
+  }
+
+  function copyCode() {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const invitedCount = friends.filter(f => f.invited).length;
+
+  return (
+    <div className="flex flex-col h-full bg-[#F5F6FA] overflow-hidden">
+      <style>{`
+        @keyframes fi-in { from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);} }
+        @keyframes fi-slide { from{opacity:0;transform:translateX(-12px);}to{opacity:1;transform:translateX(0);} }
+        @keyframes fi-check { 0%{opacity:0;transform:scale(0.5);}60%{transform:scale(1.15);}100%{opacity:1;transform:scale(1);} }
+      `}</style>
+
+      {/* 헤더 */}
+      <div
+        className="shrink-0 flex items-center gap-3 px-4 pt-12 pb-4 bg-white border-b border-black/[0.05]"
+        style={{ animation: "fi-in 0.4s ease both" }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-slate-700" />
+        </button>
+        <div className="flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF3355]">소셜</p>
+          <h1 className="text-[20px] font-black text-slate-900">친구 초대</h1>
+        </div>
+        {invitedCount > 0 && (
+          <span
+            className="bg-[#FF3355] text-white text-[12px] font-black px-2.5 py-1 rounded-full"
+            style={{ animation: "fi-check 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}
+          >
+            {invitedCount}명 초대
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto pb-8">
+
+        {/* 초대 링크 카드 */}
+        <div
+          className="mx-4 mt-4 rounded-3xl overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, #FF3355, #CC0030)",
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(16px)",
+            transition: "all 0.5s cubic-bezier(0.34,1.56,0.64,1) 60ms",
+          }}
+        >
+          {/* 배경 장식 */}
+          <div className="relative overflow-hidden p-5">
+            <div className="pointer-events-none absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/[0.08]" />
+            <div className="pointer-events-none absolute -bottom-6 -left-6 w-28 h-28 rounded-full bg-black/[0.06]" />
+
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-white/70" />
+                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">나의 초대 코드</p>
+              </div>
+              <p className="text-[28px] font-black text-white tracking-widest mb-4 leading-none">
+                {INVITE_CODE}
+              </p>
+              <p className="text-white/60 text-[12px] leading-relaxed mb-4">
+                친구가 이 코드로 가입하면 둘 다<br />
+                <span className="text-white font-bold">+50 XP</span>를 받아요!
+              </p>
+
+              {/* 버튼들 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={copyCode}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-[14px] transition-all active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.25)" }}
+                >
+                  {copied
+                    ? <><Check className="w-4 h-4 text-white" /><span className="text-white">복사됨!</span></>
+                    : <><Copy className="w-4 h-4 text-white" /><span className="text-white">코드 복사</span></>
+                  }
+                </button>
+                <button
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-white font-bold text-[14px] text-[#FF3355] transition-all active:scale-95"
+                >
+                  <Link2 className="w-4 h-4" />
+                  링크 공유
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 초대 URL 표시 */}
+          <div
+            className="flex items-center gap-2 px-5 py-3"
+            style={{ background: "rgba(0,0,0,0.15)", borderTop: "1px solid rgba(255,255,255,0.1)" }}
+          >
+            <Link2 className="w-3.5 h-3.5 text-white/40 shrink-0" />
+            <p className="text-[11px] text-white/40 font-medium truncate">{INVITE_URL}</p>
+          </div>
+        </div>
+
+        {/* 공유 채널 */}
+        <div
+          className="mx-4 mt-3 grid grid-cols-4 gap-2"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(12px)",
+            transition: "all 0.5s ease 120ms",
+          }}
+        >
+          {[
+            { emoji: "💬", label: "카카오톡", color: "#FEE500", textColor: "#3A1D1D" },
+            { emoji: "📱", label: "문자",     color: "#34C759", textColor: "white"   },
+            { emoji: "📸", label: "인스타",   color: "#E1306C", textColor: "white"   },
+            { emoji: "📋", label: "기타",     color: "#F1F5F9", textColor: "#64748B" },
+          ].map(({ emoji, label, color, textColor }) => (
+            <button
+              key={label}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-all"
+              style={{ background: color }}
+            >
+              <span className="text-xl">{emoji}</span>
+              <span className="text-[11px] font-bold" style={{ color: textColor }}>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 친구 검색 */}
+        <div
+          className="mx-4 mt-5"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(12px)",
+            transition: "all 0.5s ease 180ms",
+          }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">
+            추천 친구 {SUGGESTED.length}명
+          </p>
+          <div className="flex items-center gap-2 bg-white rounded-2xl border border-slate-200 px-4 py-3 mb-3 focus-within:border-[#FF3355] transition-colors">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="이름 또는 @핸들 검색"
+              className="flex-1 bg-transparent text-[14px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* 친구 목록 */}
+        <div className="mx-4 space-y-2">
+          {filtered.map((friend, i) => (
+            <div
+              key={friend.id}
+              className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 border border-black/[0.04]"
+              style={{
+                opacity: mounted ? 1 : 0,
+                transform: mounted ? "translateX(0)" : "translateX(-12px)",
+                transition: `opacity 0.4s ease ${200 + i * 50}ms, transform 0.4s ease ${200 + i * 50}ms`,
+                boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+              }}
+            >
+              <Avatar seed={friend.seed} size={44} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-slate-900">{friend.name}</p>
+                <p className="text-[12px] text-slate-400 font-medium">{friend.handle}</p>
+                {friend.mutual > 0 && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Users className="w-3 h-3 text-slate-300" />
+                    <span className="text-[11px] text-slate-400">공통 친구 {friend.mutual}명</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => invite(friend.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95",
+                  friend.invited
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                    : "bg-[#FFF0F3] text-[#FF3355] border border-[#FFD6DC]"
+                )}
+              >
+                {friend.invited ? (
+                  <><Check className="w-3.5 h-3.5" />초대됨</>
+                ) : (
+                  <><UserPlus className="w-3.5 h-3.5" />초대</>
+                )}
+              </button>
+            </div>
+          ))}
+
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 text-slate-300" />
+              </div>
+              <p className="text-slate-400 font-medium text-[14px]">검색 결과가 없어요</p>
+            </div>
+          )}
+        </div>
+
+        {/* 초대 메시지 보내기 */}
+        <div
+          className="mx-4 mt-4 bg-white rounded-2xl p-4 border border-black/[0.04] flex items-center gap-3"
+          style={{
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(12px)",
+            transition: "all 0.5s ease 500ms",
+            boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#FFF0F3] flex items-center justify-center shrink-0">
+            <MessageCircle className="w-5 h-5 text-[#FF3355]" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[14px] font-bold text-slate-900">연락처로 초대</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">전화번호부에서 친구 찾기</p>
+          </div>
+          <button className="text-[12px] font-bold text-[#FF3355] bg-[#FFF0F3] px-3 py-1.5 rounded-full active:bg-[#FFE0E7] transition-colors">
+            열기
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}

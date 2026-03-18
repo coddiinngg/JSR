@@ -1,55 +1,141 @@
-import { Moon, Ticket } from "lucide-react";
+import { useState } from "react";
+import { Ticket, AlertTriangle, Lock } from "lucide-react";
+import { cn } from "../lib/utils";
+import { useApp } from "../contexts/AppContext";
 
 interface SnoozeModalProps {
+  goalId: string;
   onClose: () => void;
   onSnooze: () => void;
 }
 
-export function SnoozeModal({ onClose, onSnooze }: SnoozeModalProps) {
+const SNOOZE_WARNINGS = [
+  "정말요? 지금 포기하면 내일이 더 힘들어요...",
+  "오늘 건너뛰면 연속 기록이 끊겨요!",
+  "딱 1번만 더 해봐요. 시작이 제일 어렵다고 했잖아요.",
+];
+
+export function SnoozeModal({ goalId, onClose, onSnooze }: SnoozeModalProps) {
+  const { recoveryTickets, useRecoveryTicket, skipGoalToday } = useApp();
+  const [confirmed, setConfirmed] = useState(false);
+  const [warning] = useState(() => SNOOZE_WARNINGS[Math.floor(Math.random() * SNOOZE_WARNINGS.length)]);
+  const noTickets = recoveryTickets <= 0;
+
+  const handleSnooze = () => {
+    if (noTickets) return;
+    if (!confirmed) {
+      setConfirmed(true);
+      return;
+    }
+    useRecoveryTicket();
+    skipGoalToday(goalId);
+    onSnooze();
+  };
+
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[6px] animate-in fade-in duration-300">
-      <div className="w-full max-w-[320px] bg-white dark:bg-[#1C1C1E] rounded-3xl p-6 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.18)] transform transition-all animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 mx-4">
-        <div className="flex justify-center mb-5">
-          <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center relative">
-            <div className="absolute w-16 h-16 rounded-full bg-[#0066FF]/10 animate-pulse"></div>
-            <Moon className="w-10 h-10 text-[#0066FF] relative z-10 fill-[#0066FF]/20" />
-            <span className="absolute top-3 right-4 text-[#0066FF]/60 text-lg font-bold animate-bounce" style={{ animationDuration: '2s' }}>z</span>
-            <span className="absolute top-5 right-2 text-[#0066FF]/40 text-sm font-bold animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.2s' }}>z</span>
+    <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
+      <style>{`
+        @keyframes sheet-up { from{transform:translateY(100%);}to{transform:translateY(0);} }
+      `}</style>
+
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div
+        className="relative w-full bg-white rounded-t-[28px] px-6 pt-5 pb-10 mx-0 max-w-none"
+        style={{ animation: "sheet-up 0.3s cubic-bezier(0.4,0,0.2,1) both" }}
+      >
+        {/* 핸들 */}
+        <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+
+        {/* 아이콘 */}
+        <div className="flex justify-center mb-4">
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{
+              background: noTickets ? "#F1F5F9" : confirmed ? "#FFF3CD" : "#FFF0F3",
+              border: `2px solid ${noTickets ? "#CBD5E1" : confirmed ? "#F59E0B" : "#FFD6DC"}`,
+            }}
+          >
+            {noTickets
+              ? <Lock className="w-8 h-8 text-slate-400" />
+              : confirmed
+                ? <AlertTriangle className="w-8 h-8 text-amber-500" />
+                : <span className="text-3xl">😴</span>
+            }
           </div>
         </div>
 
-        <div className="text-center mb-6 space-y-3">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-tight">쉬어갈까요?</h2>
-          <p className="text-[15px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium px-2">
-            오늘은 건너뛰어도 괜찮아요.<br />복구권 1개를 사용합니다.
+        {/* 텍스트 */}
+        <div className="text-center mb-5">
+          <h2 className="text-[20px] font-black text-slate-900 mb-2">
+            {noTickets ? "복구권이 없어요" : confirmed ? "정말 건너뛸까요?" : "오늘 건너뛰기"}
+          </h2>
+          <p className="text-[14px] text-slate-500 leading-relaxed">
+            {noTickets
+              ? "복구권을 모두 사용했어요.\n오늘은 꼭 해봐요! 💪"
+              : confirmed
+                ? <span className="text-amber-600 font-semibold">{warning}</span>
+                : "복구권 1개를 사용해서 오늘을 건너뛸 수 있어요."
+            }
           </p>
         </div>
 
-        <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl py-3.5 px-4 mb-8 flex items-center justify-between border border-slate-100 dark:border-slate-700/50 shadow-sm">
+        {/* 복구권 상태 */}
+        <div className="flex items-center justify-between bg-slate-50 rounded-2xl px-4 py-3 mb-5 border border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center border border-slate-100 dark:border-slate-600">
-              <Ticket className="w-4 h-4 text-[#0066FF]" />
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm border border-slate-100">
+              <Ticket className={cn("w-4 h-4", noTickets ? "text-slate-300" : "text-[#FF3355]")} />
             </div>
-            <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">차감: 1 복구권</span>
+            <span className="text-[13px] font-semibold text-slate-600">
+              {noTickets ? "복구권 없음" : "차감: 복구권 1개"}
+            </span>
           </div>
-          <div className="bg-[#0066FF]/10 dark:bg-[#0066FF]/20 px-3 py-1.5 rounded-full border border-[#0066FF]/10">
-            <span className="text-[13px] font-bold text-[#0066FF]">잔여 2개</span>
+          <div className={cn(
+            "px-3 py-1.5 rounded-full border",
+            noTickets
+              ? "bg-slate-100 border-slate-200"
+              : "bg-[#FFF0F3] border-[#FFD6DC]"
+          )}>
+            <span className={cn(
+              "text-[13px] font-bold",
+              noTickets ? "text-slate-400" : "text-[#FF3355]"
+            )}>
+              잔여 {recoveryTickets}개
+            </span>
           </div>
         </div>
 
+        {/* 버튼 */}
         <div className="flex flex-col gap-3">
-          <button
-            onClick={onSnooze}
-            className="w-full h-12 bg-[#0066FF] hover:bg-[#0052cc] active:scale-[0.98] text-white text-base font-semibold rounded-2xl transition-all flex items-center justify-center shadow-[0_4px_12px_rgba(0,102,255,0.3)]"
-          >
-            건너뛰기
-          </button>
-          <button
-            onClick={onClose}
-            className="w-full h-12 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] text-slate-500 dark:text-slate-400 text-base font-medium rounded-2xl transition-all"
-          >
-            취소
-          </button>
+          {noTickets ? (
+            <button
+              onClick={onClose}
+              className="w-full h-14 rounded-2xl bg-[#FF3355] text-white font-bold text-[15px] active:scale-[0.98] transition-all"
+              style={{ boxShadow: "0 6px 20px -4px rgba(255,51,85,0.45)" }}
+            >
+              알겠어요, 할게요! 💪
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleSnooze}
+                className={cn(
+                  "w-full h-14 rounded-2xl font-bold text-[15px] transition-all active:scale-[0.98]",
+                  confirmed
+                    ? "bg-amber-500 text-white shadow-[0_6px_20px_-4px_rgba(245,158,11,0.5)]"
+                    : "bg-[#FF3355] text-white shadow-[0_6px_20px_-4px_rgba(255,51,85,0.45)]"
+                )}
+              >
+                {confirmed ? "그래도 건너뛰기" : "건너뛰기"}
+              </button>
+              <button
+                onClick={onClose}
+                className="w-full h-12 text-slate-400 font-medium text-[14px] hover:text-slate-600 transition-colors"
+              >
+                {confirmed ? "아니요, 할게요! 💪" : "취소"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

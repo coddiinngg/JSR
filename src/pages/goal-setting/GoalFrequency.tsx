@@ -2,6 +2,7 @@ import { ChevronLeft, CalendarDays, Repeat, SlidersHorizontal, PlayCircle, StopC
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
+import { useApp } from "../../contexts/AppContext";
 
 const options = [
   { id: "daily",  icon: CalendarDays,    label: "매일",      sub: "Daily" },
@@ -11,6 +12,7 @@ const options = [
 
 export function GoalFrequency() {
   const navigate = useNavigate();
+  const { setGoalDraft } = useApp();
   const [selected, setSelected] = useState("daily");
   const [mounted, setMounted] = useState(false);
 
@@ -152,7 +154,7 @@ export function GoalFrequency() {
         style={{ animation: "ob-fade 0.5s ease 400ms both" }}
       >
         <button
-          onClick={() => navigate("/goal-setting/coach")}
+          onClick={() => { setGoalDraft({ frequency: selected }); navigate("/goal-setting/coach"); }}
           className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_12px_28px_-8px_rgba(255,51,85,0.6)] active:scale-[0.98] transition-transform group"
         >
           다음

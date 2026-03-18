@@ -14,7 +14,7 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="shrink-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 px-2 pt-2 pb-6 z-50">
+    <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-6 z-50" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.04)" }}>
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = location.pathname === item.href;
@@ -27,7 +27,7 @@ export function BottomNav() {
                 "flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200",
                 isActive
                   ? "text-[#FF3355]"
-                  : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                  : "text-slate-400 hover:text-slate-600"
               )}
             >
               <Icon

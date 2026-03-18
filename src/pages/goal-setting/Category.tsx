@@ -2,6 +2,7 @@ import { ChevronLeft, Dumbbell, GraduationCap, BookOpen, Repeat, Palette, MoreHo
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { cn } from "../../lib/utils";
+import { useApp } from "../../contexts/AppContext";
 
 const categories = [
   { id: "exercise", icon: Dumbbell,       label: "운동",  sub: "건강한 신체" },
@@ -14,6 +15,7 @@ const categories = [
 
 export function Category() {
   const navigate = useNavigate();
+  const { setGoalDraft } = useApp();
   const [selected, setSelected] = useState("exercise");
   const [mounted, setMounted] = useState(false);
 
@@ -120,7 +122,7 @@ export function Category() {
         style={{ animation: "ob-fade 0.5s ease 400ms both" }}
       >
         <button
-          onClick={() => navigate("/goal-setting/frequency")}
+          onClick={() => { setGoalDraft({ category: selected }); navigate("/goal-setting/frequency"); }}
           className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_12px_28px_-8px_rgba(255,51,85,0.6)] active:scale-[0.98] transition-transform group"
         >
           다음

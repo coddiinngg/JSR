@@ -1,6 +1,6 @@
 import { Search, Users, Flame, Plus, ArrowUpRight, Minus, ChevronRight,
-         Activity, BookOpen, Apple, Sun, Sparkles, Dumbbell } from "lucide-react";
-import { Link } from "react-router-dom";
+         Activity, BookOpen, Apple, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useState, useEffect } from "react";
 
@@ -38,6 +38,12 @@ const topRankers = [
   { rank: 3, name: "이성민", streak: 15, rate: 87, seed: "Jude",  up: false },
 ];
 
+// 추천 그룹 (내 관심사 기반)
+const recommended = [
+  { id: "5", title: "매일 명상 10분",  desc: "하루 10분, 마음의 여유를 찾아요", members: 31, rate: 88, category: "생활", reason: "인기 급상승 🔥" },
+  { id: "6", title: "영어 단어 30개",  desc: "매일 꾸준히 어휘를 늘려요",       members: 17, rate: 60, category: "학습", reason: "학습 목표 유사" },
+];
+
 const CATS = ["전체", "운동", "식단", "학습", "생활"];
 
 // 카테고리 태그 (카드 상단)
@@ -53,8 +59,11 @@ function CatTag({ category }: { category: string }) {
 }
 
 export function Challenge() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"group" | "all">("group");
   const [activeCat, setActiveCat] = useState("전체");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [mounted,   setMounted]   = useState(false);
   const [joinedIds, setJoinedIds] = useState<Set<string>>(
     new Set(allGroups.filter((g) => g.joined).map((g) => g.id))
@@ -71,7 +80,9 @@ export function Challenge() {
     transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
   });
 
-  const filtered = activeCat === "전체" ? allGroups : allGroups.filter((g) => g.category === activeCat);
+  const filtered = allGroups
+    .filter((g) => activeCat === "전체" || g.category === activeCat)
+    .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery));
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F8F8FA]">
@@ -82,19 +93,43 @@ export function Challenge() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-black/[0.05]"
+        className="shrink-0 bg-white border-b border-black/[0.05]"
         style={{ animation: "ch-down 0.4s ease both" }}
       >
-        <h1 className="text-[22px] font-black text-slate-900 tracking-tight">챌린지</h1>
-        <div className="flex items-center gap-2">
-          <button className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors">
-            <Search style={{ width: 17, height: 17 }} className="text-slate-500" />
-          </button>
-          <button className="h-9 px-3.5 flex items-center gap-1.5 bg-[#FF3355] rounded-full text-white text-[13px] font-bold shadow-[0_4px_14px_rgba(255,51,85,0.35)] active:scale-95 transition-all">
-            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-            만들기
-          </button>
+        <div className="flex items-center justify-between px-5 pt-12 pb-4">
+          <h1 className="text-[22px] font-black text-slate-900 tracking-tight">챌린지</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSearch(v => !v)}
+              className={cn(
+                "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                showSearch ? "bg-[#FF3355] text-white" : "bg-slate-100 text-slate-500 active:bg-slate-200"
+              )}
+            >
+              <Search style={{ width: 17, height: 17 }} />
+            </button>
+            <button
+              onClick={() => navigate("/challenge/create")}
+              className="h-9 px-3.5 flex items-center gap-1.5 bg-[#FF3355] rounded-full text-white text-[13px] font-bold shadow-[0_4px_14px_rgba(255,51,85,0.35)] active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+              만들기
+            </button>
+          </div>
         </div>
+        {/* 검색 입력창 */}
+        {showSearch && (
+          <div className="px-4 pb-3" style={{ animation: "ch-down 0.2s ease both" }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="챌린지 검색..."
+              autoFocus
+              className="w-full h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 text-[14px] focus:outline-none focus:border-[#FF3355] transition-colors"
+            />
+          </div>
+        )}
       </div>
 
       {/* 탭 */}
@@ -215,6 +250,46 @@ export function Challenge() {
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* 추천 그룹 */}
+          <section style={slide(480)}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[14px] font-bold text-slate-900">추천 그룹</h2>
+              <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-semibold">관심사 기반</span>
+            </div>
+            <div className="space-y-2.5">
+              {recommended.map(({ id, title, desc, members, rate, category, reason }, i) => {
+                const meta = CAT_META[category] ?? CAT_META["생활"];
+                const Icon = meta.icon;
+                return (
+                  <Link
+                    key={id}
+                    to={`/challenge/group/${id}`}
+                    className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-black/[0.05] active:scale-[0.98] transition-all duration-150"
+                    style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: meta.grad }}
+                    >
+                      <Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <p className="text-[14px] font-black text-slate-900 truncate">{title}</p>
+                      </div>
+                      <p className="text-[12px] text-slate-400 truncate">{desc}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-[#FF3355] bg-[#FFF0F3] px-1.5 py-0.5 rounded-full">{reason}</span>
+                        <span className="text-[11px] text-slate-400">{members}명 · {rate}%</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
