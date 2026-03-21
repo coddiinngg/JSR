@@ -1,10 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ListChecks, Trophy, BarChart2, User } from "lucide-react";
+import { Home, Trophy, BarChart2, User } from "lucide-react";
 import { cn } from "../lib/utils";
 
 const navItems = [
   { icon: Home, label: "홈", href: "/" },
-  { icon: ListChecks, label: "목표", href: "/goals" },
   { icon: Trophy, label: "챌린지", href: "/challenge" },
   { icon: BarChart2, label: "통계", href: "/stats" },
   { icon: User, label: "프로필", href: "/profile" },
@@ -14,7 +13,7 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 pb-6 z-50" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.04)" }}>
+    <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 z-50" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.04)", paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = location.pathname === item.href;
