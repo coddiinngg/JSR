@@ -360,7 +360,7 @@ export function Home() {
         </div>{/* px-4 끝 */}
 
         {/* 인증하기 버튼 */}
-        <div className="px-4 pb-6 pt-2 shrink-0">
+        <div className="px-4 pb-3 pt-2 shrink-0">
           <button
             onClick={() => {
               if (currentGoal) { setVerifyingGoalId(currentGoal.id); navigate("/verify/camera"); }

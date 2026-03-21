@@ -119,7 +119,7 @@ export function GroupDetail() {
         <div className="pointer-events-none absolute bottom-0 left-10 w-40 h-40 rounded-full bg-[#FF3355]/[0.04] blur-2xl" />
 
         {/* 네비 바 */}
-        <div className="flex items-center justify-between px-4 pt-8 pb-3 relative z-10">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2 relative z-10">
           <button onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors">
             <ChevronLeft className="w-5 h-5 text-white" />
