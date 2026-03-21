@@ -130,7 +130,7 @@ export function Home() {
       `}</style>
 
       {/* 헤더 */}
-      <header className="shrink-0 bg-white z-10 px-6 pt-8 pb-3"
+      <header className="shrink-0 bg-white z-10 px-6 pt-4 pb-1.5"
         style={{ animation: "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -369,7 +369,6 @@ export function Home() {
             className="relative w-full h-[68px] rounded-[20px] flex items-center px-5 gap-4 text-white active:scale-[0.97] transition-all duration-200 overflow-hidden"
             style={{ background: "linear-gradient(115deg, #FF5C7A 0%, #FF3355 45%, #C8002B 100%)", boxShadow: "0 8px 24px rgba(255,51,85,0.22), 0 1px 0 rgba(255,255,255,0.12) inset", animation: btnFlash ? "btn-flash 0.6s cubic-bezier(0.4,0,0.2,1) both" : undefined }}>
             {/* 배경 광택 원 */}
-            <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/[0.07]" />
             {/* 카메라 아이콘 */}
             <div className="shrink-0 w-10 h-10 rounded-[14px] flex items-center justify-center"
               style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>

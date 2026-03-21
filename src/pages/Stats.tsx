@@ -210,7 +210,7 @@ export function Stats() {
 
       {/* 헤더 */}
       <header
-        className="shrink-0 flex items-center justify-between px-5 pt-8 pb-4 bg-white border-b border-black/[0.05]"
+        className="shrink-0 flex items-center justify-between px-5 pt-4 pb-4 bg-white border-b border-black/[0.05]"
         style={{ animation: "st-fade 0.4s ease both" }}
       >
         <div>
@@ -227,8 +227,6 @@ export function Stats() {
         {/* 주간 차트 */}
         <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
           style={{ animation: "st-fade 0.45s ease 60ms both" }}>
-          <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(255,51,85,0.08) 0%, transparent 70%)", filter: "blur(24px)" }} />
           <div className="relative z-10">
             <div className="flex items-start justify-between mb-5">
               <div>
@@ -276,8 +274,6 @@ export function Stats() {
           </div>
           <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             style={{ minHeight: 150, animation: "st-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) 280ms both" }}>
-            <div className="pointer-events-none absolute -bottom-6 -right-6 w-28 h-28 rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(251,146,60,0.2) 0%, transparent 70%)", filter: "blur(20px)" }} />
             <div className="relative z-10 h-full flex flex-col justify-between">
               <Flame className="w-7 h-7" style={{ color: "#fb923c", fill: "#fb923c" }} />
               <div>

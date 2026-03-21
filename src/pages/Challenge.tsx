@@ -81,7 +81,7 @@ export function Challenge() {
         className="shrink-0 bg-white border-b border-black/[0.05] relative z-50"
         style={{ animation: "ch-down 0.4s ease both" }}
       >
-        <div className="flex items-center justify-between px-5 pt-12 pb-4">
+        <div className="flex items-center justify-between px-5 pt-6 pb-4">
           {/* 드롭다운 */}
           <div className="relative" onClick={e => e.stopPropagation()}>
             <button
@@ -172,7 +172,6 @@ export function Challenge() {
             className="relative overflow-hidden rounded-2xl px-5 py-4 flex items-center justify-between"
             style={{ background: "linear-gradient(110deg, #FF3355 0%, #CC0030 100%)" }}
           >
-            <div className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/[0.07] blur-xl" />
             <div>
               <p className="text-white/60 text-[11px] font-bold uppercase tracking-[0.15em]">현재 진행 중</p>
               <p className="text-white text-[22px] font-black leading-tight">{allGroups.length}개 그룹</p>

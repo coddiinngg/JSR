@@ -13,7 +13,7 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 z-50" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.04)", paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+    <nav className="shrink-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 z-50" style={{ boxShadow: "0 -4px 20px rgba(0,0,0,0.04)", paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = location.pathname === item.href;

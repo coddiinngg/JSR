@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 type CoachType = "king" | "pressure" | "gentle";
 
@@ -81,6 +81,8 @@ const DEFAULT_GOALS: Goal[] = [
 ];
 
 interface AppContextType {
+  theme: "light" | "dark" | "system";
+  setTheme: (t: "light" | "dark" | "system") => void;
   coachType: CoachType;
   setCoachType: (t: CoachType) => void;
   getRandomMessage: () => { emoji: string; text: string; label: string };
@@ -102,7 +104,23 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<"light" | "dark" | "system">("light");
   const [coachType, setCoachType] = useState<CoachType>("pressure");
+
+  useEffect(() => {
+    const apply = (isDark: boolean) =>
+      document.documentElement.classList.toggle("dark", isDark);
+
+    if (theme === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      apply(mq.matches);
+      const handler = (e: MediaQueryListEvent) => apply(e.matches);
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    } else {
+      apply(theme === "dark");
+    }
+  }, [theme]);
   const [nickname, setNickname] = useState("이름");
   const [recoveryTickets, setRecoveryTickets] = useState(2);
   const [goals, setGoals] = useState<Goal[]>(DEFAULT_GOALS);
@@ -160,6 +178,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
+      theme, setTheme,
       coachType, setCoachType, getRandomMessage,
       nickname, setNickname,
       recoveryTickets, useRecoveryTicket,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Share2, Users, Flame, Crown, Copy, Check, Bell, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../lib/utils";
@@ -89,7 +89,10 @@ export function GroupDetail() {
   const [tab, setTab]                     = useState<"leaderboard" | "activity">("leaderboard");
   const [copied, setCopied]               = useState(false);
   const [showInvite, setShowInvite]       = useState(false);
-  const [showJoinConfirm, setShowJoinConfirm] = useState(false);
+  const [showJoinConfirm, setShowJoinConfirm]   = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [scrolled, setScrolled]           = useState(false);
+  const scrollRef                         = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -106,17 +109,50 @@ export function GroupDetail() {
   const restList = group.leaderboard.slice(3);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#F2F2F7]">
+    <div className="flex flex-col h-full overflow-hidden bg-[#F2F2F7] relative">
       <style>{`
         @keyframes sheet-up { from{opacity:0;transform:translateY(100%);}to{opacity:1;transform:translateY(0);} }
         @keyframes fade-in   { from{opacity:0;}to{opacity:1;} }
       `}</style>
 
+      {/* ── 스티키 컴팩트 바 ── */}
+      <div className="absolute top-0 left-0 right-0 z-30 transition-all duration-300"
+        style={{
+          opacity: scrolled ? 1 : 0,
+          transform: scrolled ? "translateY(0)" : "translateY(-100%)",
+          background: "rgba(26,10,20,0.95)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+        }}>
+        <div className="flex items-center gap-3 px-4 pt-3 pb-2">
+          <button onClick={() => navigate(-1)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 shrink-0 active:bg-white/20 transition-colors">
+            <ChevronLeft className="w-4 h-4 text-white" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-black text-[15px] leading-none truncate">{group.title}</p>
+          </div>
+          <span className="text-[#FF3355] font-black text-[15px] tabular-nums shrink-0">{group.rate}%</span>
+        </div>
+        <div className="flex gap-1 px-4 pb-2">
+          {(["leaderboard", "activity"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={cn("flex-1 py-1.5 rounded-xl text-[12px] font-black transition-all duration-200",
+                tab === t ? "text-white" : "text-white/40")}
+              style={tab === t ? { background: "linear-gradient(110deg,#FF3355,#CC0030)" } : {}}>
+              {t === "leaderboard" ? "🏆 순위" : "💬 활동"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 전체 스크롤 영역 ── */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto"
+        onScroll={() => setScrolled((scrollRef.current?.scrollTop ?? 0) > 130)}>
+
       {/* ── 히어로 헤더 ── */}
-      <div className="shrink-0 relative overflow-hidden"
+      <div className="relative overflow-hidden"
         style={{ background: "linear-gradient(150deg,#1A0A14 0%,#2D0A1A 55%,#0F0F1A 100%)" }}>
-        <div className="pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full bg-[#FF3355]/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-10 w-40 h-40 rounded-full bg-[#FF3355]/[0.04] blur-2xl" />
 
         {/* 네비 바 */}
         <div className="flex items-center justify-between px-4 pt-3 pb-2 relative z-10">
@@ -139,10 +175,10 @@ export function GroupDetail() {
               <p className="text-white/45 text-[13px] leading-relaxed mt-1.5">{group.desc}</p>
             </div>
             {/* 달성률 박스 */}
-            <div className="shrink-0 flex flex-col items-center justify-center w-[76px] h-[76px] rounded-2xl mt-1"
+            <div className="shrink-0 flex flex-col items-center justify-center w-[76px] rounded-2xl mt-1 py-3 gap-1"
               style={{ background: "rgba(255,51,85,0.15)", border: "1.5px solid rgba(255,51,85,0.35)" }}>
               <span className="text-[22px] font-black text-[#FF3355] leading-none tabular-nums">{group.rate}%</span>
-              <span className="text-white/35 text-[9px] font-bold mt-0.5 uppercase tracking-wide">달성률</span>
+              <span className="text-white/35 text-[9px] font-bold uppercase tracking-wide">달성률</span>
             </div>
           </div>
 
@@ -157,12 +193,23 @@ export function GroupDetail() {
               style={{ background: `${group.statusColor}1A`, border: `1px solid ${group.statusColor}40` }}>
               <span className="text-[12px] font-bold" style={{ color: group.statusColor }}>{group.status}</span>
             </div>
-            {joined && (
-              <div className="px-3 py-1.5 rounded-full"
-                style={{ background: "rgba(255,51,85,0.2)", border: "1px solid rgba(255,51,85,0.4)" }}>
-                <span className="text-[#FF3355] text-[12px] font-black">참여중</span>
-              </div>
-            )}
+            <div className="ml-auto">
+              {joined ? (
+                <button onClick={() => setShowLeaveConfirm(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-90 transition-transform"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                  <span className="text-[14px]">🚪</span>
+                  <span className="text-white/50 text-[11px] font-bold">탈퇴</span>
+                </button>
+              ) : (
+                <button onClick={() => setShowJoinConfirm(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-90 transition-transform"
+                  style={{ background: "rgba(255,51,85,0.25)", border: "1px solid rgba(255,51,85,0.4)" }}>
+                  <span className="text-[14px]">✅</span>
+                  <span className="text-[#FF3355] text-[11px] font-bold">참여하기</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -202,7 +249,7 @@ export function GroupDetail() {
       </div>
 
       {/* ── 컨텐츠 ── */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="pb-6">
         {tab === "leaderboard" ? (
           <div className="px-4 mt-3 space-y-2.5">
 
@@ -323,24 +370,7 @@ export function GroupDetail() {
         )}
       </div>
 
-      {/* ── 하단 참여 버튼 ── */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pb-8 pt-5"
-        style={{
-          background: "linear-gradient(to top, #F2F2F7 60%, transparent)",
-          opacity: mounted ? 1 : 0,
-          transition: "opacity 0.5s ease 0.4s",
-        }}>
-        <button
-          onClick={() => joined ? setJoined(false) : setShowJoinConfirm(true)}
-          className="w-full h-14 text-[16px] font-black rounded-2xl transition-all duration-200 active:scale-[0.98]"
-          style={joined ? { background: "white", color: "#94A3B8", border: "1.5px solid #E2E8F0" } : {
-            background: "linear-gradient(110deg,#FF3355,#CC0030)",
-            color: "white",
-            boxShadow: "0 12px 28px -8px rgba(255,51,85,0.5)",
-          }}>
-          {joined ? "그룹 탈퇴" : "그룹 참여하기"}
-        </button>
-      </div>
+      </div>{/* ── 전체 스크롤 영역 끝 ── */}
 
       {/* ── 초대 링크 시트 ── */}
       {showInvite && (
@@ -398,6 +428,36 @@ export function GroupDetail() {
                 className="flex-1 h-12 rounded-2xl text-white font-black text-[14px] active:scale-95 transition-all"
                 style={{ background: "linear-gradient(110deg,#FF3355,#CC0030)", boxShadow: "0 8px 20px -4px rgba(255,51,85,0.5)" }}>
                 참여하기
+              </button>
+            </div>
+            <div className="pb-2" />
+          </div>
+        </div>
+      )}
+
+      {/* ── 탈퇴 확인 시트 ── */}
+      {showLeaveConfirm && (
+        <div className="absolute inset-0 z-50 flex items-end" onClick={() => setShowLeaveConfirm(false)}
+          style={{ background: "rgba(0,0,0,0.5)", animation: "fade-in 0.2s ease both" }}>
+          <div className="w-full bg-white rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
+            style={{ animation: "sheet-up 0.35s cubic-bezier(0.4,0,0.2,1) both" }}>
+            <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+            <div className="text-center mb-5">
+              <span className="text-[40px]">🚪</span>
+              <h3 className="text-[18px] font-black text-slate-900 mt-2">탈퇴 하시겠습니까?</h3>
+              <p className="text-[13px] text-slate-400 mt-1 leading-relaxed">
+                <span className="font-bold text-slate-600">{group.title}</span>에서 나가면<br />달성 기록이 초기화될 수 있어요.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 h-12 rounded-2xl bg-slate-100 text-slate-500 font-bold text-[14px]">
+                취소
+              </button>
+              <button onClick={() => { setJoined(false); setShowLeaveConfirm(false); }}
+                className="flex-1 h-12 rounded-2xl text-white font-black text-[14px] active:scale-95 transition-all"
+                style={{ background: "linear-gradient(110deg,#FF3355,#CC0030)", boxShadow: "0 8px 20px -4px rgba(255,51,85,0.5)" }}>
+                탈퇴하기
               </button>
             </div>
             <div className="pb-2" />

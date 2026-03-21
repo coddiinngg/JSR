@@ -5,18 +5,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-/* ─── 파티클 데이터 ────────────────────────────── */
-const PARTICLES = [
-  { top: "8%",  left: "12%", s: 3,   d: 0 },
-  { top: "14%", left: "80%", s: 2,   d: 0.9 },
-  { top: "30%", left: "92%", s: 1.5, d: 1.7 },
-  { top: "42%", left: "4%",  s: 2,   d: 0.5 },
-  { top: "57%", left: "87%", s: 1.5, d: 1.3 },
-  { top: "70%", left: "16%", s: 1,   d: 2.1 },
-  { top: "78%", left: "72%", s: 2.5, d: 0.7 },
-  { top: "22%", left: "50%", s: 1,   d: 1.9 },
-];
-
 /* 카드에 spring-in + float 콤보 animation 문자열 생성 */
 function cardAnim(delay: number, floatName = "ob-float-a") {
   return `ob-spring 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both, ${floatName} 5s ease-in-out ${delay + 600}ms infinite`;
@@ -26,12 +14,8 @@ function cardAnim(delay: number, floatName = "ob-float-a") {
 function Slide1({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-12 pb-2 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
         <div className="relative w-[300px] h-[280px]">
-
-          {/* 중앙 글로우 */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 bg-[#FF3355]/12 rounded-full blur-2xl"
-            style={{ animation: "ob-orb 4s ease-in-out infinite" }} />
 
           {/* 메인 목표 카드 */}
           <div
@@ -133,10 +117,8 @@ function Slide1({ on }: { on: boolean }) {
 function Slide2({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-12 pb-2 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
         <div className="relative w-[300px] h-[280px]">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 bg-violet-600/10 rounded-full blur-2xl"
-            style={{ animation: "ob-orb 4.5s ease-in-out infinite" }} />
 
           {/* 카메라 카드 */}
           <div
@@ -224,10 +206,8 @@ function Slide2({ on }: { on: boolean }) {
 function Slide3({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-12 pb-2 relative z-10">
+      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
         <div className="relative w-[300px] h-[280px]">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 bg-amber-500/10 rounded-full blur-2xl"
-            style={{ animation: "ob-orb 5s ease-in-out infinite" }} />
 
           {/* 랭킹 카드 */}
           <div
@@ -380,27 +360,6 @@ export function Onboarding() {
         touchX.current = null;
       }}
     >
-      {/* 배경 오브 */}
-      <div className="absolute -top-24 -left-24 w-[420px] h-[420px] bg-[#FF3355]/13 rounded-full blur-[120px]"
-        style={{ animation: "ob-orb 6s ease-in-out infinite" }} />
-      <div className="absolute top-[45%] -right-24 w-[300px] h-[300px] bg-violet-600/9 rounded-full blur-[90px]"
-        style={{ animation: "ob-orb 7s ease-in-out infinite 1.5s" }} />
-      <div className="absolute bottom-10 left-1/3 w-[200px] h-[200px] bg-amber-500/7 rounded-full blur-[70px]"
-        style={{ animation: "ob-orb 5s ease-in-out infinite 3s" }} />
-
-      {/* 파티클 */}
-      {PARTICLES.map((p, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full bg-white/25"
-          style={{
-            top: p.top, left: p.left,
-            width: p.s * 4, height: p.s * 4,
-            animation: `ob-particle ${2 + p.d}s ease-in-out infinite ${p.d}s`,
-          }}
-        />
-      ))}
-
       {/* 슬라이드 */}
       <div
         className="flex-1 flex flex-col"
@@ -415,7 +374,7 @@ export function Onboarding() {
 
       {/* 하단 CTA */}
       <div
-        className="w-full px-8 pb-12 flex flex-col items-center gap-5 z-30"
+        className="w-full px-8 pb-6 flex flex-col items-center gap-5 z-30"
         style={{ animation: "ob-fade 0.6s ease 500ms both" }}
       >
         {/* 인디케이터 */}

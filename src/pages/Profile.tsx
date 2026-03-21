@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus } from "lucide-react";
+import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus, Moon, Sun, Smartphone } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 
@@ -40,7 +40,7 @@ function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetV
 
 export function Profile() {
   const navigate = useNavigate();
-  const { nickname } = useApp();
+  const { nickname, theme, setTheme } = useApp();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -50,10 +50,11 @@ export function Profile() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#FAFAFA]">
+      <div className="flex-1 overflow-y-auto">
 
       {/* 히어로 헤더 */}
       <div
-        className="shrink-0 relative overflow-hidden"
+        className="relative overflow-hidden"
         style={{
           background: "linear-gradient(160deg, #FF3355 0%, #CC0030 55%, #A00025 100%)",
           paddingTop: 32,
@@ -61,8 +62,6 @@ export function Profile() {
         }}
       >
         {/* 장식 원 */}
-        <div className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/[0.07]" />
-        <div className="pointer-events-none absolute bottom-0 left-0 w-40 h-40 rounded-full bg-black/[0.06]" />
 
         <div className="relative z-10 px-5">
           {/* 아바타 + 캐릭터 행 */}
@@ -128,7 +127,7 @@ export function Profile() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <div className="px-4 py-5 space-y-4">
 
         {/* 복구권 카드 */}
         <div
@@ -139,10 +138,6 @@ export function Profile() {
             transition: "all 0.5s 0.35s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
-          <div
-            className="pointer-events-none absolute -top-8 -right-8 w-40 h-40 rounded-full"
-            style={{ background: "radial-gradient(circle, rgba(255,51,85,0.08) 0%, transparent 70%)", filter: "blur(20px)" }}
-          />
           <div className="relative z-10">
             <p className="text-[11px] text-slate-400 mb-1">보유한 복구권</p>
             <div className="flex items-baseline gap-1">
@@ -167,10 +162,10 @@ export function Profile() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">설정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             {[
-              { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",  onClick: () => navigate("/settings/notifications") },
-              { icon: Flag,         bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",  onClick: () => navigate("/goals") },
+              { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",    onClick: () => navigate("/settings/notifications") },
+              { icon: Flag,         bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",    onClick: () => navigate("/goals") },
               { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => navigate("/rewards") },
-              { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",   onClick: () => navigate("/friends/invite") },
+              { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",    onClick: () => navigate("/friends/invite") },
             ].map(({ icon: Icon, bg, color, label, onClick }, i) => (
               <div key={label}>
                 {i > 0 && <div className="h-px bg-slate-100 mx-4" />}
@@ -186,6 +181,43 @@ export function Profile() {
                 </button>
               </div>
             ))}
+
+            {/* 테마 설정 */}
+            <div className="h-px bg-slate-100 mx-4" />
+            <div className="px-4 py-3.5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
+                  {theme === "dark" ? <Moon className="w-4 h-4 text-slate-500" />
+                    : theme === "system" ? <Smartphone className="w-4 h-4 text-slate-500" />
+                    : <Sun className="w-4 h-4 text-slate-500" />}
+                </div>
+                <span className="text-[14px] font-semibold text-slate-800">화면 모드</span>
+              </div>
+              <div className="flex gap-2">
+                {([
+                  { value: "light",  label: "라이트", icon: Sun },
+                  { value: "dark",   label: "다크",   icon: Moon },
+                  { value: "system", label: "사용자 지정", icon: Smartphone },
+                ] as const).map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setTheme(value)}
+                    className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold transition-all duration-200 active:scale-95"
+                    style={theme === value ? {
+                      background: "linear-gradient(115deg,#FF5C7A,#FF3355)",
+                      color: "white",
+                      boxShadow: "0 4px 12px rgba(255,51,85,0.3)",
+                    } : {
+                      background: "#F1F5F9",
+                      color: "#64748b",
+                    }}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2 mt-5">계정</p>
@@ -203,6 +235,7 @@ export function Profile() {
         </div>
 
         <p className="text-center text-[11px] text-slate-300 pb-2">JSR v1.0.0</p>
+      </div>
       </div>
     </div>
   );
