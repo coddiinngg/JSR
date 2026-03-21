@@ -261,13 +261,13 @@ export function Home() {
               <div className="flex-1 px-5 pb-4 space-y-2 overflow-y-auto overscroll-contain">
                 {rankers.map(({ rank, name, streak, rate, seed, isMe }) => (
                   <div key={rank} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{ background: isMe ? "rgba(255,51,85,0.06)" : "rgba(0,0,0,0.02)",
-                      border: isMe ? "1px solid rgba(255,51,85,0.2)" : "1px solid rgba(0,0,0,0.05)" }}>
+                    style={{ background: isMe ? "rgba(255,51,85,0.10)" : "var(--c-input-bg)",
+                      border: isMe ? "1px solid rgba(255,51,85,0.25)" : "1px solid var(--c-border)" }}>
                     <div className="w-5 flex items-center justify-center shrink-0">
                       {rank === 1
                         ? <Crown className="w-4 h-4 text-[#FF3355]" />
                         : <span className="text-[13px] font-black tabular-nums"
-                            style={{ color: isMe ? "#FF3355" : "rgba(0,0,0,0.2)" }}>{rank}</span>}
+                            style={{ color: isMe ? "#FF3355" : "rgba(150,150,150,0.6)" }}>{rank}</span>}
                     </div>
                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
                       className="w-8 h-8 rounded-full bg-slate-100 shrink-0" draggable={false} />
@@ -312,8 +312,8 @@ export function Home() {
                     <div className={`flex flex-col gap-0.5 max-w-[72%] ${msg.isMe ? "items-end" : "items-start"}`}>
                       {!msg.isMe && <span className="text-slate-400 text-[10px] font-semibold px-1">{msg.sender}</span>}
                       <div className="px-3 py-2 text-[13px] leading-snug"
-                        style={{ background: msg.isMe ? "#FF3355" : "white",
-                          color: msg.isMe ? "white" : "#1e293b",
+                        style={{ background: msg.isMe ? "#FF3355" : "var(--c-bubble-bg)",
+                          color: msg.isMe ? "white" : "var(--c-bubble-text)",
                           borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                           boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}>
                         {msg.text}
@@ -333,7 +333,7 @@ export function Home() {
                   onTouchStart={e => e.stopPropagation()}
                   placeholder="메시지 입력..."
                   className="flex-1 h-9 px-3.5 rounded-full text-[13px] text-slate-700 placeholder-slate-300 focus:outline-none"
-                  style={{ background: "#F1F5F9", border: "1px solid rgba(0,0,0,0.06)" }} />
+                  style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-input-text)" }} />
                 <button onClick={sendChat} onTouchStart={e => e.stopPropagation()}
                   className="w-9 h-9 rounded-full bg-[#FF3355] flex items-center justify-center shrink-0 active:scale-90 transition-transform"
                   style={{ boxShadow: "0 4px 12px rgba(255,51,85,0.3)" }}>
@@ -351,7 +351,7 @@ export function Home() {
                 style={{
                   height: 6, borderRadius: 999, border: "none", cursor: "pointer", padding: 0,
                   width: i === slideIdx ? 18 : 6,
-                  background: i === slideIdx ? "#FF3355" : "rgba(0,0,0,0.15)",
+                  background: i === slideIdx ? "#FF3355" : "rgba(128,128,128,0.35)",
                   transition: "width 0.35s cubic-bezier(0.4,0,0.2,1), background-color 0.35s ease",
                 }} />
             ))}

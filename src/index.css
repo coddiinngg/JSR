@@ -30,6 +30,24 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── 다크모드 CSS 변수 (인라인 스타일에서 참조) ── */
+:root {
+  --c-surface: #ffffff;
+  --c-bubble-bg: #ffffff;
+  --c-bubble-text: #1e293b;
+  --c-input-bg: #F1F5F9;
+  --c-input-text: #334155;
+  --c-border: rgba(0,0,0,0.05);
+}
+html.dark {
+  --c-surface: #1c1c1e;
+  --c-bubble-bg: #2a2a2a;
+  --c-bubble-text: #e2e8f0;
+  --c-input-bg: #1e1e1e;
+  --c-input-text: #cbd5e1;
+  --c-border: rgba(255,255,255,0.07);
+}
+
 /* ── 다크모드 전역 오버라이드 ── */
 html.dark,
 html.dark body,
@@ -63,6 +81,19 @@ html.dark [class*="border-black/[0.05]"]     { border-color: rgba(255,255,255,0.
 
 /* 그림자 */
 html.dark [class*="shadow-"]                 { box-shadow: 0 2px 12px rgba(0,0,0,0.5) !important; }
+
+/* 추가 배경색 */
+html.dark [class*="bg-[#F5F6FA]"]            { background-color: #000000 !important; }
+html.dark [class*="bg-[#F5F7FA]"]            { background-color: #000000 !important; }
+html.dark [class*="bg-slate-200"]            { background-color: #2a2a2a !important; }
+html.dark [class*="bg-[#F1F5F9]"]            { background-color: #1e1e1e !important; }
+
+/* 다크모드 레드 약화 */
+html.dark [class*="bg-[#FF3355]"]            { background-color: #99001f !important; }
+html.dark [class*="bg-[#FFE8EC]"]            { background-color: #1a0508 !important; }
+html.dark [class*="bg-[#FFF0F3]"]            { background-color: #160407 !important; }
+html.dark [class*="text-[#FF3355]"]          { color: #cc1133 !important; }
+html.dark [class*="border-[#FF3355]"]        { border-color: #99001f !important; }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;

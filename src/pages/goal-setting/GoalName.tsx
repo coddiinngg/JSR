@@ -1,7 +1,7 @@
-import { ChevronLeft, Bell, Sparkles, Zap, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Bell, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useApp, COACH_CONFIGS } from "../../contexts/AppContext";
+import { useApp } from "../../contexts/AppContext";
 
 const suggestions = [
   "30분 러닝",
@@ -16,8 +16,7 @@ const suggestions = [
 
 export function GoalName() {
   const navigate = useNavigate();
-  const { coachType, nickname, addGoal } = useApp();
-  const coachCfg = COACH_CONFIGS[coachType];
+  const { nickname, addGoal } = useApp();
   const [name, setName] = useState("");
   const [time, setTime] = useState("07:00");
 
@@ -30,20 +29,20 @@ export function GoalName() {
       </div>
 
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 z-10">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 z-10">
         <button
           onClick={() => navigate(-1)}
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">4 / 4</span>
+        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">3 / 3</span>
         <div className="w-10" />
       </div>
 
       {/* 스텝 바 */}
       <div className="shrink-0 flex gap-1.5 px-5 pb-1 z-10">
-        {[0, 1, 2, 3].map(i => (
+        {[0, 1, 2].map(i => (
           <div
             key={i}
             className="flex-1 h-1 rounded-full"
@@ -63,20 +62,6 @@ export function GoalName() {
       <div className="relative z-10 flex-1 overflow-y-auto px-5 pb-6 pt-2">
         {/* 목표 입력 카드 */}
         <div className="rounded-[24px] border border-white/15 bg-white/8 p-5 backdrop-blur-xl mb-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">코치</p>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-lg">{coachCfg.emoji}</span>
-                <span className="text-[13px] font-bold text-white/70">{coachCfg.label}</span>
-              </div>
-            </div>
-            <div className="relative flex size-11 items-center justify-center rounded-2xl bg-[#FF3355]/20">
-              <span className="anim-pulse-ring absolute inset-0 rounded-2xl bg-[#FF3355]" />
-              <Sparkles className="relative z-10 size-5 text-white" />
-            </div>
-          </div>
-
           <div className="space-y-3">
             <div>
               <label className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-1.5 block">목표 이름</label>
@@ -116,24 +101,12 @@ export function GoalName() {
           </div>
         </div>
 
-        {/* 코치 미리보기 메시지 */}
-        {name.trim() && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-2.5">코치가 이렇게 말할 거예요</p>
-            <div className="flex items-start gap-2.5">
-              <span className="text-xl shrink-0">{coachCfg.emoji}</span>
-              <p className="text-[13px] text-white/70 leading-relaxed font-medium">
-                "{coachCfg.messages[0].replace("(닉네임)", nickname || "이름")}"
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 하단 버튼 */}
       <div className="relative z-10 shrink-0 px-5 pb-10 pt-4">
         <button
-          onClick={() => { addGoal(name.trim(), time); navigate("/"); }}
+          onClick={() => { addGoal(name.trim(), time); navigate("/", { replace: true }); }}
           disabled={!name.trim()}
           className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_16px_30px_-10px_rgba(255,51,85,0.65)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale"
         >

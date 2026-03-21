@@ -8,7 +8,6 @@ import { Home } from "./pages/Home";
 import { GoalDetail } from "./pages/GoalDetail";
 import { Category } from "./pages/goal-setting/Category";
 import { GoalFrequency } from "./pages/goal-setting/GoalFrequency";
-import { GoalCoach } from "./pages/goal-setting/GoalCoach";
 import { GoalName } from "./pages/goal-setting/GoalName";
 import { Camera } from "./pages/verify/Camera";
 import { Upload } from "./pages/verify/Upload";
@@ -39,7 +38,6 @@ export default function App() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/goal-setting/category" element={<Category />} />
           <Route path="/goal-setting/frequency" element={<GoalFrequency />} />
-          <Route path="/goal-setting/coach" element={<GoalCoach />} />
           <Route path="/goal-setting/name" element={<GoalName />} />
           <Route path="/goals/:id" element={<GoalDetail />} />
           <Route path="/verify/camera" element={<Camera />} />

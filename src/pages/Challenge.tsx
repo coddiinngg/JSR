@@ -67,7 +67,8 @@ export function Challenge() {
   const filtered = allGroups
     .filter((g) => filterMode === "전체" || joinedIds.has(g.id))
     .filter((g) => activeCat === "전체" || g.category === activeCat)
-    .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery));
+    .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery))
+    .sort((a, b) => Number(joinedIds.has(a.id)) - Number(joinedIds.has(b.id)));
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F8F8FA]" onClick={() => setShowDropdown(false)}>

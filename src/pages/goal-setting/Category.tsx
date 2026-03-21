@@ -33,7 +33,7 @@ export function Category() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 z-10"
+        className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 z-10"
         style={{ animation: "ob-fade 0.4s ease both" }}
       >
         <button
@@ -42,7 +42,7 @@ export function Category() {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">1 / 4</span>
+        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">1 / 3</span>
         <div className="w-10" />
       </div>
 
@@ -51,7 +51,7 @@ export function Category() {
         className="shrink-0 flex gap-1.5 px-5 pb-1 z-10"
         style={{ animation: "ob-fade 0.4s ease 60ms both" }}
       >
-        {[0,1,2,3].map(i => (
+        {[0,1,2].map(i => (
           <div
             key={i}
             className="h-1 rounded-full transition-all duration-500"

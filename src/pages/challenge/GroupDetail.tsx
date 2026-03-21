@@ -224,7 +224,7 @@ export function GroupDetail() {
       </div>
 
       {/* ── 규칙 카드 ── */}
-      <div className="mx-4 mt-3 flex items-center gap-3 bg-white px-4 py-3.5 rounded-2xl border border-black/[0.04]"
+      <div className="mx-4 mt-3 flex items-center gap-3 bg-white dark:bg-[#1c1c1e] px-4 py-3.5 rounded-2xl border border-black/[0.04]"
         style={{ opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(8px)", transition: "opacity 0.4s ease 0.1s, transform 0.4s ease 0.1s" }}>
         <div className="w-8 h-8 rounded-xl bg-[#FFE8EC] flex items-center justify-center shrink-0">
           <Bell className="w-4 h-4 text-[#FF3355]" />
@@ -233,7 +233,7 @@ export function GroupDetail() {
       </div>
 
       {/* ── 탭 ── */}
-      <div className="mx-4 mt-3 flex gap-1 p-1 bg-white rounded-2xl border border-black/[0.04]"
+      <div className="mx-4 mt-3 flex gap-1 p-1 bg-white dark:bg-[#1c1c1e] rounded-2xl border border-black/[0.04]"
         style={{ opacity: mounted ? 1 : 0, transform: mounted ? "none" : "translateY(8px)", transition: "opacity 0.4s ease 0.18s, transform 0.4s ease 0.18s" }}>
         {(["leaderboard", "activity"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
@@ -260,9 +260,9 @@ export function GroupDetail() {
                   className="flex-1 flex flex-col items-center py-4 px-2 rounded-2xl"
                   style={{
                     background: rank === 1
-                      ? "linear-gradient(160deg,rgba(255,51,85,0.08),white)"
-                      : "white",
-                    border: rank === 1 ? "1.5px solid rgba(255,51,85,0.2)" : "1px solid rgba(0,0,0,0.05)",
+                      ? "linear-gradient(160deg,rgba(255,51,85,0.12),var(--c-surface))"
+                      : "var(--c-surface)",
+                    border: rank === 1 ? "1.5px solid rgba(255,51,85,0.2)" : "1px solid var(--c-border)",
                     boxShadow: rank === 1
                       ? "0 6px 24px rgba(255,51,85,0.12)"
                       : "0 2px 10px rgba(0,0,0,0.04)",
@@ -297,7 +297,7 @@ export function GroupDetail() {
                 {restList.map(({ rank, name, seed, streak, rate: r, isMe }, i) => (
                   <div key={name}>
                     {i > 0 && <div className="h-px bg-slate-50 mx-4" />}
-                    <div className={cn("flex items-center gap-3 px-4 py-3.5", isMe ? "bg-[#FFF5F7]" : "")}
+                    <div className={cn("flex items-center gap-3 px-4 py-3.5", isMe ? "bg-[#FFF5F7] dark:bg-[#2a0a10]" : "")}
                       style={{
                         opacity: mounted ? 1 : 0,
                         transform: mounted ? "none" : "translateX(-8px)",
@@ -376,7 +376,7 @@ export function GroupDetail() {
       {showInvite && (
         <div className="absolute inset-0 z-50 flex items-end" onClick={() => setShowInvite(false)}
           style={{ background: "rgba(0,0,0,0.5)", animation: "fade-in 0.2s ease both" }}>
-          <div className="w-full bg-white rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
+          <div className="w-full bg-white dark:bg-[#1c1c1e] rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
             style={{ animation: "sheet-up 0.35s cubic-bezier(0.4,0,0.2,1) both" }}>
             <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
             <div className="flex items-center justify-between mb-4">
@@ -411,7 +411,7 @@ export function GroupDetail() {
       {showJoinConfirm && (
         <div className="absolute inset-0 z-50 flex items-end" onClick={() => setShowJoinConfirm(false)}
           style={{ background: "rgba(0,0,0,0.5)", animation: "fade-in 0.2s ease both" }}>
-          <div className="w-full bg-white rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
+          <div className="w-full bg-white dark:bg-[#1c1c1e] rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
             style={{ animation: "sheet-up 0.35s cubic-bezier(0.4,0,0.2,1) both" }}>
             <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
             <h3 className="text-[18px] font-black text-slate-900 mb-1">그룹 참여하기</h3>
@@ -439,7 +439,7 @@ export function GroupDetail() {
       {showLeaveConfirm && (
         <div className="absolute inset-0 z-50 flex items-end" onClick={() => setShowLeaveConfirm(false)}
           style={{ background: "rgba(0,0,0,0.5)", animation: "fade-in 0.2s ease both" }}>
-          <div className="w-full bg-white rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
+          <div className="w-full bg-white dark:bg-[#1c1c1e] rounded-t-3xl p-6" onClick={e => e.stopPropagation()}
             style={{ animation: "sheet-up 0.35s cubic-bezier(0.4,0,0.2,1) both" }}>
             <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
             <div className="text-center mb-5">

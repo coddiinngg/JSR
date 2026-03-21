@@ -32,7 +32,7 @@ export function GoalFrequency() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 z-10"
+        className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 z-10"
         style={{ animation: "ob-fade 0.4s ease both" }}
       >
         <button
@@ -41,7 +41,7 @@ export function GoalFrequency() {
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">2 / 4</span>
+        <span className="text-[13px] font-semibold text-white/40 tracking-widest uppercase">2 / 3</span>
         <div className="w-10" />
       </div>
 
@@ -50,7 +50,7 @@ export function GoalFrequency() {
         className="shrink-0 flex gap-1.5 px-5 pb-1 z-10"
         style={{ animation: "ob-fade 0.4s ease 60ms both" }}
       >
-        {[0,1,2,3].map(i => (
+        {[0,1,2].map(i => (
           <div
             key={i}
             className="h-1 rounded-full transition-all duration-500"
@@ -154,7 +154,7 @@ export function GoalFrequency() {
         style={{ animation: "ob-fade 0.5s ease 400ms both" }}
       >
         <button
-          onClick={() => { setGoalDraft({ frequency: selected }); navigate("/goal-setting/coach"); }}
+          onClick={() => { setGoalDraft({ frequency: selected }); navigate("/goal-setting/name"); }}
           className="anim-gradient-x flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(110deg,#FF3355,#FF6A63,#FF3355)] text-[17px] font-black text-white shadow-[0_12px_28px_-8px_rgba(255,51,85,0.6)] active:scale-[0.98] transition-transform group"
         >
           다음
