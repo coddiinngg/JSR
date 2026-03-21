@@ -130,7 +130,7 @@ export function Home() {
       `}</style>
 
       {/* 헤더 */}
-      <header className="shrink-0 bg-white z-10 px-6 pt-12 pb-4"
+      <header className="shrink-0 bg-white z-10 px-6 pt-8 pb-3"
         style={{ animation: "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export function Home() {
 
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
-        <div className="px-4 pt-4 shrink-0">
+        <div className="px-4 pt-2 shrink-0">
 
           {/* ── 슬라이드 카드 ── */}
           <div

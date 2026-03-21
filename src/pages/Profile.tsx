@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, MessageSquare, Star, UserPlus } from "lucide-react";
+import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { useApp, COACH_CONFIGS } from "../contexts/AppContext";
-import { CoachCharacter } from "../components/CoachCharacter";
+import { useApp } from "../contexts/AppContext";
 
 function useCountUp(target: number, duration = 900, delay = 400) {
   const [val, setVal] = useState(0);
@@ -41,8 +40,7 @@ function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetV
 
 export function Profile() {
   const navigate = useNavigate();
-  const { coachType, nickname } = useApp();
-  const coachCfg = COACH_CONFIGS[coachType];
+  const { nickname } = useApp();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -58,8 +56,8 @@ export function Profile() {
         className="shrink-0 relative overflow-hidden"
         style={{
           background: "linear-gradient(160deg, #FF3355 0%, #CC0030 55%, #A00025 100%)",
-          paddingTop: 52,
-          paddingBottom: 32,
+          paddingTop: 32,
+          paddingBottom: 24,
         }}
       >
         {/* 장식 원 */}
@@ -114,16 +112,6 @@ export function Profile() {
               </span>
             </div>
 
-            {/* 코치 캐릭터 */}
-            <div
-              style={{
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? "translateY(0) scale(1)" : "translateY(14px) scale(0.7)",
-                transition: "all 0.6s 0.1s cubic-bezier(0.34,1.56,0.64,1)",
-              }}
-            >
-              <CoachCharacter type={coachType} size={72} animated />
-            </div>
           </div>
 
           {/* 통계 */}
@@ -176,26 +164,10 @@ export function Profile() {
             transition: "all 0.5s 0.45s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
-          {/* 현재 코치 유형 */}
-          <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04] mb-4 px-4 py-3.5 flex items-center gap-3">
-            <span className="text-2xl">{coachCfg.emoji}</span>
-            <div className="flex-1">
-              <p className="text-[11px] text-slate-400 font-semibold mb-0.5">현재 코치 유형</p>
-              <p className="text-[14px] font-bold text-slate-800">{coachCfg.label}</p>
-            </div>
-            <button
-              onClick={() => navigate("/settings/notifications")}
-              className="text-[12px] font-bold text-[#FF3355] bg-[#FFF0F3] px-3 py-1.5 rounded-full"
-            >
-              변경
-            </button>
-          </div>
-
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">설정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             {[
               { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",  onClick: () => navigate("/settings/notifications") },
-              { icon: MessageSquare, bg: "bg-[#FFF0F3]", color: "text-[#FF3355]", label: "코치와 채팅", onClick: () => navigate("/coach/chat") },
               { icon: Flag,         bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",  onClick: () => navigate("/goals") },
               { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => navigate("/rewards") },
               { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",   onClick: () => navigate("/friends/invite") },
