@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, Camera, Lightbulb, CheckCircle2, XCircle } from "lucide-react";
+import { ChevronLeft, Camera, CheckCircle2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../lib/verifyTypes";
+
+const TYPE_BG: Record<VerifyTypeKey, string> = {
+  step_walk:      "https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=800&fit=crop&q=80",
+  run_scenery:    "https://images.unsplash.com/photo-1694903089438-b5f75f66b7e7?w=800&fit=crop&q=80",
+  quote_photo:    "https://images.unsplash.com/photo-1687360440434-9b1407c5e04c?w=800&fit=crop&q=80",
+  book_cover:     "https://images.unsplash.com/photo-1695653422902-c52a1b3ba5be?w=800&fit=crop&q=80",
+  celeb_pose:     "https://images.unsplash.com/photo-1698038136041-e1e0d23e2d44?w=800&fit=crop&q=80",
+  location_photo: "https://images.unsplash.com/photo-1693411974501-a9c2d1b4a0ee?w=800&fit=crop&q=80",
+};
 
 export function VerifyGuide() {
   const navigate = useNavigate();
@@ -19,133 +28,109 @@ export function VerifyGuide() {
     return () => clearTimeout(t);
   }, [key, setVerifyType]);
 
-  const slide = (delay: number): React.CSSProperties => ({
+  const fade = (delay: number): React.CSSProperties => ({
     opacity: mounted ? 1 : 0,
-    transform: mounted ? "translateY(0)" : "translateY(14px)",
-    transition: `opacity 0.45s ease ${delay}ms, transform 0.45s cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
+    transform: mounted ? "translateY(0)" : "translateY(16px)",
+    transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#F8F8FA]">
+    <div className="flex flex-col h-full bg-[#0A0A0F] overflow-hidden">
 
-      {/* 히어로 헤더 */}
-      <div
-        className="relative overflow-hidden shrink-0"
-        style={{ background: `linear-gradient(150deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})`, paddingBottom: 32 }}
-      >
-        {/* 장식 원 */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute top-20 -left-8 w-28 h-28 rounded-full bg-white/10 pointer-events-none" />
+      {/* ── 히어로 (배경 이미지 풀스크린) ── */}
+      <div className="relative shrink-0 h-[42%] overflow-hidden">
+        <img
+          src={TYPE_BG[key]}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.5 }}
+          referrerPolicy="no-referrer"
+        />
+        {/* 그라디언트 오버레이 */}
+        <div className="absolute inset-0"
+          style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 40%, rgba(10,10,15,0.95) 100%)` }} />
+        {/* 컬러 글로우 */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: `radial-gradient(ellipse at 60% 80%, ${vt.bgGrad[0]}30 0%, transparent 65%)` }} />
 
-        {/* 네비 */}
-        <div className="relative z-10 flex items-center px-4 pt-4 pb-2">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/20 active:bg-white/30 transition-colors"
+        {/* 뒤로가기 */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white active:bg-black/50 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        {/* 타입 정보 */}
+        <div className="absolute bottom-5 left-5 z-10" style={fade(80)}>
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold mb-3"
+            style={{ background: `${vt.bgGrad[0]}30`, border: `1px solid ${vt.bgGrad[0]}50`, color: vt.bgGrad[0] }}
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
-          </button>
-        </div>
-
-        {/* 이모지 + 타이틀 */}
-        <div className="relative z-10 px-6 pt-2" style={slide(60)}>
-          <span className="text-[56px] block mb-3">{vt.emoji}</span>
-          <h1 className="text-[28px] font-black text-white leading-tight">{vt.label}</h1>
-          <p className="text-white/70 text-[14px] mt-1 leading-relaxed">{vt.desc}</p>
+            {vt.emoji} {vt.label}
+          </div>
+          <h1 className="text-white font-black text-[26px] leading-tight">{vt.desc}</h1>
         </div>
       </div>
 
-      {/* 본문 */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      {/* ── 본문 ── */}
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-2 space-y-5">
 
         {/* 인증 방법 */}
-        <div style={slide(120)}
-          className="bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-3">인증 방법</p>
-          <div className="space-y-3">
+        <div style={fade(160)}>
+          <p className="text-white/35 text-[11px] font-bold uppercase tracking-widest mb-3">이렇게 찍으세요</p>
+          <div className="space-y-2.5">
             {vt.guide.map((step, i) => (
-              <div key={i} className="flex items-start gap-3">
+              <div key={i} className="flex items-start gap-3 p-3.5 rounded-2xl"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <div
-                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black text-white mt-0.5"
-                  style={{ background: `linear-gradient(135deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})` }}
+                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white mt-0.5"
+                  style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})` }}
                 >
                   {i + 1}
                 </div>
-                <p className="text-[14px] text-slate-700 leading-snug flex-1">{step}</p>
+                <p className="text-white/75 text-[13px] leading-snug flex-1">{step}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* AI 확인 항목 */}
-        <div style={slide(200)}
-          className="bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-3">AI가 확인하는 것</p>
-          <div className="space-y-2.5">
+        <div style={fade(260)}>
+          <p className="text-white/35 text-[11px] font-bold uppercase tracking-widest mb-3">AI가 확인하는 것</p>
+          <div className="grid grid-cols-2 gap-2">
             {vt.checklist.map((item, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <CheckCircle2
-                  className="w-4 h-4 shrink-0"
-                  style={{ color: vt.bgGrad[0] }}
-                  strokeWidth={2.5}
-                />
-                <p className="text-[13px] text-slate-700 leading-snug">{item}</p>
+              <div key={i}
+                className="flex items-center gap-2 p-3 rounded-xl"
+                style={{ background: `${vt.bgGrad[0]}12`, border: `1px solid ${vt.bgGrad[0]}25` }}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: vt.bgGrad[0] }} strokeWidth={2.5} />
+                <span className="text-white/70 text-[11px] font-medium leading-tight">{item}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 거절 사유 */}
-        <div style={slide(280)}
-          className="bg-white rounded-2xl p-5 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-3">이런 사진은 거절돼요</p>
-          <div className="space-y-2.5">
-            {vt.rejectReasons.map((reason, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <XCircle
-                  className="w-4 h-4 shrink-0 text-rose-400"
-                  strokeWidth={2.5}
-                />
-                <p className="text-[13px] text-slate-500 leading-snug">{reason}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 팁 배너 */}
+        {/* 팁 */}
         <div
-          className="rounded-2xl p-4 flex items-start gap-3"
-          style={{
-            ...slide(200),
-            background: `linear-gradient(110deg, ${vt.bgGrad[0]}18, ${vt.bgGrad[1]}18)`,
-            border: `1px solid ${vt.bgGrad[0]}30`,
-          }}
+          className="flex items-start gap-3 p-4 rounded-2xl"
+          style={{ ...fade(340), background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <div
-            className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})` }}
-          >
-            <Lightbulb className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest mb-0.5"
-              style={{ color: vt.bgGrad[0] }}>Tip</p>
-            <p className="text-[13px] text-slate-700 leading-snug">{vt.tip}</p>
-          </div>
+          <span className="text-[20px] shrink-0">💡</span>
+          <p className="text-white/50 text-[12px] leading-relaxed">{vt.tip}</p>
         </div>
 
-        {/* 여백 */}
-        <div className="h-2" />
+        <div className="h-1" />
       </div>
 
-      {/* 촬영 시작 버튼 */}
-      <div className="shrink-0 px-4 pb-8 pt-3 bg-[#F8F8FA]">
+      {/* ── 촬영 시작 버튼 ── */}
+      <div className="shrink-0 px-5 pb-8 pt-3">
         <button
           onClick={() => navigate("/verify/camera")}
-          className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl text-white font-black text-[16px] active:scale-[0.98] transition-transform"
+          className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl text-white font-black text-[16px] active:scale-[0.97] transition-transform"
           style={{
-            background: `linear-gradient(135deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})`,
-            boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}60`,
+            background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`,
+            boxShadow: `0 8px 28px -4px ${vt.bgGrad[0]}55`,
           }}
         >
           <Camera className="w-5 h-5" />
