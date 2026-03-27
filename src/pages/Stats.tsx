@@ -1,13 +1,7 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { TrendingUp, Flame, Calendar, Trophy, Clock, CheckCircle2, ChevronRight, ImageIcon, ChevronLeft, Target } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// 목표별 통계
-const goalStats = [
-  { id: "1", title: "30분 유산소",   color: "#FF3355", colorRgb: "255,51,85",  rate: 80, streak: 8,  total: 24, days: 30 },
-  { id: "2", title: "물 2L 마시기",  color: "#38BDF8", colorRgb: "56,189,248", rate: 65, streak: 5,  total: 18, days: 30 },
-  { id: "3", title: "독서 30페이지", color: "#FB923C", colorRgb: "251,146,60", rate: 15, streak: 0,  total: 3,  days: 20 },
-];
+import { useApp } from "../contexts/AppContext";
 
 function useCountUp(target: number, duration = 900, delay = 0) {
   const [val, setVal] = useState(0);
@@ -27,33 +21,10 @@ function useCountUp(target: number, duration = 900, delay = 0) {
   return val;
 }
 
-const bars = [
-  { day: "월", v: 50 },
-  { day: "화", v: 85, hi: true },
-  { day: "수", v: 70 },
-  { day: "목", v: 40 },
-  { day: "금", v: 15 },
-  { day: "토", v: 30 },
-  { day: "일", v: 60 },
-];
-
-// 최근 인증 미리보기
-const recentThumbs = [
-  { id: 1, grad: ["#FF3355","#FF6680"] },
-  { id: 2, grad: ["#38BDF8","#0EA5E9"] },
-  { id: 3, grad: ["#FB923C","#F59E0B"] },
-  { id: 4, grad: ["#FF3355","#FF6680"] },
-  { id: 5, grad: ["#38BDF8","#0EA5E9"] },
-];
-
-// 3월 달력 히트맵 데이터 (0=없음, 1=낮음, 2=중간, 3=높음)
-const CAL_YEAR = 2026;
-const CAL_MONTH = 2; // 0-indexed (2 = March)
-const calData: Record<number, number> = {
-  1: 3, 2: 2, 3: 3, 4: 1, 5: 0,
-  6: 0, 7: 3, 8: 3, 9: 2, 10: 3, 11: 3, 12: 1,
-  13: 0, 14: 2, 15: 3, 16: 3, 17: 3,
-};
+const NOW = new Date();
+const CAL_YEAR = NOW.getFullYear();
+const CAL_MONTH = NOW.getMonth(); // 0-indexed
+const CAL_TODAY = NOW.getDate();
 
 const HEAT_COLORS = [
   "bg-slate-100",
@@ -67,7 +38,7 @@ interface GoalStat {
   rate: number; streak: number; total: number; days: number;
 }
 
-function GoalRow({ goal, idx, mounted }: { goal: GoalStat; idx: number; mounted: boolean }) {
+function GoalRow({ goal, idx, mounted }: { goal: GoalStat; idx: number; mounted: boolean; key?: React.Key }) {
   const { id, title, color, colorRgb, rate, streak, total } = goal;
   const countedRate = useCountUp(mounted ? rate : 0, 1000, idx * 150 + 600);
   return (
@@ -127,9 +98,8 @@ function Ring({ pct, size = 96 }: { pct: number; size?: number }) {
   );
 }
 
-function CalendarHeatmap({ mounted }: { mounted: boolean }) {
-  const today = 17; // 오늘 날짜
-  // 2026년 3월 1일은 일요일(0)
+function CalendarHeatmap({ mounted, calData }: { mounted: boolean; calData: Record<number, number> }) {
+  const today = CAL_TODAY;
   const firstDow = new Date(CAL_YEAR, CAL_MONTH, 1).getDay();
   const daysInMonth = new Date(CAL_YEAR, CAL_MONTH + 1, 0).getDate();
   const dow = ["일", "월", "화", "수", "목", "금", "토"];
@@ -187,8 +157,88 @@ function CalendarHeatmap({ mounted }: { mounted: boolean }) {
 }
 
 export function Stats() {
+  const { goals, verificationHistory } = useApp();
   const [mounted, setMounted] = useState(false);
-  const [calMonth, setCalMonth] = useState("2026년 3월");
+  const completedVerifications = verificationHistory.filter(item => item.status === "completed");
+
+  // context goals → GoalStat 변환
+  const goalStats: GoalStat[] = goals.map(g => ({
+    id: g.id,
+    title: g.title,
+    color: g.color,
+    colorRgb: g.colorRgb,
+    rate: g.progress,
+    streak: g.streak,
+    total: completedVerifications.filter(item => item.goal_id === g.id).length,
+    days: 30,
+  }));
+
+  const maxStreak = Math.max(...goals.map(g => g.streak), 0);
+  const calData: Record<number, number> = {};
+  const recentPhotoThumbs = completedVerifications
+    .filter(item => item.photo_url)
+    .slice(0, 5)
+    .map(item => ({
+      id: item.id,
+      src: item.photo_url as string,
+    }));
+
+  const startOfWeek = new Date();
+  const currentDay = startOfWeek.getDay();
+  const daysFromMonday = (currentDay + 6) % 7;
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(startOfWeek.getDate() - daysFromMonday);
+
+  const weeklyCounts = Array.from({ length: 7 }, () => 0);
+  const previousWeekCounts = Array.from({ length: 7 }, () => 0);
+  const previousWeekStart = new Date(startOfWeek);
+  previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+  completedVerifications.forEach(item => {
+    const verifiedAt = new Date(item.verified_at);
+    const diffMs = verifiedAt.getTime() - startOfWeek.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays >= 0 && diffDays < 7) {
+      weeklyCounts[diffDays] += 1;
+    }
+    const previousDiffMs = verifiedAt.getTime() - previousWeekStart.getTime();
+    const previousDiffDays = Math.floor(previousDiffMs / (1000 * 60 * 60 * 24));
+    if (previousDiffDays >= 0 && previousDiffDays < 7) {
+      previousWeekCounts[previousDiffDays] += 1;
+    }
+    if (
+      verifiedAt.getFullYear() === CAL_YEAR &&
+      verifiedAt.getMonth() === CAL_MONTH &&
+      verifiedAt.getDate() <= CAL_TODAY
+    ) {
+      calData[verifiedAt.getDate()] = Math.min((calData[verifiedAt.getDate()] ?? 0) + 1, 3);
+    }
+  });
+
+  const maxWeeklyCount = Math.max(...weeklyCounts, 0);
+  const weeklyTotalDone = weeklyCounts.reduce((sum, count) => sum + count, 0);
+  const previousWeeklyTotalDone = previousWeekCounts.reduce((sum, count) => sum + count, 0);
+  const weeklyDiff = weeklyTotalDone - previousWeeklyTotalDone;
+  const bars = weeklyCounts.map((count, idx) => ({
+    day: ["월", "화", "수", "목", "금", "토", "일"][idx],
+    v: maxWeeklyCount > 0 ? Math.max(12, Math.round((count / maxWeeklyCount) * 100)) : 0,
+    hi: count === maxWeeklyCount && count > 0,
+    count,
+  }));
+
+  const bestBar = maxWeeklyCount > 0 ? bars.find(item => item.hi) ?? null : null;
+
+  const avgProgress = goals.length > 0
+    ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length)
+    : 0;
+  const totalDone = completedVerifications.length;
+  const doneDays = Object.values(calData).filter(v => v > 0).length;
+  const missedDays = Math.max(0, CAL_TODAY - doneDays);
+  const remainingDays = new Date(CAL_YEAR, CAL_MONTH + 1, 0).getDate() - CAL_TODAY;
+  const photoCount = completedVerifications.filter(item => item.photo_url).length;
+  const expectedRate = goals.length > 0 ? Math.min(100, avgProgress + Math.max(5, Math.round(maxStreak / 2))) : 0;
+
+  const MONTH_NAMES = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
+  const calMonth = `${CAL_YEAR}년 ${MONTH_NAMES[CAL_MONTH]}`;
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
@@ -214,7 +264,7 @@ export function Stats() {
         style={{ animation: "st-fade 0.4s ease both" }}
       >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#FF3355] mb-0.5">2026년 3월</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#FF3355] mb-0.5">{calMonth}</p>
           <h1 className="text-2xl font-black text-slate-900">통계</h1>
         </div>
         <button className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#FFE8EC] active:scale-90 transition-all">
@@ -232,31 +282,40 @@ export function Stats() {
               <div>
                 <p className="text-[11px] text-slate-400 mb-1">이번 주 달성</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[40px] font-black text-slate-900 leading-none">24</span>
+                  <span className="text-[40px] font-black text-slate-900 leading-none">{weeklyTotalDone}</span>
                   <span className="text-[14px] text-slate-400">회</span>
-                  <span className="flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-[11px] font-bold text-emerald-600 bg-emerald-50">
-                    <TrendingUp className="w-3 h-3" /> +12%
-                  </span>
+                  {weeklyDiff !== 0 && (
+                    <span className={`flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-[11px] font-bold ${weeklyDiff > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-500 bg-slate-100"}`}>
+                      <TrendingUp className="w-3 h-3" /> {weeklyDiff > 0 ? `+${weeklyDiff}` : weeklyDiff}회
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="flex items-end gap-1.5" style={{ height: 100 }}>
-              {bars.map(({ day, v, hi }, idx) => (
-                <div key={day} className="flex flex-col items-center gap-2 flex-1">
-                  <div className="w-full relative rounded-lg overflow-hidden bg-slate-100" style={{ height: 80 }}>
-                    <div className="absolute bottom-0 left-0 right-0 rounded-t"
-                      style={{
-                        height: mounted ? `${v}%` : "0%",
-                        transition: "height 0.7s cubic-bezier(0.4,0,0.2,1)",
-                        transitionDelay: `${idx * 60 + 100}ms`,
-                        background: hi ? "linear-gradient(180deg, #FF6680 0%, #FF3355 100%)" : "rgba(255,51,85,0.15)",
-                        boxShadow: hi ? "0 0 16px rgba(255,51,85,0.35)" : "none",
-                      }} />
+            {weeklyTotalDone > 0 ? (
+              <div className="flex items-end gap-1.5" style={{ height: 100 }}>
+                {bars.map(({ day, v, hi, count }, idx) => (
+                  <div key={day} className="flex flex-col items-center gap-2 flex-1">
+                    <div className="w-full relative rounded-lg overflow-hidden bg-slate-100" style={{ height: 80 }}>
+                      <div className="absolute bottom-0 left-0 right-0 rounded-t"
+                        style={{
+                          height: mounted ? `${v}%` : "0%",
+                          transition: "height 0.7s cubic-bezier(0.4,0,0.2,1)",
+                          transitionDelay: `${idx * 60 + 100}ms`,
+                          background: hi ? "linear-gradient(180deg, #FF6680 0%, #FF3355 100%)" : "rgba(255,51,85,0.15)",
+                          boxShadow: hi ? "0 0 16px rgba(255,51,85,0.35)" : "none",
+                        }} />
+                    </div>
+                    <span className="text-[9px] text-slate-300 leading-none">{count > 0 ? `${count}회` : "\u00A0"}</span>
+                    <span className={`text-[10px] font-bold ${hi ? "text-[#FF3355]" : "text-slate-400"}`}>{day}</span>
                   </div>
-                  <span className={`text-[10px] font-bold ${hi ? "text-[#FF3355]" : "text-slate-400"}`}>{day}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-[100px] rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-center px-6">
+                <p className="text-[12px] text-slate-400 leading-relaxed">이번 주 인증 기록이 아직 없어요. 첫 인증이 생기면 요일별 패턴이 여기에 표시됩니다.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -265,9 +324,9 @@ export function Stats() {
           <div className="rounded-3xl p-4 flex flex-col items-center justify-center bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             style={{ minHeight: 150, animation: "st-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) 200ms both" }}>
             <div className="relative">
-              <Ring pct={0.8} size={90} />
+              <Ring pct={avgProgress / 100} size={90} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[20px] font-black text-slate-900">80%</span>
+                <span className="text-[20px] font-black text-slate-900">{avgProgress}%</span>
               </div>
             </div>
             <p className="text-[11px] text-slate-400 mt-2 font-semibold">성공률</p>
@@ -277,7 +336,7 @@ export function Stats() {
             <div className="relative z-10 h-full flex flex-col justify-between">
               <Flame className="w-7 h-7" style={{ color: "#fb923c", fill: "#fb923c" }} />
               <div>
-                <p className="text-[42px] font-black text-slate-900 leading-none">8</p>
+                <p className="text-[42px] font-black text-slate-900 leading-none">{maxStreak}</p>
                 <p className="text-[12px] text-slate-400 mt-1">일 연속</p>
               </div>
             </div>
@@ -291,17 +350,18 @@ export function Stats() {
             <TrendingUp className="w-4 h-4 text-[#FF3355]" />
           </div>
           <p className="text-[13px] text-slate-600 leading-relaxed">
-            <span className="text-[#FF3355] font-bold">화요일</span>이 가장 활발해요.{" "}
-            이 패턴 유지 시 성공률 <span className="text-[#FF3355] font-bold">85%</span> 도달!
+            {bestBar
+              ? <><span className="text-[#FF3355] font-bold">{bestBar.day}요일</span>에 인증이 가장 몰려 있어요. 이 패턴을 유지하면 평균 성공률 <span className="text-[#FF3355] font-bold">{expectedRate}%</span>까지 노려볼 수 있어요.</>
+              : <>아직 누적 인증이 많지 않아요. 오늘 첫 인증을 쌓으면 이번 달 히트맵이 바로 채워집니다.</>}
           </p>
         </div>
 
         {/* 미니 통계 3칸 */}
         <div className="grid grid-cols-3 gap-2.5" style={{ animation: "st-fade 0.45s ease 380ms both" }}>
           {[
-            { icon: Trophy,       label: "최고",   value: "화요일",  color: "#f59e0b", bg: "bg-amber-50"   },
-            { icon: Clock,        label: "평균",   value: "오전 7시", color: "#FF3355", bg: "bg-[#FFE8EC]" },
-            { icon: CheckCircle2, label: "총 인증", value: "24회",   color: "#10b981", bg: "bg-emerald-50" },
+            { icon: Trophy,       label: "최고 연속", value: `${maxStreak}일`,    color: "#f59e0b", bg: "bg-amber-50"   },
+            { icon: Clock,        label: "목표 수",  value: `${goals.length}개`, color: "#FF3355", bg: "bg-[#FFE8EC]" },
+            { icon: CheckCircle2, label: "총 달성",  value: `${totalDone}회`,   color: "#10b981", bg: "bg-emerald-50" },
           ].map(({ icon: Icon, label, value, color, bg }) => (
             <div key={label} className="rounded-2xl p-3 text-center bg-white border border-black/[0.04]">
               <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center mx-auto mb-2`}>
@@ -332,20 +392,20 @@ export function Stats() {
               </button>
             </div>
           </div>
-          <CalendarHeatmap mounted={mounted} />
+          <CalendarHeatmap mounted={mounted} calData={calData} />
           <div className="mt-4 pt-4 border-t border-slate-100 flex gap-4">
             <div className="flex-1 text-center">
-              <p className="text-[22px] font-black text-[#FF3355] leading-none">13</p>
+              <p className="text-[22px] font-black text-[#FF3355] leading-none">{doneDays}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">달성일</p>
             </div>
             <div className="w-px bg-slate-100" />
             <div className="flex-1 text-center">
-              <p className="text-[22px] font-black text-slate-700 leading-none">4</p>
+              <p className="text-[22px] font-black text-slate-700 leading-none">{missedDays}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">미달성</p>
             </div>
             <div className="w-px bg-slate-100" />
             <div className="flex-1 text-center">
-              <p className="text-[22px] font-black text-slate-300 leading-none">13</p>
+              <p className="text-[22px] font-black text-slate-300 leading-none">{remainingDays}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">남은 날</p>
             </div>
           </div>
@@ -366,9 +426,16 @@ export function Stats() {
             </div>
           </div>
           <div className="space-y-4">
-            {goalStats.map((g, i) => (
-              <GoalRow key={g.id} goal={g} idx={i} mounted={mounted} />
-            ))}
+            {goalStats.length > 0 ? (
+              goalStats.map((g, i) => (
+                <GoalRow key={g.id} goal={g} idx={i} mounted={mounted} />
+              ))
+            ) : (
+              <div className="rounded-2xl bg-slate-50 border border-dashed border-slate-200 px-4 py-8 text-center">
+                <p className="text-[13px] font-semibold text-slate-500">아직 목표가 없어요</p>
+                <p className="text-[12px] text-slate-400 mt-1">목표를 만들면 달성률과 연속 기록이 여기서 집계됩니다.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -399,21 +466,33 @@ export function Stats() {
           className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150"
           style={slide(520)}
         >
-          <div className="flex -space-x-2 shrink-0">
-            {recentThumbs.map(({ id, grad }) => (
-              <div
-                key={id}
-                className="w-10 h-10 rounded-xl border-2 border-white overflow-hidden shrink-0"
-                style={{ background: `linear-gradient(135deg, ${grad[0]}, ${grad[1]})` }}
-              />
-            ))}
+          <div className="shrink-0">
+            {recentPhotoThumbs.length > 0 ? (
+              <div className="flex -space-x-2">
+                {recentPhotoThumbs.map(thumb => (
+                <img
+                  key={thumb.id}
+                  src={thumb.src}
+                  alt="최근 인증"
+                  className="w-10 h-10 rounded-xl border-2 border-white object-cover overflow-hidden shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                ))}
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-slate-400" />
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-0.5">
               <ImageIcon className="w-3.5 h-3.5 text-[#FF3355]" />
               <p className="text-[14px] font-black text-slate-900">인증 히스토리</p>
             </div>
-            <p className="text-[12px] text-slate-400">총 15장 · 갤러리에서 확인</p>
+            <p className="text-[12px] text-slate-400">
+              {photoCount > 0 ? `총 ${photoCount}장 · 갤러리에서 확인` : "아직 저장된 인증 사진이 없어요"}
+            </p>
           </div>
           <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
             <ChevronRight className="w-4 h-4 text-[#FF3355]" />

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Bell, Flag, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus, Moon, Sun, Smartphone } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Bell, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus, Moon, Sun, Smartphone } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 
 function useCountUp(target: number, duration = 900, delay = 400) {
   const [val, setVal] = useState(0);
@@ -20,13 +21,9 @@ function useCountUp(target: number, duration = 900, delay = 400) {
   return val;
 }
 
-const stats = [
-  { label: "달성",   targetVal: 24, suffix: "회", delay: 400 },
-  { label: "연속",   targetVal: 8,  suffix: "일", delay: 550 },
-  { label: "성공률", targetVal: 92, suffix: "%",  delay: 700 },
-];
+// stats는 컴포넌트 내부에서 context 기반으로 계산
 
-function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetVal: number; suffix: string; delay: number }) {
+function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetVal: number; suffix: string; delay: number; key?: React.Key }) {
   const val = useCountUp(targetVal, 900, delay);
   return (
     <div className="flex-1 rounded-2xl p-3 text-center bg-white/20 border border-white/25">
@@ -40,8 +37,22 @@ function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetV
 
 export function Profile() {
   const navigate = useNavigate();
-  const { nickname, theme, setTheme } = useApp();
+  const { nickname, theme, setTheme, goals, recoveryTickets } = useApp();
+  const { signOut, profile } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const planLabel = profile?.plan_type === "premium" ? "Premium Plan" : "Free Plan";
+  const avatarUrl = profile?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+
+  const totalDone = goals.reduce((s, g) => s + g.streak, 0);
+  const maxStreak = Math.max(...goals.map(g => g.streak), 0);
+  const avgProgress = goals.length > 0
+    ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length)
+    : 0;
+  const stats = [
+    { label: "달성",   targetVal: totalDone,    suffix: "회", delay: 400 },
+    { label: "연속",   targetVal: maxStreak,     suffix: "일", delay: 550 },
+    { label: "성공률", targetVal: avgProgress,   suffix: "%",  delay: 700 },
+  ];
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -82,7 +93,7 @@ export function Profile() {
               <div
                 className="relative w-20 h-20 rounded-full bg-cover bg-center"
                 style={{
-                  backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
+                  backgroundImage: `url("${avatarUrl}")`,
                   outline: "3px solid #FF3355",
                   outlineOffset: 1,
                 }}
@@ -107,7 +118,7 @@ export function Profile() {
             >
               <h2 className="text-[18px] font-black text-white text-center">{nickname}</h2>
               <span className="rounded-lg px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30 mt-1">
-                Free Plan
+                {planLabel}
               </span>
             </div>
 
@@ -122,7 +133,9 @@ export function Profile() {
               transition: "all 0.5s 0.25s cubic-bezier(0.4,0,0.2,1)",
             }}
           >
-            {stats.map((s) => <StatBadge key={s.label} {...s} />)}
+            {stats.map((s) => (
+              <StatBadge key={s.label} label={s.label} targetVal={s.targetVal} suffix={s.suffix} delay={s.delay} />
+            ))}
           </div>
         </div>
       </div>
@@ -141,7 +154,7 @@ export function Profile() {
           <div className="relative z-10">
             <p className="text-[11px] text-slate-400 mb-1">보유한 복구권</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-[44px] font-black text-slate-900 leading-none">2</span>
+              <span className="text-[44px] font-black text-slate-900 leading-none">{recoveryTickets}</span>
               <span className="text-[16px] text-slate-400 ml-1">개</span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">실패 시 사용 가능</p>
@@ -163,7 +176,6 @@ export function Profile() {
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             {[
               { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",    onClick: () => navigate("/settings/notifications") },
-              { icon: Flag,         bg: "bg-[#FFE8EC]", color: "text-[#CC0030]", label: "목표 관리",    onClick: () => navigate("/goals") },
               { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => navigate("/rewards") },
               { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",    onClick: () => navigate("/friends/invite") },
             ].map(({ icon: Icon, bg, color, label, onClick }, i) => (
@@ -223,7 +235,13 @@ export function Profile() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2 mt-5">계정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => {
+                void signOut()
+                  .catch(error => {
+                    console.error("Failed to sign out", error);
+                  })
+                  .finally(() => navigate("/login"));
+              }}
               className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
@@ -234,7 +252,7 @@ export function Profile() {
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-300 pb-2">JSR v1.0.0</p>
+        <p className="text-center text-[11px] text-slate-300 pb-2">챌리 v1.0.0</p>
       </div>
       </div>
     </div>

@@ -21,8 +21,8 @@ const SUGGESTED: Friend[] = [
   { id: 6, name: "유서진",  handle: "@seojin_y",  seed: "Ava",    mutual: 0, invited: false },
 ];
 
-const INVITE_CODE = "JSR-OMOM-2026";
-const INVITE_URL  = "https://jsr.app/join/JSR-OMOM-2026";
+const INVITE_CODE = "CHALLY-OMOM-2026";
+const INVITE_URL  = "https://chally.app/join/CHALLY-OMOM-2026";
 
 function Avatar({ seed, size = 40 }: { seed: string; size?: number }) {
   // Color palette based on seed

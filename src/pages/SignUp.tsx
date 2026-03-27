@@ -3,10 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { cn } from "../lib/utils";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export function SignUp() {
   const navigate = useNavigate();
   const { setNickname: saveNickname } = useApp();
+  const { signUpWithEmail } = useAuth();
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,19 +16,25 @@ export function SignUp() {
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [step, setStep] = useState(1); // 1: 기본 정보, 2: 비밀번호
 
   const canNext1 = nickname.trim().length >= 2 && email.includes("@");
   const canNext2 = password.length >= 8 && password === confirm;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canNext2) return;
+    setError("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signUpWithEmail(email.trim(), password, nickname.trim());
+      saveNickname(nickname.trim());
+      navigate("/login");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "회원가입에 실패했어요.");
+    } finally {
       setLoading(false);
-      saveNickname(nickname);
-      navigate("/onboarding");
-    }, 600);
+    }
   };
 
   return (
@@ -68,7 +76,7 @@ export function SignUp() {
           </p>
           <h1 className="text-[26px] font-black leading-tight">
             {step === 1 ? (
-              <>JSR에<br />오신 걸 환영해요!</>
+              <>챌리에<br />오신 걸 환영해요!</>
             ) : (
               <>비밀번호를<br />설정해주세요</>
             )}
@@ -96,7 +104,7 @@ export function SignUp() {
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="example@jsr.com"
+                placeholder="example@chally.app"
                 className="w-full h-14 px-5 rounded-2xl border border-white/10 bg-white/[0.07] text-white placeholder:text-white/25 focus:outline-none focus:border-[#FF3355] transition-colors text-[15px]"
               />
             </div>
@@ -186,6 +194,10 @@ export function SignUp() {
                 <p className="text-red-400 text-[12px] mt-1.5 ml-1">비밀번호가 일치하지 않아요</p>
               )}
             </div>
+
+            {error && (
+              <p className="text-center text-[13px] text-red-400">{error}</p>
+            )}
 
             <button
               onClick={handleSubmit}

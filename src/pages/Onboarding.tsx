@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Flame, Target, TrendingUp, CheckCircle2, ArrowRight,
-  Camera, Trophy, Users, Star, Zap,
+  Camera, Trophy, Users, Star, Zap, User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../contexts/AppContext";
 
 /* 카드에 spring-in + float 콤보 animation 문자열 생성 */
 function cardAnim(delay: number, floatName = "ob-float-a") {
@@ -102,7 +103,6 @@ function Slide1({ on }: { on: boolean }) {
         </div>
       </div>
 
-      {/* 텍스트 */}
       <TextBlock on={on} tag="체계적인 목표 달성 시스템" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
         <span className="text-white">다짐은 왜 항상</span>
         <br />
@@ -290,6 +290,225 @@ function Slide3({ on }: { on: boolean }) {
   );
 }
 
+/* ─── 슬라이드 4: 닉네임 입력 ──────────────────── */
+function Slide4({ on, value, onChange }: { on: boolean; value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (on) setTimeout(() => inputRef.current?.focus(), 400);
+  }, [on]);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 pt-2 pb-2 relative z-10">
+        {/* 아바타 */}
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-[0_16px_40px_rgba(255,51,85,0.4)]"
+          style={{
+            background: "linear-gradient(135deg,#FF3355,#CC0030)",
+            animation: on ? "ob-spring 0.6s cubic-bezier(0.34,1.56,0.64,1) 80ms both" : "none",
+          }}
+        >
+          <User className="w-10 h-10 text-white" strokeWidth={1.8} />
+        </div>
+
+        {/* 입력 */}
+        <div
+          className="w-full"
+          style={{ animation: on ? "ob-fade 0.5s ease 220ms both" : "none" }}
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            placeholder="닉네임을 입력하세요"
+            maxLength={12}
+            className="w-full text-center text-white text-[20px] font-bold bg-transparent outline-none placeholder:text-white/25 border-b-2 pb-2"
+            style={{ borderColor: value ? "#FF3355" : "rgba(255,255,255,0.15)" }}
+          />
+          <p className="text-center text-white/30 text-[11px] mt-2">최대 12자</p>
+        </div>
+      </div>
+
+      <TextBlock on={on} tag="프로필 설정" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
+        <span className="text-white">어떻게</span>
+        <br />
+        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>불러드릴까요?</span>
+      </TextBlock>
+      <SubText on={on}>챌리에서 사용할 닉네임을 입력해주세요.</SubText>
+    </div>
+  );
+}
+
+/* ─── 슬라이드 5: 관심 카테고리 선택 ──────────── */
+const OB_CATS = [
+  { id: "exercise", label: "운동",  emoji: "💪", grad: ["#FF3355","#FF6680"] as [string,string] },
+  { id: "study",    label: "학습",  emoji: "📖", grad: ["#3b82f6","#6366f1"] as [string,string] },
+  { id: "reading",  label: "독서",  emoji: "📚", grad: ["#FB923C","#F59E0B"] as [string,string] },
+  { id: "habit",    label: "습관",  emoji: "🌱", grad: ["#22c55e","#16a34a"] as [string,string] },
+  { id: "hobby",    label: "취미",  emoji: "🎨", grad: ["#a855f7","#7c3aed"] as [string,string] },
+  { id: "etc",      label: "기타",  emoji: "✨", grad: ["#38BDF8","#0EA5E9"] as [string,string] },
+];
+
+function Slide5({ on, selected, toggle }: {
+  on: boolean; selected: string[]; toggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 pt-6 pb-3 z-10">
+        <div
+          className="inline-flex items-center gap-1.5 bg-[#3b82f6]/15 border border-[#3b82f6]/25 rounded-full px-3 py-1 mb-3"
+          style={{ animation: on ? "ob-fade 0.5s ease 100ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-400" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-blue-300 text-xs font-semibold tracking-wide">관심 분야</span>
+        </div>
+        <h1
+          className="text-[28px] leading-tight font-extrabold tracking-tight break-keep text-white"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 180ms both" : "none" }}
+        >
+          어떤 분야에<br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#60a5fa,#a78bfa)" }}>관심 있나요?</span>
+        </h1>
+        <p
+          className="text-white/40 text-[13px] mt-1.5 break-keep"
+          style={{ animation: on ? "ob-fade 0.5s ease 280ms both" : "none" }}
+        >
+          여러 개 선택할 수 있어요
+        </p>
+      </div>
+
+      <div
+        className="flex-1 px-5 overflow-y-auto"
+        style={{ animation: on ? "ob-fade 0.5s ease 320ms both" : "none" }}
+      >
+        <div className="grid grid-cols-2 gap-2.5 pb-4">
+          {OB_CATS.map((cat, i) => {
+            const isOn = selected.includes(cat.id);
+            return (
+              <button
+                key={cat.id}
+                onClick={() => toggle(cat.id)}
+                className="relative rounded-2xl p-4 text-left transition-all active:scale-[0.97]"
+                style={{
+                  background: isOn
+                    ? `linear-gradient(135deg,${cat.grad[0]},${cat.grad[1]})`
+                    : "rgba(255,255,255,0.07)",
+                  border: isOn ? "2px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                  boxShadow: isOn ? `0 8px 24px ${cat.grad[0]}44` : "none",
+                  backdropFilter: "blur(12px)",
+                  animation: on ? `ob-spring 0.5s cubic-bezier(0.34,1.56,0.64,1) ${140 + i * 55}ms both` : "none",
+                }}
+              >
+                {isOn && (
+                  <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                  </div>
+                )}
+                <div className="text-[26px] mb-2 leading-none">{cat.emoji}</div>
+                <p className="text-white font-bold text-[14px]">{cat.label}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 슬라이드 6: 챌린지 선택 ──────────────────── */
+const OB_CHALLENGES = [
+  { id: "1", title: "매일 5,000보 걷기",  emoji: "👟", members: 38, img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&fit=crop&q=80" },
+  { id: "2", title: "러닝 크루",       emoji: "🏃", members: 24, img: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&fit=crop&q=80" },
+  { id: "3", title: "일일 독서 클럽",  emoji: "📚", members: 15, img: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&fit=crop&q=80" },
+  { id: "4", title: "필사 챌린지",     emoji: "✍️", members: 11, img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&fit=crop&q=80" },
+  { id: "5", title: "포즈 챌린지",     emoji: "📸", members: 42, img: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=400&fit=crop&q=80" },
+  { id: "6", title: "장소 탐험대",     emoji: "📍", members: 19, img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&fit=crop&q=80" },
+];
+
+function Slide6({ on, selected, toggle }: {
+  on: boolean; selected: string[]; toggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 pt-6 pb-3 z-10">
+        <div
+          className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/25 rounded-full px-3 py-1 mb-3"
+          style={{ animation: on ? "ob-fade 0.5s ease 100ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-amber-300 text-xs font-semibold tracking-wide">챌린지 참여</span>
+        </div>
+        <h1
+          className="text-[28px] leading-tight font-extrabold tracking-tight break-keep text-white"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 180ms both" : "none" }}
+        >
+          참여할 챌린지를<br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>골라보세요</span>
+        </h1>
+        <p
+          className="text-white/40 text-[13px] mt-1.5 break-keep"
+          style={{ animation: on ? "ob-fade 0.5s ease 280ms both" : "none" }}
+        >
+          최대 2개까지 선택할 수 있어요{selected.length > 0 && <span className="text-amber-400 font-semibold"> · {selected.length}개 선택됨</span>}
+        </p>
+      </div>
+
+      <div
+        className="flex-1 px-5 overflow-y-auto"
+        style={{ animation: on ? "ob-fade 0.5s ease 320ms both" : "none" }}
+      >
+        <div className="flex flex-col gap-2.5 pb-4">
+          {OB_CHALLENGES.map((ch, i) => {
+            const isOn = selected.includes(ch.id);
+            const maxed = selected.length >= 2 && !isOn;
+            return (
+              <button
+                key={ch.id}
+                onClick={() => !maxed && toggle(ch.id)}
+                className="relative rounded-2xl overflow-hidden text-left transition-all active:scale-[0.99]"
+                style={{
+                  opacity: maxed ? 0.4 : 1,
+                  outline: isOn ? "2.5px solid #FF3355" : "none",
+                  outlineOffset: 2,
+                  animation: on ? `ob-spring 0.5s cubic-bezier(0.34,1.56,0.64,1) ${140 + i * 50}ms both` : "none",
+                }}
+              >
+                {/* 배경 이미지 */}
+                <div className="relative h-[72px]">
+                  <img
+                    src={ch.img}
+                    alt={ch.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: "linear-gradient(to right,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.25) 100%)" }}
+                  />
+                  <div className="absolute inset-0 flex items-center px-4 gap-3">
+                    <span className="text-[22px] leading-none shrink-0">{ch.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-black text-[15px] leading-tight">{ch.title}</p>
+                      <p className="text-white/50 text-[11px] mt-0.5">{ch.members}명 참여 중</p>
+                    </div>
+                    {isOn && (
+                      <div className="shrink-0 w-7 h-7 rounded-full bg-[#FF3355] flex items-center justify-center shadow-[0_4px_12px_rgba(255,51,85,0.5)]">
+                        <CheckCircle2 className="w-4 h-4 text-white" strokeWidth={2.5} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── 공통 텍스트 블록 ─────────────────────────── */
 function TextBlock({ on, tag, tagColor, tagBg, children }: {
   on: boolean; tag: string; tagColor: string; tagBg: string; children: React.ReactNode;
@@ -326,14 +545,17 @@ function SubText({ on, children }: { on: boolean; children: React.ReactNode }) {
   );
 }
 
-/* ─── 슬라이드 목록 ─────────────────────────────── */
-const SLIDES = [Slide1, Slide2, Slide3];
+const TOTAL = 6;
 
 /* ─── 메인 ─────────────────────────────────────── */
 export function Onboarding() {
   const navigate = useNavigate();
+  const { setNickname, joinGroup } = useApp();
   const [current, setCurrent] = useState(0);
   const [on, setOn] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState("");
+  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedChallenges, setSelectedChallenges] = useState<string[]>([]);
   const touchX = useRef<number | null>(null);
 
   useEffect(() => {
@@ -342,12 +564,27 @@ export function Onboarding() {
   }, []);
 
   const goTo = (idx: number) => {
-    if (idx < 0 || idx >= SLIDES.length) return;
+    if (idx < 0 || idx >= TOTAL) return;
     setOn(false);
     setTimeout(() => { setCurrent(idx); setOn(true); }, 220);
   };
 
-  const SlideComponent = SLIDES[current];
+  const toggleCat = (id: string) =>
+    setSelectedCats(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+
+  const toggleChallenge = (id: string) =>
+    setSelectedChallenges(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : prev.length < 2 ? [...prev, id] : prev
+    );
+
+  const handleStart = () => {
+    if (nicknameInput.trim()) setNickname(nicknameInput.trim());
+    selectedChallenges.forEach(id => joinGroup(id));
+    navigate("/");
+  };
+
+  // slide 3(닉네임)은 입력 필수, 나머지 선택 단계는 선택 없어도 통과 가능
+  const canNext = current !== 3 || nicknameInput.trim().length > 0;
 
   return (
     <div
@@ -362,24 +599,29 @@ export function Onboarding() {
     >
       {/* 슬라이드 */}
       <div
-        className="flex-1 flex flex-col"
+        className="flex-1 flex flex-col min-h-0"
         style={{
           opacity: on ? 1 : 0,
           transform: on ? "translateY(0)" : "translateY(8px)",
           transition: "opacity 0.2s ease, transform 0.2s ease",
         }}
       >
-        <SlideComponent on={on} />
+        {current === 0 && <Slide1 on={on} />}
+        {current === 1 && <Slide2 on={on} />}
+        {current === 2 && <Slide3 on={on} />}
+        {current === 3 && <Slide4 on={on} value={nicknameInput} onChange={setNicknameInput} />}
+        {current === 4 && <Slide5 on={on} selected={selectedCats} toggle={toggleCat} />}
+        {current === 5 && <Slide6 on={on} selected={selectedChallenges} toggle={toggleChallenge} />}
       </div>
 
       {/* 하단 CTA */}
       <div
-        className="w-full px-8 pb-6 flex flex-col items-center gap-5 z-30"
+        className="w-full px-8 pb-6 flex flex-col items-center gap-4 z-30 shrink-0"
         style={{ animation: "ob-fade 0.6s ease 500ms both" }}
       >
         {/* 인디케이터 */}
         <div className="flex gap-2 items-center">
-          {SLIDES.map((_, i) => (
+          {Array.from({ length: TOTAL }).map((_, i) => (
             <button
               key={i}
               onClick={() => goTo(i)}
@@ -394,13 +636,14 @@ export function Onboarding() {
           ))}
         </div>
 
-        {current < SLIDES.length - 1 ? (
+        {current < TOTAL - 1 ? (
           <button
-            onClick={() => goTo(current + 1)}
-            className="w-full h-14 text-white rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2 group active:scale-[0.97] transition-transform"
+            onClick={() => canNext && goTo(current + 1)}
+            disabled={!canNext}
+            className="w-full h-14 text-white rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2 group active:scale-[0.97] transition-all disabled:opacity-40"
             style={{
               background: "linear-gradient(135deg,#FF3355,#FF6680)",
-              animation: "ob-glow 2.5s ease-in-out infinite",
+              animation: canNext ? "ob-glow 2.5s ease-in-out infinite" : "none",
             }}
           >
             다음
@@ -408,21 +651,21 @@ export function Onboarding() {
           </button>
         ) : (
           <button
-            onClick={() => navigate("/goal-setting/category")}
+            onClick={handleStart}
             className="w-full h-14 text-white rounded-2xl text-[17px] font-bold flex items-center justify-center gap-2 group active:scale-[0.97] transition-transform"
             style={{
               background: "linear-gradient(135deg,#FF3355,#FF6680)",
               animation: "ob-glow 2.5s ease-in-out infinite",
             }}
           >
-            시작하기
+            {selectedChallenges.length > 0 ? `${selectedChallenges.length}개 챌린지로 시작하기` : "시작하기"}
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         )}
 
-        {current < SLIDES.length - 1 && (
+        {current <= 2 && (
           <button
-            onClick={() => navigate("/goal-setting/category")}
+            onClick={() => goTo(3)}
             className="text-white/30 text-sm font-medium hover:text-white/50 transition-colors"
           >
             건너뛰기

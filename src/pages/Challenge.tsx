@@ -2,7 +2,8 @@ import { Search, Users, ChevronDown,
          Activity, BookOpen, Apple, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useApp } from "../contexts/AppContext";
 
 // 카테고리 아이콘 + 배경
 const CAT_META: Record<string, { icon: React.ElementType; bg: string; color: string; glow: string; grad: string; cardGrad: string }> = {
@@ -17,15 +18,6 @@ const STATUS_STYLE: Record<string, string> = {
   "인기":    "text-[#FF3355] bg-[#FFE8EC]",
   "마감임박": "text-amber-600 bg-amber-50",
 };
-
-const allGroups = [
-  { id: "1", title: "새벽 미라클 모닝", desc: "매일 새벽 5시 30분, 함께 일어나요", members: 12, rate: 82, status: "진행중",  category: "생활", joined: true  },
-  { id: "2", title: "매일 1만보 걷기",   desc: "하루 만 보를 함께 걸어요",         members: 45, rate: 65, status: "인기",    category: "운동", joined: false },
-  { id: "3", title: "주 1권 독서",       desc: "매주 한 권씩 읽고 생각을 나눠요",  members: 8,  rate: 48, status: "마감임박", category: "학습", joined: true  },
-  { id: "4", title: "저탄고지 식단",     desc: "건강한 식습관을 함께 만들어요",    members: 23, rate: 71, status: "진행중",  category: "식단", joined: false },
-  { id: "5", title: "매일 명상 10분",    desc: "하루 10분, 마음의 여유를 찾아요",  members: 31, rate: 88, status: "인기",    category: "생활", joined: false },
-  { id: "6", title: "영어 단어 30개",    desc: "매일 꾸준히 어휘를 늘려요",        members: 17, rate: 60, status: "진행중",  category: "학습", joined: false },
-];
 
 const CATS = ["전체", "운동", "식단", "학습", "생활"];
 
@@ -43,15 +35,13 @@ function CatTag({ category }: { category: string }) {
 
 export function Challenge() {
   const navigate = useNavigate();
+  const { groups, joinGroup, leaveGroup } = useApp();
   const [activeCat, setActiveCat] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [filterMode, setFilterMode] = useState<"전체" | "참여중">("전체");
   const [showDropdown, setShowDropdown] = useState(false);
   const [mounted,   setMounted]   = useState(false);
-  const [joinedIds, setJoinedIds] = useState<Set<string>>(
-    new Set(allGroups.filter((g) => g.joined).map((g) => g.id))
-  );
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -64,11 +54,11 @@ export function Challenge() {
     transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
   });
 
-  const filtered = allGroups
-    .filter((g) => filterMode === "전체" || joinedIds.has(g.id))
+  const filtered = groups
+    .filter((g) => filterMode === "전체" || g.joined)
     .filter((g) => activeCat === "전체" || g.category === activeCat)
     .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery))
-    .sort((a, b) => Number(joinedIds.has(a.id)) - Number(joinedIds.has(b.id)));
+    .sort((a, b) => Number(a.joined) - Number(b.joined));
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F8F8FA]" onClick={() => setShowDropdown(false)}>
@@ -175,19 +165,19 @@ export function Challenge() {
           >
             <div>
               <p className="text-white/60 text-[11px] font-bold uppercase tracking-[0.15em]">현재 진행 중</p>
-              <p className="text-white text-[22px] font-black leading-tight">{allGroups.length}개 그룹</p>
+              <p className="text-white text-[22px] font-black leading-tight">{groups.length}개 그룹</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-center">
                 <p className="text-white text-[18px] font-black leading-none">
-                  {allGroups.reduce((s, g) => s + g.members, 0)}
+                  {groups.reduce((s, g) => s + g.members, 0)}
                 </p>
                 <p className="text-white/50 text-[10px] mt-0.5">총 참여자</p>
               </div>
               <div className="w-px h-10 bg-white/20" />
               <div className="text-center">
                 <p className="text-white text-[18px] font-black leading-none">
-                  {Math.round(allGroups.reduce((s, g) => s + g.rate, 0) / allGroups.length)}%
+                  {Math.round(groups.reduce((s, g) => s + g.rate, 0) / groups.length)}%
                 </p>
                 <p className="text-white/50 text-[10px] mt-0.5">평균 달성</p>
               </div>
@@ -197,8 +187,7 @@ export function Challenge() {
 
         {/* 전체 그룹 리스트 */}
         <div className="px-4 pt-3 pb-6 space-y-2.5">
-          {filtered.map(({ id, title, desc, members, rate, status, category }, i) => {
-            const isJoined = joinedIds.has(id);
+          {filtered.map(({ id, title, desc, members, rate, status, category, joined: isJoined }, i) => {
             return (
               <div
                 key={id}
@@ -251,9 +240,7 @@ export function Challenge() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const next = new Set(joinedIds);
-                      isJoined ? next.delete(id) : next.add(id);
-                      setJoinedIds(next);
+                      isJoined ? leaveGroup(id) : joinGroup(id);
                     }}
                     className={cn(
                       "w-full py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 active:scale-[0.98]",

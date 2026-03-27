@@ -3,10 +3,10 @@ import { Home, Trophy, BarChart2, User } from "lucide-react";
 import { cn } from "../lib/utils";
 
 const navItems = [
-  { icon: Home, label: "홈", href: "/" },
-  { icon: Trophy, label: "챌린지", href: "/challenge" },
-  { icon: BarChart2, label: "통계", href: "/stats" },
-  { icon: User, label: "프로필", href: "/profile" },
+  { icon: Home,      label: "홈",    href: "/" },
+  { icon: Trophy,    label: "챌린지", href: "/challenge" },
+  { icon: BarChart2, label: "통계",  href: "/stats" },
+  { icon: User,      label: "프로필", href: "/profile" },
 ];
 
 export function BottomNav() {

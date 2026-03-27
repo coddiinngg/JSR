@@ -11,6 +11,8 @@ import { GoalFrequency } from "./pages/goal-setting/GoalFrequency";
 import { GoalName } from "./pages/goal-setting/GoalName";
 import { Camera } from "./pages/verify/Camera";
 import { Upload } from "./pages/verify/Upload";
+import { VerifySelect } from "./pages/verify/Select";
+import { VerifyGuide } from "./pages/verify/Guide";
 import { Success } from "./pages/Success";
 import { Stats } from "./pages/Stats";
 import { Profile } from "./pages/Profile";
@@ -23,8 +25,8 @@ import { Gallery } from "./pages/Gallery";
 import { Rewards } from "./pages/Rewards";
 import { Notifications } from "./pages/Notifications";
 import { WeeklyReport } from "./pages/WeeklyReport";
-import { CoachChat } from "./pages/CoachChat";
 import { FriendInvite } from "./pages/FriendInvite";
+import { UserProfile } from "./pages/UserProfile";
 
 export default function App() {
   return (
@@ -40,6 +42,8 @@ export default function App() {
           <Route path="/goal-setting/frequency" element={<GoalFrequency />} />
           <Route path="/goal-setting/name" element={<GoalName />} />
           <Route path="/goals/:id" element={<GoalDetail />} />
+          <Route path="/verify/select" element={<VerifySelect />} />
+          <Route path="/verify/guide/:type" element={<VerifyGuide />} />
           <Route path="/verify/camera" element={<Camera />} />
           <Route path="/verify/upload" element={<Upload />} />
           <Route path="/success" element={<Success />} />
@@ -50,9 +54,9 @@ export default function App() {
           <Route path="/rewards" element={<Rewards />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/stats/weekly-report" element={<WeeklyReport />} />
-          <Route path="/coach/chat" element={<CoachChat />} />
           <Route path="/friends/invite" element={<FriendInvite />} />
           <Route path="/challenge/group/:groupId" element={<GroupDetail />} />
+          <Route path="/user/:seed" element={<UserProfile />} />
         </Route>
 
         {/* 바텀 네비 있는 메인 탭 */}

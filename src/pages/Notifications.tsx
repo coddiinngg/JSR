@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { ChevronLeft, CheckCircle2, Trophy, Users, MessageSquare, Star, Flame, Bell, Check, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronLeft, CheckCircle2, Trophy, Users, Star, Flame, Bell, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 
-type NotifType = "goal" | "badge" | "group" | "coach" | "rank" | "streak";
+type NotifType = "goal" | "badge" | "group" | "rank" | "streak";
 
 interface Notif {
   id: number;
@@ -18,23 +18,20 @@ interface Notif {
 }
 
 const INITIAL: Notif[] = [
-  { id: 1,  type: "coach",  title: "잔소리 코치",       body: "지금 안 하면 언제 하려고???!! 얼른 해!",          time: "방금",        read: false, emoji: "👑" },
-  { id: 2,  type: "goal",   title: "목표 달성 성공!",   body: "오늘 '30분 유산소' 를 완료했어요. 대단해요! 🎉", time: "1시간 전",    read: false },
-  { id: 3,  type: "streak", title: "8일 연속 달성!",    body: "연속 8일 목표를 달성했어요. 이 페이스 유지해요!", time: "2시간 전",    read: false, emoji: "🔥" },
-  { id: 4,  type: "group",  title: "그룹 활동",          body: "김지수님이 '새벽 미라클 모닝' 그룹에서 1위를 달성했어요.", time: "3시간 전", read: true },
-  { id: 5,  type: "badge",  title: "새 배지 획득!",     body: "'7일 연속' 배지를 획득했어요. 리워드에서 확인해보세요.", time: "오늘",      read: true, emoji: "🏅" },
-  { id: 6,  type: "rank",   title: "랭킹 변동",          body: "주간 랭킹이 12위에서 9위로 올랐어요! 🚀",         time: "어제",       read: true },
-  { id: 7,  type: "coach",  title: "잔소리 코치",       body: "아직 안 했네? 시간이 많지 않을텐데?",              time: "어제",       read: true, emoji: "⏰" },
-  { id: 8,  type: "goal",   title: "목표 알림",          body: "'독서 30페이지' 목표 시간이 다가오고 있어요",      time: "어제",       read: true },
-  { id: 9,  type: "group",  title: "그룹 초대",          body: "박민혁님이 '매일 1만보 걷기' 그룹에 초대했어요.",  time: "2일 전",     read: false, emoji: "👥", actionable: true },
-  { id: 10, type: "badge",  title: "새 배지 획득!",     body: "'첫 인증' 배지를 획득했어요!",                    time: "3일 전",     read: true, emoji: "⚡" },
+  { id: 1,  type: "goal",   title: "목표 달성 성공!",   body: "오늘 '30분 유산소' 를 완료했어요. 대단해요! 🎉", time: "1시간 전",    read: false },
+  { id: 2,  type: "streak", title: "8일 연속 달성!",    body: "연속 8일 목표를 달성했어요. 이 페이스 유지해요!", time: "2시간 전",    read: false, emoji: "🔥" },
+  { id: 3,  type: "group",  title: "그룹 활동",          body: "김지수님이 '새벽 미라클 모닝' 그룹에서 1위를 달성했어요.", time: "3시간 전", read: true },
+  { id: 4,  type: "badge",  title: "새 배지 획득!",     body: "'7일 연속' 배지를 획득했어요. 리워드에서 확인해보세요.", time: "오늘",      read: true, emoji: "🏅" },
+  { id: 5,  type: "rank",   title: "랭킹 변동",          body: "주간 랭킹이 12위에서 9위로 올랐어요! 🚀",         time: "어제",       read: true },
+  { id: 6,  type: "goal",   title: "목표 알림",          body: "'독서 30페이지' 목표 시간이 다가오고 있어요",      time: "어제",       read: true },
+  { id: 7,  type: "group",  title: "그룹 초대",          body: "박민혁님이 '매일 5,000보 걷기' 그룹에 초대했어요.",  time: "2일 전",     read: false, emoji: "👥", actionable: true },
+  { id: 8,  type: "badge",  title: "새 배지 획득!",     body: "'첫 인증' 배지를 획득했어요!",                    time: "3일 전",     read: true, emoji: "⚡" },
 ];
 
 const TYPE_ICON: Record<NotifType, React.ElementType> = {
   goal:   CheckCircle2,
   badge:  Star,
   group:  Users,
-  coach:  MessageSquare,
   rank:   Trophy,
   streak: Flame,
 };
@@ -43,7 +40,6 @@ const TYPE_COLOR: Record<NotifType, string> = {
   goal:   "#10B981",
   badge:  "#F59E0B",
   group:  "#6366F1",
-  coach:  "#FF3355",
   rank:   "#F97316",
   streak: "#FB923C",
 };
@@ -52,7 +48,6 @@ const TYPE_BG: Record<NotifType, string> = {
   goal:   "#ECFDF5",
   badge:  "#FFFBEB",
   group:  "#EEF2FF",
-  coach:  "#FFF0F3",
   rank:   "#FFF7ED",
   streak: "#FFF7ED",
 };

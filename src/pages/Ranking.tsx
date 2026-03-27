@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, Share2, Flame, TrendingUp, TrendingDown, Trophy, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
@@ -74,7 +74,7 @@ const GROUP_TABS = [
   },
   {
     id: "g2",
-    name: "매일 1만보 걷기",
+    name: "매일 5,000보 걷기",
     emoji: "👟",
     members: 21,
     members_list: [
@@ -287,14 +287,15 @@ export function Ranking() {
                     {i > 0 && <div className="h-px bg-slate-50 mx-4" />}
                     <div
                       className={cn(
-                        "flex items-center px-4 py-3 transition-colors",
-                        isMe && "bg-[#FFF0F3]"
+                        "flex items-center px-4 py-3 transition-opacity active:opacity-60",
+                        isMe ? "bg-[#FFF0F3]" : "cursor-pointer"
                       )}
                       style={{
                         opacity: mounted ? 1 : 0,
                         transform: mounted ? "translateX(0)" : "translateX(-12px)",
                         transition: `opacity 0.4s ease ${i * 50 + 300}ms, transform 0.4s ease ${i * 50 + 300}ms`,
                       }}
+                      onClick={() => !isMe && navigate(`/user/${seed}`)}
                     >
                       <span className={cn(
                         "w-7 text-center text-[13px] font-black shrink-0",
@@ -408,12 +409,13 @@ export function Ranking() {
                   <div key={`${rank}-${name}`}>
                     {i > 0 && <div className="h-px bg-slate-50 mx-4" />}
                     <div
-                      className={cn("flex items-center px-4 py-3", isMe && "bg-[#FFF0F3]")}
+                      className={cn("flex items-center px-4 py-3 transition-opacity active:opacity-60", isMe ? "bg-[#FFF0F3]" : "cursor-pointer")}
                       style={{
                         opacity: mounted ? 1 : 0,
                         transform: mounted ? "translateX(0)" : "translateX(-10px)",
                         transition: `opacity 0.4s ease ${i * 60 + 300}ms, transform 0.4s ease ${i * 60 + 300}ms`,
                       }}
+                      onClick={() => !isMe && navigate(`/user/${seed}`)}
                     >
                       <span className="w-8 text-center text-[16px] shrink-0">
                         {medal ?? <span className="text-[12px] font-black text-slate-300">{rank}</span>}

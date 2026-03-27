@@ -1,13 +1,9 @@
 import { ChevronLeft, Camera, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useApp, COACH_CONFIGS } from "../contexts/AppContext";
-import { CoachCharacter } from "../components/CoachCharacter";
 
 export function EditProfile() {
   const navigate = useNavigate();
-  const { coachType } = useApp();
-  const coachCfg = COACH_CONFIGS[coachType];
   const [name, setName] = useState("김지수");
   const [nickname, setNickname] = useState("jisu_kim");
   const [bio, setBio] = useState("매일 조금씩 더 나아지는 중 🌱");
@@ -104,20 +100,6 @@ export function EditProfile() {
             <p className="text-[11px] text-slate-300 text-right mt-1 mr-1">{bio.length}/80</p>
           </div>
 
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">코치 유형</label>
-            <button
-              onClick={() => navigate("/settings/notifications")}
-              className="w-full bg-white rounded-2xl border border-slate-200 px-4 py-3 flex items-center gap-3 active:bg-slate-50 transition-colors"
-            >
-              <CoachCharacter type={coachType} size={44} animated={false} className="shrink-0" />
-              <div className="flex-1 text-left">
-                <p className="text-[14px] font-bold text-slate-800">{coachCfg.label}</p>
-                <p className="text-[12px] text-slate-400">탭해서 코치 변경하기</p>
-              </div>
-              <span className="text-[12px] font-bold text-[#FF3355] bg-[#FFF0F3] px-2.5 py-1 rounded-full shrink-0">변경</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>

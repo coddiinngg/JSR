@@ -36,7 +36,6 @@ export interface Database {
           frequency: 'daily' | 'weekly';
           frequency_days: number[] | null;
           reminder_time: string | null;
-          coach_type: string | null;
           status: 'active' | 'completed' | 'paused';
           created_at: string;
         };
@@ -49,7 +48,6 @@ export interface Database {
           frequency?: 'daily' | 'weekly';
           frequency_days?: number[] | null;
           reminder_time?: string | null;
-          coach_type?: string | null;
           status?: 'active' | 'completed' | 'paused';
         };
         Update: Partial<Omit<Database['public']['Tables']['goals']['Insert'], 'user_id' | 'id'>>;

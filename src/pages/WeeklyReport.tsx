@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Flame, Trophy, TrendingUp, TrendingDown, Minus, Target, Calendar, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
-import { CoachCharacter } from "../components/CoachCharacter";
+import type { Goal } from "../contexts/AppContext";
+import type { Verification } from "../types/database";
 
 /* ─── 타입 ─── */
 interface GoalWeekData {
@@ -25,89 +26,95 @@ interface WeekData {
   prevTotalXP: number;
 }
 
-/* ─── 주 데이터 ─── */
-const WEEKS: WeekData[] = [
-  {
-    label: "이번 주",
-    startDate: "3월 11일",
-    endDate: "3월 17일",
-    totalXP: 190,
-    prevTotalXP: 145,
-    goals: [
-      {
-        id: "1",
-        title: "30분 유산소",
-        color: "#FF3355",
-        colorRgb: "255,51,85",
-        days: [true, true, true, false, true, true, false],
-        streak: 8,
-        prevRate: 57,
-        currRate: 71,
-      },
-      {
-        id: "2",
-        title: "물 2L 마시기",
-        color: "#38BDF8",
-        colorRgb: "56,189,248",
-        days: [true, false, true, true, false, true, true],
-        streak: 5,
-        prevRate: 71,
-        currRate: 71,
-      },
-      {
-        id: "3",
-        title: "독서 30페이지",
-        color: "#FB923C",
-        colorRgb: "251,146,60",
-        days: [false, true, false, false, false, false, false],
-        streak: 0,
-        prevRate: 28,
-        currRate: 14,
-      },
-    ],
-  },
-  {
-    label: "지난 주",
-    startDate: "3월 4일",
-    endDate: "3월 10일",
-    totalXP: 145,
-    prevTotalXP: 120,
-    goals: [
-      {
-        id: "1",
-        title: "30분 유산소",
-        color: "#FF3355",
-        colorRgb: "255,51,85",
-        days: [false, true, true, false, true, false, false],
-        streak: 3,
-        prevRate: 43,
-        currRate: 57,
-      },
-      {
-        id: "2",
-        title: "물 2L 마시기",
-        color: "#38BDF8",
-        colorRgb: "56,189,248",
-        days: [true, true, false, true, true, false, true],
-        streak: 2,
-        prevRate: 43,
-        currRate: 71,
-      },
-      {
-        id: "3",
-        title: "독서 30페이지",
-        color: "#FB923C",
-        colorRgb: "251,146,60",
-        days: [true, false, true, false, false, false, false],
-        streak: 0,
-        prevRate: 14,
-        currRate: 28,
-      },
-    ],
-  },
-];
-
 const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
+
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function startOfWeek(date: Date) {
+  const next = new Date(date);
+  const daysFromMonday = (next.getDay() + 6) % 7;
+  next.setHours(0, 0, 0, 0);
+  next.setDate(next.getDate() - daysFromMonday);
+  return next;
+}
+
+function formatMonthDay(date: Date) {
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function diffDays(start: Date, end: Date) {
+  return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function buildDays(verifications: Verification[], weekStart: Date) {
+  const days = Array.from({ length: 7 }, () => false);
+
+  verifications.forEach(item => {
+    const index = diffDays(weekStart, new Date(item.verified_at));
+    if (index >= 0 && index < 7) {
+      days[index] = true;
+    }
+  });
+
+  return days;
+}
+
+function buildGoalWeekData(goal: Goal, verifications: Verification[], weekStart: Date): GoalWeekData {
+  const previousWeekStart = addDays(weekStart, -7);
+  const currentDays = buildDays(verifications, weekStart);
+  const previousDays = buildDays(verifications, previousWeekStart);
+  const currDone = currentDays.filter(Boolean).length;
+  const prevDone = previousDays.filter(Boolean).length;
+
+  return {
+    id: goal.id,
+    title: goal.title,
+    color: goal.color,
+    colorRgb: goal.colorRgb,
+    days: currentDays,
+    streak: goal.streak,
+    prevRate: Math.round((prevDone / 7) * 100),
+    currRate: Math.round((currDone / 7) * 100),
+  };
+}
+
+function buildWeekData(label: string, weekStart: Date, goals: Goal[], verifications: Verification[]): WeekData {
+  const previousWeekStart = addDays(weekStart, -7);
+  const goalData = goals.map(goal => buildGoalWeekData(
+    goal,
+    verifications.filter(item => item.goal_id === goal.id),
+    weekStart,
+  ));
+
+  const totalXP = verifications
+    .filter(item => {
+      const verifiedAt = new Date(item.verified_at);
+      const index = diffDays(weekStart, verifiedAt);
+      return index >= 0 && index < 7;
+    })
+    .reduce((sum, item) => sum + item.xp_earned, 0);
+
+  const prevTotalXP = verifications
+    .filter(item => {
+      const verifiedAt = new Date(item.verified_at);
+      const index = diffDays(previousWeekStart, verifiedAt);
+      return index >= 0 && index < 7;
+    })
+    .reduce((sum, item) => sum + item.xp_earned, 0);
+
+  return {
+    label,
+    startDate: formatMonthDay(weekStart),
+    endDate: formatMonthDay(addDays(weekStart, 6)),
+    goals: goalData,
+    totalXP,
+    prevTotalXP,
+  };
+}
 
 function useCountUp(target: number, duration = 900, delay = 0) {
   const [val, setVal] = useState(0);
@@ -149,7 +156,7 @@ function Trend({ curr, prev }: { curr: number; prev: number }) {
   );
 }
 
-function GoalWeekCard({ goal, mounted, delay }: { goal: GoalWeekData; mounted: boolean; delay: number }) {
+function GoalWeekCard({ goal, mounted, delay }: { goal: GoalWeekData; mounted: boolean; delay: number; key?: React.Key }) {
   const doneCount = goal.days.filter(Boolean).length;
   const rate = Math.round((doneCount / 7) * 100);
   const counted = useCountUp(mounted ? rate : 0, 1000, delay + 400);
@@ -228,35 +235,34 @@ function GoalWeekCard({ goal, mounted, delay }: { goal: GoalWeekData; mounted: b
 
 export function WeeklyReport() {
   const navigate = useNavigate();
-  const { coachType, nickname } = useApp();
+  const { nickname, goals, verificationHistory } = useApp();
   const [weekIdx, setWeekIdx] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const completedVerifications = verificationHistory.filter(item => item.status === "completed");
+  const currentWeekStart = startOfWeek(new Date());
+  const weeks = [
+    buildWeekData("이번 주", currentWeekStart, goals, completedVerifications),
+    buildWeekData("지난 주", addDays(currentWeekStart, -7), goals, completedVerifications),
+  ];
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  const week = WEEKS[weekIdx];
+  const week = weeks[weekIdx];
   const totalDone = week.goals.reduce((sum, g) => sum + g.days.filter(Boolean).length, 0);
   const totalPossible = week.goals.length * 7;
-  const overallRate = Math.round((totalDone / totalPossible) * 100);
+  const activeDays = DAYS.reduce((sum, _, index) => (
+    week.goals.some(goal => goal.days[index]) ? sum + 1 : sum
+  ), 0);
+  const overallRate = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
   const xpCounted = useCountUp(mounted ? week.totalXP : 0, 1000, 500);
-
   const xpDiff = week.totalXP - week.prevTotalXP;
-
-  // 코치 메시지
-  const coachMessages = {
-    king: overallRate >= 70
-      ? "그래, 이 정도면 봐줄 만하다. 하지만 아직 멀었어!"
-      : "이게 최선이야? 다음 주엔 제대로 해봐!",
-    pressure: overallRate >= 70
-      ? "좋은 한 주였어. 이 흐름을 유지해!"
-      : "아쉬운 주였어. 시간은 기다려 주지 않아.",
-    gentle: overallRate >= 70
-      ? "정말 잘 해줬어! 이번 주도 수고했어 😊"
-      : "괜찮아, 다음 주에 더 잘 할 수 있어. 함께 해보자!",
-  };
+  const maxStreak = Math.max(...week.goals.map(goal => goal.streak), 0);
+  const suggestedGoals = [...week.goals]
+    .sort((a, b) => a.currRate - b.currRate)
+    .slice(0, 2);
 
   return (
     <div className="flex flex-col h-full bg-[#F8F8FA] overflow-hidden">
@@ -283,8 +289,8 @@ export function WeeklyReport() {
         {/* 주 네비게이터 */}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setWeekIdx(i => Math.min(WEEKS.length - 1, i + 1))}
-            disabled={weekIdx === WEEKS.length - 1}
+            onClick={() => setWeekIdx(i => Math.min(weeks.length - 1, i + 1))}
+            disabled={weekIdx === weeks.length - 1}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 disabled:opacity-30 active:bg-slate-200 transition-colors"
           >
             <ChevronLeft className="w-4 h-4 text-slate-600" />
@@ -344,37 +350,14 @@ export function WeeklyReport() {
                   }}
                 />
               </div>
-              <p className="text-white/40 text-[11px] mt-1.5">{totalDone}/{totalPossible}개 완료</p>
-            </div>
-            {/* 코치 캐릭터 */}
-            <div
-              style={{
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? "translateY(0) scale(1)" : "translateY(12px) scale(0.8)",
-                transition: "all 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s",
-              }}
-            >
-              <CoachCharacter type={coachType} size={90} animated />
+              <p className="text-white/40 text-[11px] mt-1.5">
+                {totalPossible > 0 ? `${totalDone}/${totalPossible}개 완료` : "아직 생성한 목표가 없어요"}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="px-4 space-y-4 mt-4">
-
-          {/* 코치 메시지 버블 */}
-          <div
-            className="bg-[#0F1117] rounded-2xl px-4 py-3.5 border border-white/[0.07]"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(12px)",
-              transition: "opacity 0.5s ease 200ms, transform 0.5s ease 200ms",
-            }}
-          >
-            <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest mb-1.5">코치 피드백</p>
-            <p className="text-white text-[14px] font-semibold leading-relaxed">
-              "{coachMessages[coachType]}"
-            </p>
-          </div>
 
           {/* 이번 주 핵심 지표 */}
           <div
@@ -386,9 +369,9 @@ export function WeeklyReport() {
             }}
           >
             {[
-              { icon: Target,   label: "완료한 날",  value: totalDone,  suffix: "일", color: "#FF3355", bg: "#FFF0F3" },
+              { icon: Target,   label: "인증한 날",  value: activeDays,  suffix: "일", color: "#FF3355", bg: "#FFF0F3" },
               { icon: Zap,      label: "획득 XP",    value: xpCounted,  suffix: " XP", color: "#f59e0b", bg: "#fffbeb" },
-              { icon: Trophy,   label: "최고 연속",  value: Math.max(...week.goals.map(g => g.streak)), suffix: "일", color: "#6366f1", bg: "#eef2ff" },
+              { icon: Trophy,   label: "최고 연속",  value: maxStreak, suffix: "일", color: "#6366f1", bg: "#eef2ff" },
             ].map(({ icon: Icon, label, value, suffix, color, bg }) => (
               <div key={label} className="bg-white rounded-2xl p-3.5 border border-black/[0.04] text-center">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: bg }}>
@@ -407,11 +390,18 @@ export function WeeklyReport() {
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">
               목표별 주간 달성
             </p>
-            <div className="space-y-2.5">
-              {week.goals.map((goal, i) => (
-                <GoalWeekCard key={goal.id} goal={goal} mounted={mounted} delay={360 + i * 80} />
-              ))}
-            </div>
+            {week.goals.length > 0 ? (
+              <div className="space-y-2.5">
+                {week.goals.map((goal, i) => (
+                  <GoalWeekCard key={goal.id} goal={goal} mounted={mounted} delay={360 + i * 80} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-8 border border-dashed border-slate-200 text-center">
+                <p className="text-[13px] font-semibold text-slate-500">표시할 목표가 없어요</p>
+                <p className="text-[12px] text-slate-400 mt-1">목표를 만들면 주간 달성 현황이 여기서 집계됩니다.</p>
+              </div>
+            )}
           </div>
 
           {/* 이전 주 비교 */}
@@ -424,20 +414,24 @@ export function WeeklyReport() {
             }}
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-3">지난 주 대비</p>
-            <div className="space-y-3">
-              {week.goals.map(goal => (
-                <div key={goal.id} className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: goal.color }} />
-                  <span className="text-[13px] text-slate-600 flex-1 font-medium">{goal.title}</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[12px] text-slate-400 font-semibold">{goal.prevRate}%</span>
-                    <span className="text-slate-200">→</span>
-                    <span className="text-[13px] font-black" style={{ color: goal.color }}>{goal.currRate}%</span>
-                    <Trend curr={goal.currRate} prev={goal.prevRate} />
+            {week.goals.length > 0 ? (
+              <div className="space-y-3">
+                {week.goals.map(goal => (
+                  <div key={goal.id} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: goal.color }} />
+                    <span className="text-[13px] text-slate-600 flex-1 font-medium">{goal.title}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[12px] text-slate-400 font-semibold">{goal.prevRate}%</span>
+                      <span className="text-slate-200">→</span>
+                      <span className="text-[13px] font-black" style={{ color: goal.color }}>{goal.currRate}%</span>
+                      <Trend curr={goal.currRate} prev={goal.prevRate} />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[13px] text-slate-400">비교할 목표 데이터가 아직 없어요.</p>
+            )}
           </div>
 
           {/* 다음 주 도전 제안 */}
@@ -454,11 +448,9 @@ export function WeeklyReport() {
             <div className="p-4">
               <p className="text-[11px] font-bold uppercase tracking-widest text-white/40 mb-1">다음 주 도전 목표</p>
               <p className="text-white font-black text-[16px] mb-3">{nickname}님, 이렇게 도전해 보세요!</p>
-              {week.goals
-                .sort((a, b) => a.currRate - b.currRate)
-                .slice(0, 2)
-                .map(goal => {
-                  const target = Math.min(100, goal.currRate + (100 - goal.currRate) / 2 | 0);
+              {suggestedGoals.length > 0 ? (
+                suggestedGoals.map(goal => {
+                  const target = Math.min(100, Math.round(goal.currRate + (100 - goal.currRate) / 2));
                   return (
                     <div key={goal.id} className="flex items-center gap-3 mb-2.5 last:mb-0">
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-white/10">
@@ -474,7 +466,10 @@ export function WeeklyReport() {
                       </div>
                     </div>
                   );
-                })}
+                })
+              ) : (
+                <p className="text-[13px] text-white/50">먼저 목표와 인증 기록이 쌓이면 다음 주 추천 목표가 계산됩니다.</p>
+              )}
             </div>
           </div>
 

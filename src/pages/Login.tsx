@@ -1,9 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Login() {
   const navigate = useNavigate();
+  const { signInWithEmail } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,12 +15,19 @@ export function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!email.trim() || !password.trim()) {
+      setError("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
     setLoading(true);
-    // 임시: 바로 온보딩으로 이동
-    setTimeout(() => {
+    try {
+      await signInWithEmail(email.trim(), password);
+      navigate("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "로그인에 실패했어요.");
+    } finally {
       setLoading(false);
-      navigate("/onboarding");
-    }, 500);
+    }
   };
 
   return (
@@ -36,11 +45,11 @@ export function Login() {
             className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-[0_12px_40px_rgba(255,51,85,0.5)]"
             style={{ background: "linear-gradient(135deg, #FF3355, #cc0030)" }}
           >
-            <span className="text-white font-black text-2xl tracking-tighter">JSR</span>
+            <span className="text-white font-black text-2xl tracking-tighter">챌리</span>
           </div>
           <h1 className="text-[28px] font-black text-white leading-tight text-center">
             반가워요!<br />
-            <span className="text-[#FF3355]">JSR</span>에 오신 걸 환영해요
+            <span className="text-[#FF3355]">챌리</span>에 오신 걸 환영해요
           </h1>
           <p className="text-white/40 text-[13px] font-medium mt-2 text-center">
             목표를 세우고, 함께 달성해요
@@ -51,7 +60,7 @@ export function Login() {
         <div className="px-6 space-y-3 mb-6">
           <button
             type="button"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => setError("소셜 로그인은 아직 준비 중이에요. 이메일 로그인을 사용해주세요.")}
             className="w-full h-14 flex items-center justify-center gap-2.5 bg-[#FEE500] hover:bg-[#FDD800] text-black font-bold text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -62,7 +71,7 @@ export function Login() {
 
           <button
             type="button"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => setError("소셜 로그인은 아직 준비 중이에요. 이메일 로그인을 사용해주세요.")}
             className="w-full h-14 flex items-center justify-center gap-2.5 bg-white hover:bg-white/90 text-slate-800 font-bold text-[15px] rounded-2xl border border-white/20 transition-all active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -76,7 +85,7 @@ export function Login() {
 
           <button
             type="button"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => setError("소셜 로그인은 아직 준비 중이에요. 이메일 로그인을 사용해주세요.")}
             className="w-full h-14 flex items-center justify-center gap-2.5 bg-black hover:bg-black/80 text-white font-bold text-[15px] rounded-2xl border border-white/10 transition-all active:scale-[0.98]"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
@@ -143,8 +152,18 @@ export function Login() {
           <Link to="/signup" className="text-[#FF3355] font-bold hover:text-[#ff5570] transition-colors">회원가입</Link>
         </div>
 
+        <div className="px-6 pb-4">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="w-full h-12 rounded-2xl border border-white/10 bg-white/[0.05] text-white/70 text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-white/[0.08]"
+          >
+            로그인 없이 둘러보기
+          </button>
+        </div>
+
         <p className="text-center text-[11px] text-white/15 pb-8 px-8">
-          계속 진행 시 JSR의{" "}
+          계속 진행 시 챌리의{" "}
           <button className="underline hover:text-white/30 transition-colors">서비스 약관</button>{" "}
           및{" "}
           <button className="underline hover:text-white/30 transition-colors">개인정보 처리방침</button>에 동의하게 됩니다.

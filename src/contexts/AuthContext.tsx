@@ -8,8 +8,10 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  refreshProfile: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, username: string) => Promise<void>;
+  resetPasswordWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -46,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
   }
 
+  async function refreshProfile() {
+    if (!user) return;
+    await fetchProfile(user.id);
+  }
+
   async function signInWithEmail(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
@@ -60,13 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function resetPasswordWithEmail(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    if (error) throw error;
+  }
+
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, refreshProfile, signInWithEmail, signUpWithEmail, resetPasswordWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );

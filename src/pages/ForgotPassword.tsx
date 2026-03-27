@@ -1,20 +1,28 @@
 import { ChevronLeft, Mail, CheckCircle2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export function ForgotPassword() {
   const navigate = useNavigate();
+  const { resetPasswordWithEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!email.includes("@")) return;
+    setError("");
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await resetPasswordWithEmail(email.trim());
       setSent(true);
-    }, 800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "이메일 전송에 실패했어요.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,6 +85,10 @@ export function ForgotPassword() {
                 </>
               )}
             </button>
+
+            {error && (
+              <p className="mt-3 text-center text-[13px] text-red-400">{error}</p>
+            )}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center pt-16 text-center">

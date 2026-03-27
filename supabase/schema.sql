@@ -1,5 +1,5 @@
 -- ============================================================
--- JSR (잔소리) Supabase Schema
+-- Chally Supabase Schema
 -- Supabase 대시보드 > SQL Editor에서 실행하세요
 -- ============================================================
 
@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS goals (
   frequency       TEXT DEFAULT 'daily' CHECK (frequency IN ('daily', 'weekly')),
   frequency_days  INT[] DEFAULT '{1,2,3,4,5,6,7}',  -- 1=월, 7=일
   reminder_time   TIME,
-  coach_type      TEXT DEFAULT 'strict',
   status          TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused')),
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
