@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Camera } from "lucide-react";
+import { X, CheckCircle2, XCircle, Camera, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../lib/verifyTypes";
@@ -110,6 +110,10 @@ export function Upload() {
           0%,100% { opacity: 0.3; transform: scale(0.8); }
           50%     { opacity: 1;   transform: scale(1.2); }
         }
+        @keyframes upl-slide {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
     </div>
   );
@@ -129,7 +133,7 @@ export function Upload() {
     </div>
   );
 
-  /* ── 분석 중 ── */
+  /* ── 분석 중 / 통과 ── */
   if (isAnalyzing || isPassed) {
     return (
       <Bg glow={isPassed
@@ -210,41 +214,130 @@ export function Upload() {
   /* ── 실패 화면 ── */
   if (isFailed && result) {
     return (
-      <Bg glow="radial-gradient(ellipse at 50% 30%, rgba(239,68,68,0.15) 0%, transparent 60%)">
+      <Bg glow="radial-gradient(ellipse at 50% 20%, rgba(239,68,68,0.1) 0%, transparent 55%)">
         <TopBar accent="#ef4444" />
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10 gap-5">
-          {/* X 아이콘 */}
-          <div className="w-20 h-20 rounded-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#ef4444,#dc2626)", boxShadow: "0 0 40px rgba(239,68,68,0.35)", animation: "upl-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}>
-            <XCircle className="w-10 h-10 text-white" strokeWidth={2} />
-          </div>
+        <div className="flex-1 overflow-y-auto relative z-10">
 
-          {/* 이유 */}
-          <div className="text-center">
-            <p className="text-white font-black text-[20px] mb-1.5">인증 실패</p>
-            <p className="text-white/50 text-[13px] leading-relaxed">{result.reason}</p>
-          </div>
-
-          {/* 실패 항목만 표시 */}
-          {result.failedChecks.length > 0 && (
-            <div className="w-full max-w-[300px] rounded-2xl p-4 space-y-2.5"
-              style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}>
-              {result.failedChecks.map((check, i) => (
-                <div key={i} className="flex items-center gap-2.5">
-                  <XCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={2.5} />
-                  <span className="text-white/70 text-[13px]">{check}</span>
+          {/* ① 실패 요약 */}
+          <div className="px-5 pt-2 pb-5 flex items-start gap-4"
+            style={{ animation: "upl-slide 0.4s ease both" }}>
+            {/* 사용자 사진 - 소형, 흐리게 */}
+            <div className="relative shrink-0 w-[72px] h-[88px] rounded-2xl overflow-hidden"
+              style={{ boxShadow: "0 0 0 1.5px rgba(239,68,68,0.4)" }}>
+              <img src={verificationImageUrl ?? ""} alt="" className="w-full h-full object-cover"
+                style={{ filter: "brightness(0.5) saturate(0.3)" }} />
+              <div className="absolute inset-0 bg-red-500/20" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center"
+                  style={{ animation: "upl-pop 0.35s cubic-bezier(0.34,1.56,0.64,1) 0.1s both" }}>
+                  <XCircle className="w-4.5 h-4.5 text-white" strokeWidth={2.5} />
                 </div>
-              ))}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 pt-1">
+              <p className="text-white font-black text-[19px] leading-tight mb-1.5">인증 실패</p>
+              <p className="text-white/50 text-[13px] leading-relaxed">{result.reason}</p>
+            </div>
+          </div>
+
+          {/* ② 통과 못한 항목 */}
+          {result.failedChecks.length > 0 && (
+            <div className="mx-5 mb-5 rounded-2xl overflow-hidden"
+              style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)", animation: "upl-slide 0.4s ease 80ms both" }}>
+              <div className="px-4 pt-3.5 pb-1">
+                <p className="text-red-400/80 text-[10px] font-black uppercase tracking-[0.16em]">통과 못한 항목</p>
+              </div>
+              <div className="px-4 pb-3.5 space-y-2.5 mt-2">
+                {result.failedChecks.map((check, i) => (
+                  <div key={i} className="flex items-center gap-2.5">
+                    <XCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={2.5} />
+                    <span className="text-white/75 text-[13px] font-medium">{check}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+
+          {/* ③ 구분선 */}
+          <div className="mx-5 mb-4 flex items-center gap-3"
+            style={{ animation: "upl-slide 0.4s ease 140ms both" }}>
+            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex items-center gap-1.5 shrink-0">
+              <AlertCircle className="w-3 h-3 text-white/30" />
+              <span className="text-white/30 text-[11px] font-bold tracking-wide">AI 인증 기준</span>
+            </div>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* ④ 예시 사진 + AI 체크리스트 */}
+          <div className="mx-5 mb-4 rounded-2xl overflow-hidden"
+            style={{ animation: "upl-slide 0.4s ease 180ms both", boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
+
+            {/* 예시 이미지 */}
+            <div className="relative" style={{ aspectRatio: "16/9" }}>
+              <img src={vt.exampleImg} alt="통과 예시" className="w-full h-full object-cover"
+                referrerPolicy="no-referrer" />
+              <div className="absolute inset-0"
+                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)" }} />
+              {/* 통과 예시 뱃지 */}
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                style={{ background: `${vt.bgGrad[0]}CC`, backdropFilter: "blur(4px)" }}>
+                <CheckCircle2 className="w-3 h-3 text-white" strokeWidth={3} />
+                <span className="text-white text-[10px] font-black">통과 예시</span>
+              </div>
+              {/* 이미지 하단에 라벨 */}
+              <div className="absolute bottom-3 left-3 right-3">
+                <p className="text-white/60 text-[11px] font-medium">"{vt.desc}"에 해당하는 사진이에요</p>
+              </div>
+            </div>
+
+            {/* AI 전체 체크리스트 */}
+            <div className="bg-[#0D0F18] px-4 py-4">
+              <p className="text-white/35 text-[10px] font-black uppercase tracking-[0.14em] mb-3">
+                AI가 확인하는 {vt.checklist.length}가지
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {vt.checklist.map((item, i) => {
+                  const isFail = result.failedChecks.includes(item);
+                  return (
+                    <div key={i}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                      style={{
+                        background: isFail ? "rgba(239,68,68,0.1)" : "rgba(52,211,153,0.07)",
+                        border: isFail ? "1px solid rgba(239,68,68,0.25)" : "1px solid rgba(52,211,153,0.2)",
+                      }}>
+                      <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${isFail ? "bg-red-500" : "bg-emerald-500"}`}>
+                        {isFail
+                          ? <X className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                          : <CheckCircle2 className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                        }
+                      </div>
+                      <span className={`text-[11px] font-semibold leading-tight ${isFail ? "text-red-300" : "text-white/65"}`}>
+                        {item}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ⑤ 촬영 팁 */}
+          <div className="mx-5 mb-4 flex items-start gap-3 px-4 py-3.5 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", animation: "upl-slide 0.4s ease 240ms both" }}>
+            <span className="text-[18px] shrink-0 mt-0.5">💡</span>
+            <p className="text-white/45 text-[12px] leading-relaxed">{vt.tip}</p>
+          </div>
+
+          <div className="h-4" />
         </div>
 
-        {/* 버튼 */}
-        <div className="shrink-0 px-6 pb-10 pt-3 relative z-10 flex flex-col gap-2">
+        {/* ⑥ 버튼 */}
+        <div className="shrink-0 px-5 pb-10 pt-3 relative z-10 flex flex-col gap-2">
           <button onClick={() => navigate("/verify/camera")}
-            className="w-full h-13 flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[15px] active:scale-[0.98] transition-transform"
-            style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}44` }}>
+            className="w-full h-[52px] flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[15px] active:scale-[0.98] transition-transform"
+            style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}50` }}>
             <Camera className="w-4 h-4" />
             다시 찍기
           </button>

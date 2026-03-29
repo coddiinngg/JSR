@@ -155,7 +155,7 @@ export function Login() {
         <div className="px-6 pb-4">
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/onboarding")}
             className="w-full h-12 rounded-2xl border border-white/10 bg-white/[0.05] text-white/70 text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-white/[0.08]"
           >
             로그인 없이 둘러보기

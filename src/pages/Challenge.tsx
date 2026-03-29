@@ -143,7 +143,9 @@ export function Challenge() {
             onClick={() => setActiveCat(cat)}
             className={cn(
               "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap transition-all duration-200 shrink-0",
-              activeCat === cat ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
+              activeCat === cat
+                ? "bg-[#FF3355] text-white shadow-[0_4px_12px_rgba(255,51,85,0.3)]"
+                : "bg-slate-100 text-slate-500 active:bg-slate-200"
             )}
           >
             {cat !== "전체" && (() => {
@@ -161,25 +163,28 @@ export function Challenge() {
         <div className="px-4 pt-4 pb-1" style={slide(60)}>
           <div
             className="relative overflow-hidden rounded-2xl px-5 py-4 flex items-center justify-between"
-            style={{ background: "linear-gradient(110deg, #FF3355 0%, #CC0030 100%)" }}
+            style={{ background: "linear-gradient(115deg, #FF3355 0%, #C8002B 100%)", boxShadow: "0 6px 20px rgba(255,51,85,0.25)" }}
           >
-            <div>
-              <p className="text-white/60 text-[11px] font-bold uppercase tracking-[0.15em]">현재 진행 중</p>
-              <p className="text-white text-[22px] font-black leading-tight">{groups.length}개 그룹</p>
+            {/* 배경 글로우 */}
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20"
+              style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }} />
+            <div className="relative">
+              <p className="text-white/55 text-[10px] font-bold uppercase tracking-[0.18em] mb-0.5">현재 진행 중</p>
+              <p className="text-white text-[24px] font-black leading-tight tracking-tight">{groups.length}<span className="text-[15px] font-semibold text-white/70 ml-1">개 그룹</span></p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="relative flex items-center gap-4">
               <div className="text-center">
-                <p className="text-white text-[18px] font-black leading-none">
+                <p className="text-white text-[20px] font-black leading-none tabular-nums">
                   {groups.reduce((s, g) => s + g.members, 0)}
                 </p>
-                <p className="text-white/50 text-[10px] mt-0.5">총 참여자</p>
+                <p className="text-white/50 text-[10px] mt-0.5 font-medium">참여자</p>
               </div>
-              <div className="w-px h-10 bg-white/20" />
+              <div className="w-px h-8 bg-white/15" />
               <div className="text-center">
-                <p className="text-white text-[18px] font-black leading-none">
+                <p className="text-white text-[20px] font-black leading-none tabular-nums">
                   {Math.round(groups.reduce((s, g) => s + g.rate, 0) / groups.length)}%
                 </p>
-                <p className="text-white/50 text-[10px] mt-0.5">평균 달성</p>
+                <p className="text-white/50 text-[10px] mt-0.5 font-medium">평균 달성</p>
               </div>
             </div>
           </div>
@@ -191,8 +196,8 @@ export function Challenge() {
             return (
               <div
                 key={id}
-                className="bg-white rounded-2xl border border-black/[0.05] shadow-[0_2px_12px_rgba(0,0,0,0.05)] overflow-hidden active:scale-[0.99] transition-transform cursor-pointer"
-                style={slide(i * 55 + 200)}
+                className="bg-white rounded-2xl border border-black/[0.04] overflow-hidden active:scale-[0.99] transition-all duration-150 cursor-pointer"
+                style={{ ...slide(i * 55 + 200), boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04)" }}
                 onClick={() => navigate(`/challenge/group/${id}`)}
               >
                 <div className="block p-4 pb-3">
@@ -244,8 +249,11 @@ export function Challenge() {
                     }}
                     className={cn(
                       "w-full py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 active:scale-[0.98]",
-                      isJoined ? "bg-slate-100 text-slate-400" : "bg-[#FF3355] text-white shadow-[0_6px_16px_-4px_rgba(255,51,85,0.4)]"
+                      isJoined
+                        ? "bg-slate-100 text-slate-400"
+                        : "text-white"
                     )}
+                    style={!isJoined ? { background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: "0 6px 16px -4px rgba(255,51,85,0.45)" } : undefined}
                   >
                     {isJoined ? "참여 중 · 탈퇴" : "참여하기"}
                   </button>

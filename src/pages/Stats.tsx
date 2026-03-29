@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, Flame, Calendar, Trophy, Clock, CheckCircle2, ChevronRight, ImageIcon, ChevronLeft, Target } from "lucide-react";
+import { TrendingUp, Flame, Calendar, Trophy, CheckCircle2, ChevronRight, ImageIcon, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 
@@ -23,7 +23,7 @@ function useCountUp(target: number, duration = 900, delay = 0) {
 
 const NOW = new Date();
 const CAL_YEAR = NOW.getFullYear();
-const CAL_MONTH = NOW.getMonth(); // 0-indexed
+const CAL_MONTH = NOW.getMonth();
 const CAL_TODAY = NOW.getDate();
 
 const HEAT_COLORS = [
@@ -32,47 +32,6 @@ const HEAT_COLORS = [
   "bg-[#FF9DB2]",
   "bg-[#FF3355]",
 ];
-
-interface GoalStat {
-  id: string; title: string; color: string; colorRgb: string;
-  rate: number; streak: number; total: number; days: number;
-}
-
-function GoalRow({ goal, idx, mounted }: { goal: GoalStat; idx: number; mounted: boolean; key?: React.Key }) {
-  const { id, title, color, colorRgb, rate, streak, total } = goal;
-  const countedRate = useCountUp(mounted ? rate : 0, 1000, idx * 150 + 600);
-  return (
-    <Link to={`/goals/${id}`} className="block active:opacity-70 transition-opacity">
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 6px rgba(${colorRgb},0.5)` }} />
-          <span className="text-[14px] font-bold text-slate-800">{title}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {streak > 0 && (
-            <div className="flex items-center gap-0.5">
-              <Flame className="w-3 h-3 text-orange-400 fill-orange-300" />
-              <span className="text-[11px] text-slate-400">{streak}일</span>
-            </div>
-          )}
-          <span className="text-[14px] font-black tabular-nums" style={{ color }}>{countedRate}%</span>
-        </div>
-      </div>
-      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: mounted ? `${rate}%` : "0%",
-            background: `linear-gradient(90deg, ${color}, ${color}88)`,
-            transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${idx * 150 + 600}ms`,
-            boxShadow: rate > 20 ? `0 0 8px rgba(${colorRgb},0.35)` : "none",
-          }}
-        />
-      </div>
-      <p className="text-[11px] text-slate-400 mt-1">총 {total}회 달성</p>
-    </Link>
-  );
-}
 
 function Ring({ pct, size = 96 }: { pct: number; size?: number }) {
   const r = (size - 14) / 2;
@@ -111,13 +70,11 @@ function CalendarHeatmap({ mounted, calData }: { mounted: boolean; calData: Reco
 
   return (
     <div>
-      {/* 요일 헤더 */}
       <div className="grid grid-cols-7 mb-1">
         {dow.map(d => (
           <div key={d} className="text-center text-[10px] font-bold text-slate-400 py-1">{d}</div>
         ))}
       </div>
-      {/* 날짜 그리드 */}
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           if (day === null) return <div key={`e${i}`} />;
@@ -144,7 +101,6 @@ function CalendarHeatmap({ mounted, calData }: { mounted: boolean; calData: Reco
           );
         })}
       </div>
-      {/* 범례 */}
       <div className="flex items-center gap-1.5 mt-3 justify-end">
         <span className="text-[10px] text-slate-400">적음</span>
         {HEAT_COLORS.map((c, i) => (
@@ -157,32 +113,14 @@ function CalendarHeatmap({ mounted, calData }: { mounted: boolean; calData: Reco
 }
 
 export function Stats() {
-  const { goals, verificationHistory } = useApp();
+  const { verificationHistory, groups } = useApp();
   const [mounted, setMounted] = useState(false);
   const completedVerifications = verificationHistory.filter(item => item.status === "completed");
 
-  // context goals → GoalStat 변환
-  const goalStats: GoalStat[] = goals.map(g => ({
-    id: g.id,
-    title: g.title,
-    color: g.color,
-    colorRgb: g.colorRgb,
-    rate: g.progress,
-    streak: g.streak,
-    total: completedVerifications.filter(item => item.goal_id === g.id).length,
-    days: 30,
-  }));
-
-  const maxStreak = Math.max(...goals.map(g => g.streak), 0);
+  // 월간 히트맵 데이터
   const calData: Record<number, number> = {};
-  const recentPhotoThumbs = completedVerifications
-    .filter(item => item.photo_url)
-    .slice(0, 5)
-    .map(item => ({
-      id: item.id,
-      src: item.photo_url as string,
-    }));
 
+  // 주간 데이터
   const startOfWeek = new Date();
   const currentDay = startOfWeek.getDay();
   const daysFromMonday = (currentDay + 6) % 7;
@@ -193,23 +131,21 @@ export function Stats() {
   const previousWeekCounts = Array.from({ length: 7 }, () => 0);
   const previousWeekStart = new Date(startOfWeek);
   previousWeekStart.setDate(previousWeekStart.getDate() - 7);
+
   completedVerifications.forEach(item => {
     const verifiedAt = new Date(item.verified_at);
+
+    // 주간
     const diffMs = verifiedAt.getTime() - startOfWeek.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays >= 0 && diffDays < 7) {
-      weeklyCounts[diffDays] += 1;
-    }
-    const previousDiffMs = verifiedAt.getTime() - previousWeekStart.getTime();
-    const previousDiffDays = Math.floor(previousDiffMs / (1000 * 60 * 60 * 24));
-    if (previousDiffDays >= 0 && previousDiffDays < 7) {
-      previousWeekCounts[previousDiffDays] += 1;
-    }
-    if (
-      verifiedAt.getFullYear() === CAL_YEAR &&
-      verifiedAt.getMonth() === CAL_MONTH &&
-      verifiedAt.getDate() <= CAL_TODAY
-    ) {
+    if (diffDays >= 0 && diffDays < 7) weeklyCounts[diffDays] += 1;
+
+    const prevDiffMs = verifiedAt.getTime() - previousWeekStart.getTime();
+    const prevDiffDays = Math.floor(prevDiffMs / (1000 * 60 * 60 * 24));
+    if (prevDiffDays >= 0 && prevDiffDays < 7) previousWeekCounts[prevDiffDays] += 1;
+
+    // 월간 히트맵
+    if (verifiedAt.getFullYear() === CAL_YEAR && verifiedAt.getMonth() === CAL_MONTH && verifiedAt.getDate() <= CAL_TODAY) {
       calData[verifiedAt.getDate()] = Math.min((calData[verifiedAt.getDate()] ?? 0) + 1, 3);
     }
   });
@@ -224,18 +160,37 @@ export function Stats() {
     hi: count === maxWeeklyCount && count > 0,
     count,
   }));
-
   const bestBar = maxWeeklyCount > 0 ? bars.find(item => item.hi) ?? null : null;
 
-  const avgProgress = goals.length > 0
-    ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length)
-    : 0;
+  // 연속 스트릭 (날짜 기준)
+  const completedDaySet = new Set(
+    completedVerifications.map(item => {
+      const d = new Date(item.verified_at);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    })
+  );
+  let maxStreak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  if (!completedDaySet.has(fmt(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (completedDaySet.has(fmt(cursor))) {
+    maxStreak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
   const totalDone = completedVerifications.length;
   const doneDays = Object.values(calData).filter(v => v > 0).length;
   const missedDays = Math.max(0, CAL_TODAY - doneDays);
   const remainingDays = new Date(CAL_YEAR, CAL_MONTH + 1, 0).getDate() - CAL_TODAY;
   const photoCount = completedVerifications.filter(item => item.photo_url).length;
-  const expectedRate = goals.length > 0 ? Math.min(100, avgProgress + Math.max(5, Math.round(maxStreak / 2))) : 0;
+  const recentPhotoThumbs = completedVerifications.filter(item => item.photo_url).slice(0, 5).map(item => ({ id: item.id, src: item.photo_url as string }));
+
+  // 달성률: 이번 달 오늘까지 중 인증 있는 날 비율
+  const successRate = CAL_TODAY > 0 ? Math.round((doneDays / CAL_TODAY) * 100) : 0;
+
+  // 참여 중인 챌린지 수
+  const joinedCount = groups.filter(g => g.joined).length;
 
   const MONTH_NAMES = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
   const calMonth = `${CAL_YEAR}년 ${MONTH_NAMES[CAL_MONTH]}`;
@@ -277,59 +232,57 @@ export function Stats() {
         {/* 주간 차트 */}
         <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
           style={{ animation: "st-fade 0.45s ease 60ms both" }}>
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-5">
-              <div>
-                <p className="text-[11px] text-slate-400 mb-1">이번 주 달성</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[40px] font-black text-slate-900 leading-none">{weeklyTotalDone}</span>
-                  <span className="text-[14px] text-slate-400">회</span>
-                  {weeklyDiff !== 0 && (
-                    <span className={`flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-[11px] font-bold ${weeklyDiff > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-500 bg-slate-100"}`}>
-                      <TrendingUp className="w-3 h-3" /> {weeklyDiff > 0 ? `+${weeklyDiff}` : weeklyDiff}회
-                    </span>
-                  )}
-                </div>
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <p className="text-[11px] text-slate-400 mb-1">이번 주 인증</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[40px] font-black text-slate-900 leading-none">{weeklyTotalDone}</span>
+                <span className="text-[14px] text-slate-400">회</span>
+                {weeklyDiff !== 0 && (
+                  <span className={`flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-[11px] font-bold ${weeklyDiff > 0 ? "text-emerald-600 bg-emerald-50" : "text-slate-500 bg-slate-100"}`}>
+                    <TrendingUp className="w-3 h-3" /> {weeklyDiff > 0 ? `+${weeklyDiff}` : weeklyDiff}회
+                  </span>
+                )}
               </div>
             </div>
-            {weeklyTotalDone > 0 ? (
-              <div className="flex items-end gap-1.5" style={{ height: 100 }}>
-                {bars.map(({ day, v, hi, count }, idx) => (
-                  <div key={day} className="flex flex-col items-center gap-2 flex-1">
-                    <div className="w-full relative rounded-lg overflow-hidden bg-slate-100" style={{ height: 80 }}>
-                      <div className="absolute bottom-0 left-0 right-0 rounded-t"
-                        style={{
-                          height: mounted ? `${v}%` : "0%",
-                          transition: "height 0.7s cubic-bezier(0.4,0,0.2,1)",
-                          transitionDelay: `${idx * 60 + 100}ms`,
-                          background: hi ? "linear-gradient(180deg, #FF6680 0%, #FF3355 100%)" : "rgba(255,51,85,0.15)",
-                          boxShadow: hi ? "0 0 16px rgba(255,51,85,0.35)" : "none",
-                        }} />
-                    </div>
-                    <span className="text-[9px] text-slate-300 leading-none">{count > 0 ? `${count}회` : "\u00A0"}</span>
-                    <span className={`text-[10px] font-bold ${hi ? "text-[#FF3355]" : "text-slate-400"}`}>{day}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-[100px] rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-center px-6">
-                <p className="text-[12px] text-slate-400 leading-relaxed">이번 주 인증 기록이 아직 없어요. 첫 인증이 생기면 요일별 패턴이 여기에 표시됩니다.</p>
-              </div>
-            )}
           </div>
+          {weeklyTotalDone > 0 ? (
+            <div className="flex items-end gap-1.5" style={{ height: 100 }}>
+              {bars.map(({ day, v, hi, count }, idx) => (
+                <div key={day} className="flex flex-col items-center gap-2 flex-1">
+                  <div className="w-full relative rounded-lg overflow-hidden bg-slate-100" style={{ height: 80 }}>
+                    <div className="absolute bottom-0 left-0 right-0 rounded-t"
+                      style={{
+                        height: mounted ? `${v}%` : "0%",
+                        transition: "height 0.7s cubic-bezier(0.4,0,0.2,1)",
+                        transitionDelay: `${idx * 60 + 100}ms`,
+                        background: hi ? "linear-gradient(180deg, #FF6680 0%, #FF3355 100%)" : "rgba(255,51,85,0.15)",
+                        boxShadow: hi ? "0 0 16px rgba(255,51,85,0.35)" : "none",
+                      }} />
+                  </div>
+                  <span className="text-[9px] text-slate-300 leading-none">{count > 0 ? `${count}회` : "\u00A0"}</span>
+                  <span className={`text-[10px] font-bold ${hi ? "text-[#FF3355]" : "text-slate-400"}`}>{day}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-[100px] rounded-2xl bg-slate-50 border border-dashed border-slate-200 flex items-center justify-center text-center px-6">
+              <p className="text-[12px] text-slate-400 leading-relaxed">이번 주 인증 기록이 아직 없어요. 챌린지에 참여해 첫 인증을 남겨보세요.</p>
+            </div>
+          )}
         </div>
 
-        {/* 성공률 + 연속 */}
+        {/* 달성률 + 연속 */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-3xl p-4 flex flex-col items-center justify-center bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             style={{ minHeight: 150, animation: "st-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) 200ms both" }}>
             <div className="relative">
-              <Ring pct={avgProgress / 100} size={90} />
+              <Ring pct={successRate / 100} size={90} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[20px] font-black text-slate-900">{avgProgress}%</span>
+                <span className="text-[20px] font-black text-slate-900">{successRate}%</span>
               </div>
             </div>
-            <p className="text-[11px] text-slate-400 mt-2 font-semibold">성공률</p>
+            <p className="text-[11px] text-slate-400 mt-2 font-semibold">이번 달 달성률</p>
           </div>
           <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             style={{ minHeight: 150, animation: "st-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) 280ms both" }}>
@@ -351,8 +304,8 @@ export function Stats() {
           </div>
           <p className="text-[13px] text-slate-600 leading-relaxed">
             {bestBar
-              ? <><span className="text-[#FF3355] font-bold">{bestBar.day}요일</span>에 인증이 가장 몰려 있어요. 이 패턴을 유지하면 평균 성공률 <span className="text-[#FF3355] font-bold">{expectedRate}%</span>까지 노려볼 수 있어요.</>
-              : <>아직 누적 인증이 많지 않아요. 오늘 첫 인증을 쌓으면 이번 달 히트맵이 바로 채워집니다.</>}
+              ? <><span className="text-[#FF3355] font-bold">{bestBar.day}요일</span>에 인증이 가장 많았어요. 이 패턴을 유지하면 챌린지 순위가 쭉쭉 올라갈 거예요.</>
+              : <>아직 누적 인증이 없어요. 챌린지에 참여해 오늘 첫 인증을 남겨보세요.</>}
           </p>
         </div>
 
@@ -360,8 +313,8 @@ export function Stats() {
         <div className="grid grid-cols-3 gap-2.5" style={{ animation: "st-fade 0.45s ease 380ms both" }}>
           {[
             { icon: Trophy,       label: "최고 연속", value: `${maxStreak}일`,    color: "#f59e0b", bg: "bg-amber-50"   },
-            { icon: Clock,        label: "목표 수",  value: `${goals.length}개`, color: "#FF3355", bg: "bg-[#FFE8EC]" },
-            { icon: CheckCircle2, label: "총 달성",  value: `${totalDone}회`,   color: "#10b981", bg: "bg-emerald-50" },
+            { icon: CheckCircle2, label: "총 인증",   value: `${totalDone}회`,   color: "#10b981", bg: "bg-emerald-50" },
+            { icon: Flame,        label: "참여 챌린지", value: `${joinedCount}개`, color: "#FF3355", bg: "bg-[#FFE8EC]" },
           ].map(({ icon: Icon, label, value, color, bg }) => (
             <div key={label} className="rounded-2xl p-3 text-center bg-white border border-black/[0.04]">
               <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center mx-auto mb-2`}>
@@ -380,7 +333,7 @@ export function Stats() {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-0.5">월간 달성 현황</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-0.5">월간 인증 현황</p>
               <h3 className="text-[16px] font-black text-slate-900">{calMonth}</h3>
             </div>
             <div className="flex gap-1">
@@ -396,12 +349,12 @@ export function Stats() {
           <div className="mt-4 pt-4 border-t border-slate-100 flex gap-4">
             <div className="flex-1 text-center">
               <p className="text-[22px] font-black text-[#FF3355] leading-none">{doneDays}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">달성일</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">인증일</p>
             </div>
             <div className="w-px bg-slate-100" />
             <div className="flex-1 text-center">
               <p className="text-[22px] font-black text-slate-700 leading-none">{missedDays}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">미달성</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">미인증</p>
             </div>
             <div className="w-px bg-slate-100" />
             <div className="flex-1 text-center">
@@ -411,39 +364,11 @@ export function Stats() {
           </div>
         </div>
 
-        {/* 목표별 달성률 브레이크다운 */}
-        <div
-          className="bg-white rounded-3xl p-5 border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
-          style={slide(500)}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 mb-0.5">목표별 분석</p>
-              <h3 className="text-[16px] font-black text-slate-900">개별 달성률</h3>
-            </div>
-            <div className="w-8 h-8 rounded-xl bg-[#FFE8EC] flex items-center justify-center">
-              <Target className="w-4 h-4 text-[#FF3355]" />
-            </div>
-          </div>
-          <div className="space-y-4">
-            {goalStats.length > 0 ? (
-              goalStats.map((g, i) => (
-                <GoalRow key={g.id} goal={g} idx={i} mounted={mounted} />
-              ))
-            ) : (
-              <div className="rounded-2xl bg-slate-50 border border-dashed border-slate-200 px-4 py-8 text-center">
-                <p className="text-[13px] font-semibold text-slate-500">아직 목표가 없어요</p>
-                <p className="text-[12px] text-slate-400 mt-1">목표를 만들면 달성률과 연속 기록이 여기서 집계됩니다.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 주간 리포트 진입 카드 */}
+        {/* 주간 리포트 */}
         <Link
           to="/stats/weekly-report"
           className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150"
-          style={slide(510)}
+          style={slide(500)}
         >
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
@@ -453,14 +378,14 @@ export function Stats() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-black text-slate-900">주간 리포트</p>
-            <p className="text-[12px] text-slate-400 mt-0.5">이번 주 목표별 달성 분석 보기</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">이번 주 챌린지별 인증 분석 보기</p>
           </div>
           <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
             <ChevronRight className="w-4 h-4 text-[#FF3355]" />
           </div>
         </Link>
 
-        {/* 인증 갤러리 진입 카드 */}
+        {/* 인증 갤러리 */}
         <Link
           to="/gallery"
           className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150"
@@ -470,13 +395,9 @@ export function Stats() {
             {recentPhotoThumbs.length > 0 ? (
               <div className="flex -space-x-2">
                 {recentPhotoThumbs.map(thumb => (
-                <img
-                  key={thumb.id}
-                  src={thumb.src}
-                  alt="최근 인증"
-                  className="w-10 h-10 rounded-xl border-2 border-white object-cover overflow-hidden shrink-0"
-                  referrerPolicy="no-referrer"
-                />
+                  <img key={thumb.id} src={thumb.src} alt="최근 인증"
+                    className="w-10 h-10 rounded-xl border-2 border-white object-cover overflow-hidden shrink-0"
+                    referrerPolicy="no-referrer" />
                 ))}
               </div>
             ) : (

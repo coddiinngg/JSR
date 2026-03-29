@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Camera, Flame, Send, Crown, ImageIcon, ChevronRight, Zap } from "lucide-react";
+import { Bell, Camera, Flame, Send, Crown, ChevronRight, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
@@ -147,7 +147,7 @@ const FEED_ITEMS: FeedItem[] = [
 
 export function Home() {
   const navigate = useNavigate();
-  const { nickname, goals, beginVerification, groups } = useApp();
+  const { nickname, beginVerification, groups } = useApp();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
   const [chats, setChats]                     = useState<ChatMsg[]>([]);
@@ -176,8 +176,6 @@ export function Home() {
     }
   }, [myGroups.length]);
 
-  const todayGoals    = goals.filter(g => !g.skippedToday && !g.completedToday);
-  const currentGoal   = todayGoals[0] ?? null;
   const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
   const rankers       = GROUP_RANKERS[selectedGroupId] ?? GROUP_RANKERS["1"];
 
@@ -275,15 +273,15 @@ export function Home() {
             {/* ─── 슬라이드 1: 오늘의 목표 ─── */}
             <div className="absolute inset-0 overflow-hidden"
               style={{ transform: slideTx(0), transition: trans, willChange: "transform" }}>
-              {/* 배경 이미지 영역 */}
-              <div className="absolute inset-0 flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#e2e8f0,#cbd5e1)" }}>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-2xl bg-white/60 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                    <ImageIcon className="w-6 h-6 text-slate-400" strokeWidth={1.5} />
-                  </div>
-                  <span className="text-slate-400 text-[11px] font-medium">이미지 영역</span>
-                </div>
+              {/* 배경 */}
+              <div className="absolute inset-0 overflow-hidden"
+                style={{ background: "linear-gradient(160deg, #0d0d18 0%, #1a0810 50%, #250b14 100%)" }}>
+                <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full opacity-25"
+                  style={{ background: "radial-gradient(circle, #FF3355 0%, transparent 70%)" }} />
+                <div className="absolute bottom-10 -left-16 w-56 h-56 rounded-full opacity-10"
+                  style={{ background: "radial-gradient(circle, #FF6680 0%, transparent 70%)" }} />
+                <div className="absolute inset-0 opacity-[0.03]"
+                  style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, #fff 0px, transparent 1px, transparent 32px)" }} />
               </div>
               {/* 그라데이션 오버레이 */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
@@ -477,12 +475,12 @@ export function Home() {
         <div className="px-4 pb-3 pt-2 shrink-0">
           <button
             onClick={() => {
-              if (currentGoal) {
-                const vType = (selectedGroup?.verifyType ?? "step_walk") as VerifyTypeKey;
-                beginVerification({ goalId: currentGoal.id, verifyType: vType });
+              if (selectedGroup) {
+                const vType = selectedGroup.verifyType as VerifyTypeKey;
+                beginVerification({ goalId: null, verifyType: vType });
                 navigate(`/verify/guide/${vType}`);
               } else {
-                navigate("/goal-setting/category");
+                navigate("/challenge");
               }
             }}
             className="relative w-full h-[68px] rounded-[20px] flex items-center px-5 gap-4 text-white active:scale-[0.97] transition-all duration-200 overflow-hidden"
@@ -499,7 +497,7 @@ export function Home() {
               <span className="text-white/55 text-[12px] font-medium leading-none truncate">
                 {selectedGroup
                   ? `${VERIFY_TYPES[(selectedGroup.verifyType as VerifyTypeKey) ?? "step_walk"]?.emoji} ${selectedGroup.goal}`
-                  : "목표를 추가해보세요"}
+                  : "챌린지에 참여하고 인증해보세요"}
               </span>
             </div>
             {/* 화살표 */}

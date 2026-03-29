@@ -20,6 +20,8 @@ export interface VerifyTypeData {
   checklist: string[];
   /** 거절될 수 있는 이유 */
   rejectReasons: string[];
+  /** 통과 예시 이미지 */
+  exampleImg: string;
 }
 
 export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
@@ -48,6 +50,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "5,000보 미만",
       "캡처가 아닌 재촬영 의심",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&fit=crop&q=80",
   },
 
   run_scenery: {
@@ -75,6 +78,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "너무 어두워서 장소 불명",
       "이전에 올린 사진과 동일",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=600&fit=crop&q=80",
   },
 
   quote_photo: {
@@ -102,6 +106,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "빛 반사로 텍스트 안 보임",
       "텍스트가 아닌 다른 콘텐츠",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&fit=crop&q=80",
   },
 
   book_cover: {
@@ -129,6 +134,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "조명 부족으로 표지 불분명",
       "이미 오늘 인증한 동일 표지",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&fit=crop&q=80",
   },
 
   celeb_pose: {
@@ -156,6 +162,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "몸이 잘려서 포즈 확인 불가",
       "너무 어두워서 구분 불가",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=600&fit=crop&q=80",
   },
 
   location_photo: {
@@ -183,6 +190,7 @@ export const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
       "이전 사진 재사용 의심",
       "실내 일반 공간 (무의미한 장소)",
     ],
+    exampleImg: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=600&fit=crop&q=80",
   },
 };
 

@@ -67,12 +67,6 @@ export interface GoalDraft {
   frequency: string;
 }
 
-/* ── 기본 목표 데이터 ── */
-const DEFAULT_GOALS: Goal[] = [
-  { id: "1", title: "30분 유산소",   color: "#FF3355", colorRgb: "255,51,85",  category: "exercise", frequency: "daily", notifyTime: "07:00", streak: 8, progress: 60, completedToday: false, skippedToday: false },
-  { id: "2", title: "물 2L 마시기",  color: "#38BDF8", colorRgb: "56,189,248", category: "habit",    frequency: "daily", notifyTime: "08:00", streak: 5, progress: 45, completedToday: false, skippedToday: false },
-  { id: "3", title: "독서 30페이지", color: "#FB923C", colorRgb: "251,146,60", category: "reading",  frequency: "daily", notifyTime: "21:00", streak: 0, progress: 0,  completedToday: false, skippedToday: false },
-];
 
 function dateKey(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -187,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [theme]);
   const [nickname, setNickname] = useState("이름");
   const [recoveryTickets, setRecoveryTickets] = useState(2);
-  const [goals, setGoals] = useState<Goal[]>(DEFAULT_GOALS);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [goalDraft, setGoalDraftState] = useState<GoalDraft>({ category: "exercise", frequency: "daily" });
   const [verifyingGoalId, setVerifyingGoalId] = useState<string | null>(null);
   const [verifyType, setVerifyType] = useState<VerifyTypeKey | null>(null);
@@ -231,7 +225,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     async function loadRemoteGoals() {
       if (!user) {
-        setGoals(DEFAULT_GOALS);
+        setGoals([]);
         setVerificationHistory([]);
         return;
       }

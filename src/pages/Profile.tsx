@@ -26,11 +26,11 @@ function useCountUp(target: number, duration = 900, delay = 400) {
 function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetVal: number; suffix: string; delay: number; key?: React.Key }) {
   const val = useCountUp(targetVal, 900, delay);
   return (
-    <div className="flex-1 rounded-2xl p-3 text-center bg-white/20 border border-white/25">
-      <p className="text-[20px] font-black text-white leading-none">
-        {val}<span className="text-[12px] font-semibold text-white/60 ml-0.5">{suffix}</span>
+    <div className="flex-1 rounded-2xl p-3 text-center bg-black/20 border border-white/[0.08] backdrop-blur-sm">
+      <p className="text-[22px] font-black text-white leading-none tabular-nums">
+        {val}<span className="text-[11px] font-semibold text-white/50 ml-0.5">{suffix}</span>
       </p>
-      <p className="text-[10px] text-white/50 mt-1">{label}</p>
+      <p className="text-[10px] text-white/45 mt-1 font-medium">{label}</p>
     </div>
   );
 }
@@ -67,12 +67,16 @@ export function Profile() {
       <div
         className="relative overflow-hidden"
         style={{
-          background: "linear-gradient(160deg, #FF3355 0%, #CC0030 55%, #A00025 100%)",
+          background: "linear-gradient(155deg, #FF5570 0%, #FF3355 35%, #C8002B 70%, #8B001F 100%)",
           paddingTop: 32,
           paddingBottom: 24,
         }}
       >
-        {/* 장식 원 */}
+        {/* 배경 장식 */}
+        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full opacity-20 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }} />
 
         <div className="relative z-10 px-5">
           {/* 아바타 + 캐릭터 행 */}
@@ -94,8 +98,7 @@ export function Profile() {
                 className="relative w-20 h-20 rounded-full bg-cover bg-center"
                 style={{
                   backgroundImage: `url("${avatarUrl}")`,
-                  outline: "3px solid #FF3355",
-                  outlineOffset: 1,
+                  boxShadow: "0 0 0 2px rgba(255,255,255,0.9), 0 0 0 4px rgba(255,51,85,0.5)",
                 }}
               />
               <Link
@@ -154,8 +157,8 @@ export function Profile() {
           <div className="relative z-10">
             <p className="text-[11px] text-slate-400 mb-1">보유한 복구권</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-[44px] font-black text-slate-900 leading-none">{recoveryTickets}</span>
-              <span className="text-[16px] text-slate-400 ml-1">개</span>
+              <span className="text-[36px] font-black text-slate-900 leading-none tabular-nums">{recoveryTickets}</span>
+              <span className="text-[14px] text-slate-400 ml-1 font-semibold">개</span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5">실패 시 사용 가능</p>
           </div>
@@ -235,12 +238,9 @@ export function Profile() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2 mt-5">계정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             <button
-              onClick={() => {
-                void signOut()
-                  .catch(error => {
-                    console.error("Failed to sign out", error);
-                  })
-                  .finally(() => navigate("/login"));
+              onClick={async () => {
+                try { await signOut(); } catch {}
+                navigate("/login");
               }}
               className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 transition-colors"
             >
