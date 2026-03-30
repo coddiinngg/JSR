@@ -215,57 +215,75 @@ export function Ranking() {
                 {period === "week" ? "이번 주" : "이번 달"} TOP 3
               </p>
 
-              <div className="flex items-end justify-center gap-3">
-                {top3.map(({ rank, name, seed, streak, rate }, i) => {
+              <div className="flex items-end justify-center gap-2">
+                {[
+                  top3.find(r => r.rank === 2),
+                  top3.find(r => r.rank === 1),
+                  top3.find(r => r.rank === 3),
+                ].filter((r): r is RankUser => !!r).map(({ rank, name, seed, streak, rate }, i) => {
                   const is1st = rank === 1;
+                  const is2nd = rank === 2;
                   const color = PODIUM_COLOR[rank];
+                  const avatarSize = is1st ? 76 : 58;
+                  const podiumH   = is1st ? 64 : is2nd ? 44 : 32;
                   return (
                     <div
                       key={rank}
-                      className={cn("flex flex-col items-center gap-1.5", is1st ? "order-2" : rank === 2 ? "order-1" : "order-3")}
+                      className="flex flex-col items-center gap-1.5 flex-1"
                       style={{
                         opacity: mounted ? 1 : 0,
-                        transform: mounted ? "translateY(0) scale(1)" : `translateY(${is1st ? 20 : 30}px) scale(0.85)`,
-                        transition: `opacity 0.6s ease ${i * 80 + 200}ms, transform 0.6s cubic-bezier(0.34,1.2,0.64,1) ${i * 80 + 200}ms`,
+                        transform: mounted ? "translateY(0) scale(1)" : `translateY(${is1st ? 20 : 28}px) scale(0.82)`,
+                        transition: `opacity 0.6s ease ${i * 90 + 180}ms, transform 0.6s cubic-bezier(0.34,1.2,0.64,1) ${i * 90 + 180}ms`,
                       }}
                     >
-                      {is1st && (
-                        <div className="text-[22px] mb-0.5" style={{ filter: "drop-shadow(0 2px 6px rgba(245,158,11,0.6))" }}>
+                      {is1st ? (
+                        <div className="text-[26px] mb-0.5" style={{ filter: "drop-shadow(0 2px 8px rgba(245,158,11,0.8))", animation: mounted ? "rk-pop 0.7s ease 0.5s both" : "none" }}>
                           👑
                         </div>
+                      ) : (
+                        <div className="h-7" />
                       )}
                       <div
-                        className="rounded-full overflow-hidden bg-white/10 border-2"
+                        className="rounded-full overflow-hidden bg-white/10"
                         style={{
-                          width: is1st ? 72 : 56,
-                          height: is1st ? 72 : 56,
-                          borderColor: color,
-                          boxShadow: is1st ? `0 0 0 4px ${color}30, 0 8px 24px rgba(0,0,0,0.3)` : `0 4px 12px rgba(0,0,0,0.2)`,
+                          width: avatarSize, height: avatarSize,
+                          border: `${is1st ? 3 : 2}px solid ${color}`,
+                          boxShadow: is1st
+                            ? `0 0 0 4px ${color}30, 0 8px 28px rgba(0,0,0,0.35), 0 0 20px ${color}40`
+                            : `0 0 0 3px ${color}20, 0 4px 14px rgba(0,0,0,0.25)`,
+                          animation: is1st && mounted ? "rk-glow 2.5s ease-in-out 1s infinite" : "none",
                         }}
                       >
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name} className="w-full h-full object-cover" />
                       </div>
                       <div
-                        className="px-2.5 py-0.5 rounded-full text-[11px] font-black"
-                        style={{ background: color, color: rank === 1 ? "#1A1A2E" : "white" }}
+                        className="px-2.5 py-0.5 rounded-full font-black leading-tight"
+                        style={{
+                          background: color,
+                          color: is1st ? "#1A1A2E" : "white",
+                          fontSize: is1st ? 12 : 10,
+                          boxShadow: is1st ? `0 4px 12px ${color}60` : "none",
+                        }}
                       >
-                        {rank}위
+                        {rank === 1 ? "🥇 1위" : rank === 2 ? "🥈 2위" : "🥉 3위"}
                       </div>
-                      <p className={cn("font-black text-white text-center", is1st ? "text-[14px]" : "text-[12px]")}>{name}</p>
-                      <div className="flex items-center gap-1">
-                        <Flame className="w-3 h-3 text-orange-400 fill-orange-400" />
-                        <span className="text-[10px] font-bold text-white/50">{streak}일</span>
+                      <p className="font-black text-white text-center px-1 leading-tight" style={{ fontSize: is1st ? 13 : 11 }}>{name}</p>
+                      <div className="flex items-center gap-0.5">
+                        <Flame className="w-2.5 h-2.5 text-orange-400 fill-orange-400" />
+                        <span className="font-bold text-white/50" style={{ fontSize: 9 }}>{streak}일</span>
                       </div>
                       <div
                         className="w-full rounded-t-xl mt-1 flex items-center justify-center"
                         style={{
-                          height: is1st ? 56 : rank === 2 ? 40 : 28,
-                          minWidth: is1st ? 76 : 60,
-                          background: `linear-gradient(180deg, ${color}40, ${color}18)`,
-                          border: `1px solid ${color}40`,
+                          height: podiumH,
+                          background: is1st
+                            ? `linear-gradient(180deg, ${color}70, ${color}30)`
+                            : `linear-gradient(180deg, ${color}35, ${color}10)`,
+                          border: `1px solid ${color}${is1st ? "60" : "30"}`,
+                          boxShadow: is1st ? `0 -4px 16px ${color}30` : "none",
                         }}
                       >
-                        <span className="text-[12px] font-black" style={{ color }}>{rate}%</span>
+                        <span className="font-black" style={{ color, fontSize: is1st ? 13 : 11 }}>{rate}%</span>
                       </div>
                     </div>
                   );

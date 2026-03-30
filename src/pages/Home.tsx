@@ -150,6 +150,7 @@ export function Home() {
   const { nickname, beginVerification, groups } = useApp();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
+  const [showAllFeed, setShowAllFeed]         = useState(false);
   const [chats, setChats]                     = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput]             = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState(() => myGroups[0]?.id ?? "1");
@@ -178,6 +179,15 @@ export function Home() {
 
   const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
   const rankers       = GROUP_RANKERS[selectedGroupId] ?? GROUP_RANKERS["1"];
+
+  function parseMinutes(time: string): number {
+    if (time === "방금 전") return 0;
+    const m = time.match(/^(\d+)분/);
+    return m ? parseInt(m[1]) : 999;
+  }
+  const recentFeed  = FEED_ITEMS.filter(item => parseMinutes(item.time) <= 30);
+  const hiddenCount = FEED_ITEMS.length - recentFeed.length;
+  const visibleFeed = showAllFeed ? FEED_ITEMS : recentFeed;
 
   /* ── 스와이프: 수평/수직 판별 ── */
   function touchBegin(x: number, y: number) {
@@ -518,8 +528,11 @@ export function Home() {
               <h3 className="text-[17px] font-black text-slate-900">실시간 인증 피드</h3>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <button className="text-[12px] font-bold text-slate-400 active:text-slate-600 transition-colors">
-              모두 보기
+            <button
+              onClick={() => setShowAllFeed(v => !v)}
+              className="text-[12px] font-bold text-slate-400 active:text-slate-600 transition-colors"
+            >
+              {showAllFeed ? "최근만 보기" : `전체보기${hiddenCount > 0 ? ` +${hiddenCount}` : ""}`}
             </button>
           </div>
 
@@ -527,13 +540,13 @@ export function Home() {
           <div className="grid grid-cols-2 gap-2.5">
             {/* 왼쪽 컬럼 */}
             <div className="flex flex-col gap-2.5">
-              {FEED_ITEMS.filter((_, i) => i % 2 === 0).map((item) => (
+              {visibleFeed.filter((_, i) => i % 2 === 0).map((item) => (
                 <FeedCard key={item.id} item={item} />
               ))}
             </div>
             {/* 오른쪽 컬럼 — 위로 오프셋 */}
             <div className="flex flex-col gap-2.5 mt-6">
-              {FEED_ITEMS.filter((_, i) => i % 2 === 1).map((item) => (
+              {visibleFeed.filter((_, i) => i % 2 === 1).map((item) => (
                 <FeedCard key={item.id} item={item} />
               ))}
             </div>

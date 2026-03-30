@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Share2, Users, Flame, Crown, Copy, Check, X, Camera, Trophy } from "lucide-react";
+import { ChevronLeft, Share2, Users, Flame, Crown, Copy, Check, X, Camera } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useApp } from "../../contexts/AppContext";
@@ -187,6 +187,7 @@ export function GroupDetail() {
   const [showJoinConfirm, setShowJoinConfirm]   = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [scrolled, setScrolled]                 = useState(false);
+  const [showMyRate, setShowMyRate]             = useState(false);
   const scrollRef                               = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -204,7 +205,6 @@ export function GroupDetail() {
   const top3      = detail.leaderboard.slice(0, 3);
   const restList  = detail.leaderboard.slice(3);
   const top3Seeds = detail.leaderboard.slice(0, 3).map(r => r.seed);
-  const badgeDays = Math.max(1, 30 - (group?.myStreak ?? 0));
   const vt        = VERIFY_TYPES[(group?.verifyType as VerifyTypeKey) ?? "step_walk"];
   const heroImg   = HERO_IMAGES[groupId] ?? HERO_IMAGES["1"];
   const actImgs   = ACTIVITY_IMGS[groupId] ?? ACTIVITY_IMGS["1"];
@@ -212,8 +212,9 @@ export function GroupDetail() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#F2F2F7] relative">
       <style>{`
-        @keyframes sheet-up { from{opacity:0;transform:translateY(100%);}to{opacity:1;transform:translateY(0);} }
+        @keyframes sheet-up  { from{opacity:0;transform:translateY(100%);}to{opacity:1;transform:translateY(0);} }
         @keyframes fade-in   { from{opacity:0;}to{opacity:1;} }
+        @keyframes noti-drop { from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);} }
       `}</style>
 
       {/* ── 스크롤 시 나타나는 컴팩트 바 ── */}
@@ -355,9 +356,9 @@ export function GroupDetail() {
                 <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
                   <span className="text-[16px]">{vt.emoji}</span>
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-[10px] text-slate-400 font-semibold">인증 방식</p>
-                  <p className="text-[13px] font-black text-slate-900">{vt.label}</p>
+                  <p className="text-[12px] font-black text-slate-900 leading-tight">{detail.rule}</p>
                 </div>
               </div>
             </div>
@@ -372,48 +373,75 @@ export function GroupDetail() {
           </div>
         </section>
 
-        {/* ── 챌린지 진행 현황 (비대칭 그리드) ── */}
+        {/* ── 내 달성률 (아코디언) ── */}
         <section className="px-4 mt-5">
-          <h3 className="text-[16px] font-black text-slate-900 mb-3 flex items-center gap-1.5">
-            챌린지 여정
-            <span className="text-[15px]">✨</span>
-          </h3>
-          <div className="grid grid-cols-6 gap-3"
+          <button
+            onClick={() => setShowMyRate(v => !v)}
+            className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-4 active:bg-slate-50 transition-colors"
             style={{
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
               opacity: mounted ? 1 : 0,
               transform: mounted ? "none" : "translateY(10px)",
-              transition: "opacity 0.5s ease 0.25s, transform 0.5s ease 0.25s",
-            }}>
-            {/* 내 달성률 카드 */}
-            <div className="col-span-4 rounded-2xl p-5 text-white"
-              style={{
-                background: "linear-gradient(135deg, #FF3355, #CC0030)",
-                boxShadow: "0 8px 24px -4px rgba(255,51,85,0.35)",
-              }}>
-              <p className="text-[11px] font-bold text-white/70 uppercase tracking-widest">내 달성률</p>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-[42px] font-black leading-none tabular-nums">{group.myRate}</span>
-                <span className="text-[18px] font-bold">%</span>
-              </div>
-              <div className="mt-4 h-2 w-full bg-white/25 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-1000"
-                  style={{ width: mounted ? `${group.myRate}%` : "0%" }} />
-              </div>
-              <div className="flex items-center gap-1 mt-2">
-                <Flame className="w-3 h-3 text-orange-300 fill-orange-200" />
-                <span className="text-white/70 text-[11px]">{group.myStreak}일 연속 달성 중</span>
+              transition: "opacity 0.5s ease 0.25s, transform 0.5s ease 0.25s, background-color 0.15s ease",
+            }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "linear-gradient(135deg,#FF3355,#CC0030)", boxShadow: "0 4px 12px rgba(255,51,85,0.3)" }}>
+              <Flame className="w-5 h-5 text-white fill-white/50" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-[14px] font-black text-slate-900">내 달성률</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-[#FF3355]" style={{ width: `${group.myRate}%`, transition: "width 0.8s ease" }} />
+                </div>
+                <span className="text-[11px] text-slate-400">{group.myStreak}일 연속</span>
               </div>
             </div>
-            {/* 배지 획득까지 */}
-            <div className="col-span-2 rounded-2xl p-4 flex flex-col justify-between"
-              style={{ background: "linear-gradient(135deg,#FFF7ED,#FED7AA)", border: "1px solid #FBD38D" }}>
-              <Trophy className="w-7 h-7 text-amber-500" />
-              <div>
-                <p className="text-[11px] font-black text-amber-700 leading-tight">배지 획득까지</p>
-                <p className="text-[22px] font-black text-amber-600 leading-none mt-0.5">D-{badgeDays}</p>
+            <span className="text-[20px] font-black text-[#FF3355] tabular-nums shrink-0">{group.myRate}%</span>
+            <ChevronLeft
+              className="w-4 h-4 text-slate-300 transition-transform duration-200 shrink-0"
+              style={{ transform: showMyRate ? "rotate(-90deg)" : "rotate(180deg)" }}
+            />
+          </button>
+
+          {showMyRate && (
+            <div className="mt-2 bg-white rounded-2xl overflow-hidden"
+              style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", animation: "noti-drop 0.2s ease both" }}>
+              {/* 달성률 상세 */}
+              <div className="px-4 pt-4 pb-3">
+                <div className="flex items-end justify-between mb-2">
+                  <div>
+                    <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-widest">내 달성률</p>
+                    <div className="flex items-baseline gap-1 mt-0.5">
+                      <span className="text-[38px] font-black text-slate-900 leading-none tabular-nums">{group.myRate}</span>
+                      <span className="text-[16px] font-bold text-slate-500">%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 mb-1">
+                    <Flame className="w-4 h-4 text-orange-400 fill-orange-300" />
+                    <span className="text-[13px] font-black text-orange-500">{group.myStreak}일 연속</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-1000"
+                    style={{ width: `${group.myRate}%`, background: "linear-gradient(90deg,#FF5C7A,#FF3355)" }} />
+                </div>
+              </div>
+              <div className="h-px bg-slate-50 mx-4" />
+              {/* 내 인증 사진 그리드 */}
+              <div className="px-4 pt-3 pb-4">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">내 인증 기록</p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {actImgs.map((src, i) => (
+                    <div key={i} className="aspect-square rounded-xl overflow-hidden bg-slate-100">
+                      <img src={src} alt="인증" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* ── 탭 ── */}

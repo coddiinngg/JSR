@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Share2, ArrowRight, Flame, Trophy, Zap, Star } from "lucide-react";
+import { Share2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
@@ -42,9 +42,6 @@ export function Success() {
   const [capturedGroup] = useState(() => groups.find(g => g.verifyType === ((verifyType as VerifyTypeKey) ?? "step_walk")) ?? null);
 
   const vt = VERIFY_TYPES[capturedKey];
-  const newStreak = (capturedGroup?.myStreak ?? 0) + 1;
-  const newRate   = Math.min((capturedGroup?.myRate ?? 0) + 5, 100);
-  const myRank    = capturedGroup?.myRank ?? 1;
 
   // 인증 완료 처리 (한 번만)
   useEffect(() => {
@@ -169,85 +166,6 @@ export function Success() {
           </div>
         )}
 
-        {/* ── 스트릭 카드 ── */}
-        <div
-          className="w-full max-w-sm bg-white rounded-3xl p-5 border border-slate-100 mb-3 relative overflow-hidden"
-          style={{ ...slide(370), boxShadow: `0 4px 20px ${vt.bgGrad[0]}14` }}
-        >
-          <div
-            className="pointer-events-none absolute -top-8 -right-8 w-32 h-32 rounded-full"
-            style={{ background: `radial-gradient(circle,${vt.bgGrad[0]}18 0%, transparent 70%)` }}
-          />
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-orange-50 border border-orange-100">
-              🔥
-            </div>
-            <div className="flex-1">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">연속 인증 기록</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[36px] font-black text-slate-900 leading-none">{newStreak}</span>
-                <span className="text-[14px] text-slate-500 font-semibold">일째</span>
-              </div>
-            </div>
-            <div
-              className="shrink-0 px-3 py-1.5 rounded-full text-white text-[11px] font-black"
-              style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})` }}
-            >
-              +1일 🎯
-            </div>
-          </div>
-        </div>
-
-        {/* ── 통계 그리드 ── */}
-        <div className="grid grid-cols-3 gap-2.5 w-full max-w-sm mb-4" style={slide(440)}>
-          {[
-            { icon: Flame,  label: "연속 기록", value: `${newStreak}일`,  color: "#f97316", bg: "#fff7ed" },
-            { icon: Trophy, label: "내 순위",   value: `${myRank}위`,     color: "#FF3355", bg: "#FFF0F3" },
-            { icon: Zap,    label: "달성률",    value: `${newRate}%`,     color: "#7c3aed", bg: "#f5f3ff" },
-          ].map(({ icon: Icon, label, value, color, bg }) => (
-            <div key={label} className="bg-white rounded-2xl p-3 flex flex-col items-center gap-1.5 border border-slate-100">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: bg }}>
-                <Icon className="w-4 h-4" style={{ color }} />
-              </div>
-              <p className="text-[15px] font-black text-slate-900">{value}</p>
-              <p className="text-[10px] text-slate-400">{label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── XP 배너 ── */}
-        <div
-          className="w-full max-w-sm rounded-2xl overflow-hidden mb-2"
-          style={{
-            ...slide(510),
-            background: "linear-gradient(110deg,#1A1A2E,#16213E)",
-            border: "1px solid rgba(255,255,255,0.08)",
-          }}
-        >
-          <div className="flex items-center gap-3 px-4 py-3.5">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: `${vt.bgGrad[0]}30`, border: `1px solid ${vt.bgGrad[0]}50` }}
-            >
-              <Star className="w-5 h-5" style={{ color: vt.bgGrad[0], fill: `${vt.bgGrad[0]}50` }} />
-            </div>
-            <div className="flex-1">
-              <p className="text-white/50 text-[11px] font-bold">챌린지 인증 보상</p>
-              <p className="text-white font-black text-[13px]">{capturedGroup?.title ?? vt.label}</p>
-            </div>
-            <p
-              className="text-[22px] font-black shrink-0"
-              style={{
-                color: vt.bgGrad[0],
-                opacity: mounted ? 1 : 0,
-                transform: mounted ? "scale(1)" : "scale(0.5)",
-                transition: "opacity 0.5s cubic-bezier(0.34,1.56,0.64,1) 600ms, transform 0.5s cubic-bezier(0.34,1.56,0.64,1) 600ms",
-              }}
-            >
-              +10 XP
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* ── 하단 버튼 ── */}
