@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
-  Flame, Target, TrendingUp, CheckCircle2, ArrowRight,
+  Flame, CheckCircle2, ArrowRight,
   Camera, Trophy, Users, Star, Zap, User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,36 @@ function cardAnim(delay: number, floatName = "ob-float-a") {
   return `ob-spring 0.6s cubic-bezier(0.34,1.56,0.64,1) ${delay}ms both, ${floatName} 5s ease-in-out ${delay + 600}ms infinite`;
 }
 
+/* ─── 슬라이드 0: 인트로 (로고) ───────────────── */
+function Slide0({ on }: { on: boolean }) {
+  return (
+    <div className="flex flex-col h-full items-center justify-center px-8 relative z-10">
+      {/* 로고 */}
+      <div
+        className="mb-8"
+        style={{ animation: on ? "ob-spring 0.7s cubic-bezier(0.34,1.56,0.64,1) 80ms both" : "none" }}
+      >
+        <img
+          src="/chally-logo-nobg.png"
+          alt="Chally"
+          className="w-40 h-40 object-contain drop-shadow-2xl"
+        />
+      </div>
+
+      {/* 타이틀 */}
+      <div
+        className="text-center"
+        style={{ animation: on ? "ob-fade 0.5s ease 350ms both" : "none" }}
+      >
+        <h1 className="text-[36px] font-black text-white leading-tight mb-3">
+          챌리<span className="text-[#FF9DB2]">(Chally)</span>
+        </h1>
+        <p className="text-white/50 text-[16px] font-medium">챌린지로 모임, 챌린지가 모임!</p>
+      </div>
+    </div>
+  );
+}
+
 /* ─── 슬라이드 1 ───────────────────────────────── */
 function Slide1({ on }: { on: boolean }) {
   return (
@@ -18,97 +48,85 @@ function Slide1({ on }: { on: boolean }) {
       <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
         <div className="relative w-[300px] h-[280px]">
 
-          {/* 메인 목표 카드 */}
+          {/* 그룹 멤버 카드 */}
           <div
-            className="absolute top-[16%] left-[2%] w-[72%] rounded-3xl p-5"
+            className="absolute top-[10%] left-[4%] w-[74%] rounded-3xl p-4"
             style={{
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(255,255,255,0.12)",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
               animation: on ? cardAnim(0) : "none",
             }}
           >
-            <div className="flex items-center gap-2.5 mb-3.5">
-              <div className="w-9 h-9 rounded-xl bg-[#FF3355] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(255,51,85,0.5)]">
-                <Target className="w-4 h-4 text-white" strokeWidth={2.2} />
-              </div>
-              <div>
-                <div className="text-white/45 text-[9px] font-bold uppercase tracking-widest">오늘의 목표</div>
-                <div className="text-white font-bold text-sm">30분 유산소</div>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-[#FF9DB2]" strokeWidth={2} />
+              <span className="text-white/45 text-[9px] font-bold uppercase tracking-widest">함께하는 챌린지</span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+            {[
+              { name: "김민준", rate: 98, color: "#f59e0b" },
+              { name: "이서연", rate: 94, color: "#94a3b8" },
+              { name: "나",     rate: 87, color: "#FF3355", me: true },
+            ].map((u, i) => (
               <div
-                className="h-full bg-gradient-to-r from-[#FF3355] to-[#FF7799] rounded-full"
-                style={{ animation: on ? "ob-bar 1s cubic-bezier(0.4,0,0.2,1) 500ms both" : "none" }}
-              />
-            </div>
-            <div className="flex justify-between mt-1.5">
-              <span className="text-white/35 text-[9px]">진행중</span>
-              <span className="text-[#FF9DB2] text-[9px] font-bold">60%</span>
+                key={u.name}
+                className={`flex items-center gap-2.5 py-1.5 ${u.me ? "rounded-xl px-2 -mx-2" : ""}`}
+                style={{
+                  ...(u.me ? { background: "rgba(255,51,85,0.15)", border: "1px solid rgba(255,51,85,0.2)" } : {}),
+                  animation: on ? `ob-slide-in-l 0.4s ease ${300 + i * 80}ms both` : "none",
+                }}
+              >
+                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-[9px] text-white/60">{u.name[0]}</span>
+                </div>
+                <span className={`text-xs font-semibold flex-1 ${u.me ? "text-[#FF9DB2]" : "text-white/70"}`}>{u.name}</span>
+                <span className="text-[10px] font-bold" style={{ color: u.color }}>{u.rate}%</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 참여 배지 */}
+          <div
+            className="absolute top-[2%] right-[0%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
+            style={{
+              background: "linear-gradient(135deg,#FF3355,#CC0030)",
+              boxShadow: "0 8px 28px rgba(255,51,85,0.5)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              animation: on ? cardAnim(130, "ob-float-b") : "none",
+            }}
+          >
+            <Users className="w-4 h-4 text-white" strokeWidth={2} />
+            <div>
+              <div className="text-white/60 text-[8px] font-semibold mb-0.5">지금 참여 중</div>
+              <div className="text-white font-extrabold text-sm leading-none">38명</div>
             </div>
           </div>
 
           {/* 연속 달성 배지 */}
           <div
-            className="absolute top-[2%] right-[2%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
+            className="absolute bottom-[8%] right-[2%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
             style={{
-              background: "linear-gradient(135deg, #f97316, #ef4444)",
-              boxShadow: "0 8px 28px rgba(239,68,68,0.45)",
+              background: "linear-gradient(135deg,#f97316,#ef4444)",
+              boxShadow: "0 8px 24px rgba(239,68,68,0.45)",
               border: "1px solid rgba(255,255,255,0.2)",
-              animation: on ? cardAnim(120, "ob-float-b") : "none",
+              animation: on ? cardAnim(280, "ob-float-c") : "none",
             }}
           >
-            <Flame className="w-5 h-5 text-white fill-white/80" />
+            <Flame className="w-4 h-4 text-white fill-white/80" />
             <div>
-              <div className="text-orange-100/70 text-[8px] font-semibold mb-0.5">연속 달성</div>
-              <div className="text-white font-extrabold text-base leading-none">7일</div>
-            </div>
-          </div>
-
-          {/* 인증 완료 */}
-          <div
-            className="absolute bottom-[8%] right-[6%] rounded-2xl px-3 py-2 flex items-center gap-1.5"
-            style={{
-              background: "linear-gradient(135deg, #10b981, #059669)",
-              boxShadow: "0 8px 24px rgba(16,185,129,0.4)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              animation: on ? cardAnim(250, "ob-float-c") : "none",
-            }}
-          >
-            <CheckCircle2 className="w-4 h-4 text-white" strokeWidth={2.5} />
-            <span className="text-white font-bold text-xs">어제 인증 완료</span>
-          </div>
-
-          {/* 달성률 */}
-          <div
-            className="absolute bottom-[12%] left-[-4%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,0.14)",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
-              animation: on ? cardAnim(380) : "none",
-            }}
-          >
-            <div className="w-7 h-7 rounded-xl bg-[#FF3355]/20 flex items-center justify-center">
-              <TrendingUp className="w-3.5 h-3.5 text-[#FF9DB2]" strokeWidth={2.5} />
-            </div>
-            <div>
-              <div className="text-white/35 text-[8px]">이번 달 달성률</div>
-              <div className="text-white font-extrabold text-sm">87%</div>
+              <div className="text-orange-100/60 text-[8px] font-semibold mb-0.5">연속 달성</div>
+              <div className="text-white font-extrabold text-sm leading-none">7일 🔥</div>
             </div>
           </div>
         </div>
       </div>
 
-      <TextBlock on={on} tag="체계적인 목표 달성 시스템" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
-        <span className="text-white">다짐은 왜 항상</span>
+      <TextBlock on={on} tag="함께하는 챌린지" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
+        <span className="text-white">목표가 있다면</span>
         <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>실패할까?</span>
+        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>이루어 내는 사람들</span>
       </TextBlock>
-      <SubText on={on}>혼자 하는 의지는 오래가지 않습니다.<br />체계적인 시스템으로 시작해보세요.</SubText>
+      <SubText on={on}>같은 목표를 바라보는 사람들과 함께 해요.</SubText>
     </div>
   );
 }
@@ -192,12 +210,12 @@ function Slide2({ on }: { on: boolean }) {
         </div>
       </div>
 
-      <TextBlock on={on} tag="AI 사진 인증 시스템" tagColor="text-violet-300" tagBg="bg-violet-500/15 border-violet-500/25">
+      <TextBlock on={on} tag="AI 사진 인증" tagColor="text-violet-300" tagBg="bg-violet-500/15 border-violet-500/25">
         <span className="text-white">사진 한 장으로</span>
         <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#a78bfa,#818cf8)" }}>증명하세요</span>
+        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#a78bfa,#818cf8)" }}>끝나는 인증</span>
       </TextBlock>
-      <SubText on={on}>목표를 달성하면 사진으로 인증하세요.<br />AI가 자동으로 확인하고 기록합니다.</SubText>
+      <SubText on={on}>챌린지를 가장 쉽게 인증해요.</SubText>
     </div>
   );
 }
@@ -280,12 +298,12 @@ function Slide3({ on }: { on: boolean }) {
         </div>
       </div>
 
-      <TextBlock on={on} tag="함께하는 챌린지" tagColor="text-amber-300" tagBg="bg-amber-500/15 border-amber-500/25">
-        <span className="text-white">같이 하면</span>
+      <TextBlock on={on} tag="실시간 공동 달성" tagColor="text-amber-300" tagBg="bg-amber-500/15 border-amber-500/25">
+        <span className="text-white">중요한 건</span>
         <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>더 오래갑니다</span>
+        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>꺾이지 않는 의지</span>
       </TextBlock>
-      <SubText on={on}>친구들과 챌린지로 서로 동기부여하고<br />랭킹으로 경쟁하며 목표를 달성하세요.</SubText>
+      <SubText on={on}>하고자 하는 마음만 있다면 하게 됩니다.</SubText>
     </div>
   );
 }
@@ -545,7 +563,7 @@ function SubText({ on, children }: { on: boolean; children: React.ReactNode }) {
   );
 }
 
-const TOTAL = 6;
+const TOTAL = 7;
 
 /* ─── 메인 ─────────────────────────────────────── */
 export function Onboarding() {
@@ -583,8 +601,8 @@ export function Onboarding() {
     navigate("/");
   };
 
-  // slide 3(닉네임)은 입력 필수, 나머지 선택 단계는 선택 없어도 통과 가능
-  const canNext = current !== 3 || nicknameInput.trim().length > 0;
+  // slide 4(닉네임)은 입력 필수, 나머지 선택 단계는 선택 없어도 통과 가능
+  const canNext = current !== 4 || nicknameInput.trim().length > 0;
 
   return (
     <div
@@ -606,12 +624,13 @@ export function Onboarding() {
           transition: "opacity 0.2s ease, transform 0.2s ease",
         }}
       >
-        {current === 0 && <Slide1 on={on} />}
-        {current === 1 && <Slide2 on={on} />}
-        {current === 2 && <Slide3 on={on} />}
-        {current === 3 && <Slide4 on={on} value={nicknameInput} onChange={setNicknameInput} />}
-        {current === 4 && <Slide5 on={on} selected={selectedCats} toggle={toggleCat} />}
-        {current === 5 && <Slide6 on={on} selected={selectedChallenges} toggle={toggleChallenge} />}
+        {current === 0 && <Slide0 on={on} />}
+        {current === 1 && <Slide1 on={on} />}
+        {current === 2 && <Slide2 on={on} />}
+        {current === 3 && <Slide3 on={on} />}
+        {current === 4 && <Slide4 on={on} value={nicknameInput} onChange={setNicknameInput} />}
+        {current === 5 && <Slide5 on={on} selected={selectedCats} toggle={toggleCat} />}
+        {current === 6 && <Slide6 on={on} selected={selectedChallenges} toggle={toggleChallenge} />}
       </div>
 
       {/* 하단 CTA */}
@@ -663,9 +682,9 @@ export function Onboarding() {
           </button>
         )}
 
-        {current <= 2 && (
+        {current >= 1 && current <= 3 && (
           <button
-            onClick={() => goTo(3)}
+            onClick={() => goTo(4)}
             className="text-white/30 text-sm font-medium hover:text-white/50 transition-colors"
           >
             건너뛰기
