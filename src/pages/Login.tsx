@@ -41,12 +41,11 @@ export function Login() {
       <div className="flex-1 flex flex-col overflow-y-auto relative z-10">
         {/* 로고 영역 */}
         <div className="flex flex-col items-center pt-16 pb-8 px-8">
-          <div
-            className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-[0_12px_40px_rgba(255,51,85,0.5)]"
-            style={{ background: "linear-gradient(135deg, #FF3355, #cc0030)" }}
-          >
-            <span className="text-white font-black text-2xl tracking-tighter">챌리</span>
-          </div>
+          <img
+            src="/chally-logo-nobg.png"
+            alt="챌리"
+            className="w-32 h-32 object-contain mb-2 drop-shadow-[0_8px_32px_rgba(255,51,85,0.45)]"
+          />
           <h1 className="text-[28px] font-black text-white leading-tight text-center">
             반가워요!<br />
             <span className="text-[#FF3355]">챌리</span>에 오신 걸 환영해요

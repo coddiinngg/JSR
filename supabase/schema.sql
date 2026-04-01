@@ -166,6 +166,31 @@ CREATE OR REPLACE TRIGGER profiles_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================================
+-- 보안 패치: 하루 중복 인증 방지 (DB 레벨)
+-- ============================================================
+
+-- 같은 goal을 같은 날 두 번 completed 상태로 인증하는 것을 막습니다.
+-- verified_at은 UTC 기준으로 날짜를 추출합니다.
+CREATE UNIQUE INDEX IF NOT EXISTS verifications_goal_user_day
+  ON verifications (goal_id, user_id, (verified_at::date))
+  WHERE status = 'completed';
+
+-- ============================================================
+-- XP 원자적 증가 함수 (Edge Function에서 호출)
+-- ============================================================
+CREATE OR REPLACE FUNCTION increment_user_xp(p_user_id UUID, p_amount INT DEFAULT 10)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  UPDATE profiles
+  SET xp_total = COALESCE(xp_total, 0) + p_amount
+  WHERE id = p_user_id;
+END;
+$$;
+
+-- ============================================================
 -- STORAGE BUCKET (Supabase 대시보드 > Storage에서 설정)
 -- ============================================================
 -- 버킷명: 'verifications' (공개)

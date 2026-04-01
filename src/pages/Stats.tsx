@@ -287,7 +287,7 @@ export function Stats() {
           <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
             style={{ minHeight: 150, animation: "st-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) 280ms both" }}>
             <div className="relative z-10 h-full flex flex-col justify-between">
-              <Flame className="w-7 h-7" style={{ color: "#fb923c", fill: "#fb923c" }} />
+              <Flame className="w-7 h-7" style={{ color: "#FF3355", fill: "#FF6680" }} />
               <div>
                 <p className="text-[42px] font-black text-slate-900 leading-none">{maxStreak}</p>
                 <p className="text-[12px] text-slate-400 mt-1">일 연속</p>
@@ -312,8 +312,8 @@ export function Stats() {
         {/* 미니 통계 3칸 */}
         <div className="grid grid-cols-3 gap-2.5" style={{ animation: "st-fade 0.45s ease 380ms both" }}>
           {[
-            { icon: Trophy,       label: "최고 연속", value: `${maxStreak}일`,    color: "#f59e0b", bg: "bg-amber-50"   },
-            { icon: CheckCircle2, label: "총 인증",   value: `${totalDone}회`,   color: "#10b981", bg: "bg-emerald-50" },
+            { icon: Trophy,       label: "최고 연속", value: `${maxStreak}일`,    color: "#FF3355", bg: "bg-[#FFE8EC]" },
+            { icon: CheckCircle2, label: "총 인증",   value: `${totalDone}회`,   color: "#FF3355", bg: "bg-[#FFE8EC]" },
             { icon: Flame,        label: "참여 챌린지", value: `${joinedCount}개`, color: "#FF3355", bg: "bg-[#FFE8EC]" },
           ].map(({ icon: Icon, label, value, color, bg }) => (
             <div key={label} className="rounded-2xl p-3 text-center bg-white border border-black/[0.04]">

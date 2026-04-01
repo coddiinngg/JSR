@@ -269,7 +269,7 @@ export function Ranking() {
                       </div>
                       <p className="font-black text-white text-center px-1 leading-tight" style={{ fontSize: is1st ? 13 : 11 }}>{name}</p>
                       <div className="flex items-center gap-0.5">
-                        <Flame className="w-2.5 h-2.5 text-orange-400 fill-orange-400" />
+                        <Flame className="w-2.5 h-2.5 text-[#FF3355] fill-[#FF6680]" />
                         <span className="font-bold text-white/50" style={{ fontSize: 9 }}>{streak}일</span>
                       </div>
                       <div

@@ -151,8 +151,9 @@ interface AppContextType {
   verificationHistory: DbVerification[];
   beginVerification: (params: { goalId?: string | null; verifyType?: VerifyTypeKey | null }) => void;
   setVerificationImage: (file: File | null) => void;
-  completeCurrentVerification: () => void;
+  completeCurrentVerification: (serverPhotoUrl?: string | null) => void;
   clearVerification: () => void;
+  refreshGoals: () => Promise<void>;
   // Groups
   groups: Group[];
   joinGroup: (id: string) => void;
@@ -381,9 +382,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     replaceVerificationImageUrl(null);
   }
 
-  function completeCurrentVerification() {
+  /**
+   * 인증 완료 처리.
+   * DB 저장/XP 지급은 Edge Function(verify-photo)이 이미 처리했으므로
+   * 여기서는 로컬 상태만 낙관적으로 업데이트하고 DB를 재로딩합니다.
+   */
+  function completeCurrentVerification(serverPhotoUrl?: string | null) {
     const goalId = verifyingGoalId;
-    const imageFile = verificationImageFile;
     const localImageUrl = verificationImageUrl;
 
     if (goalId) {
@@ -394,70 +399,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
           goal_id: goalId,
           user_id: user?.id ?? "guest",
           verified_at: new Date().toISOString(),
-          photo_url: localImageUrl,
+          photo_url: serverPhotoUrl ?? localImageUrl,
           status: "completed",
           xp_earned: 10,
         },
         ...prev,
       ]);
     }
-    if (verifyingGoalId) {
-      if (user) {
-        void (async () => {
-          let photoUrl: string | null = null;
 
-          if (imageFile) {
-            const extension = imageFile.name.includes(".")
-              ? imageFile.name.split(".").pop()
-              : "jpg";
-            const filePath = `${user.id}/${goalId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
-            const { error: uploadError } = await supabase.storage
-              .from("verifications")
-              .upload(filePath, imageFile, {
-                cacheControl: "3600",
-                upsert: false,
-              });
-
-            if (uploadError) {
-              console.error("Failed to upload verification image", uploadError);
-            } else {
-              photoUrl = supabase.storage.from("verifications").getPublicUrl(filePath).data.publicUrl;
-            }
-          }
-
-          const { error } = await supabase.from("verifications").insert({
-            goal_id: goalId,
-            user_id: user.id,
-            status: "completed",
-            photo_url: photoUrl,
-            xp_earned: 10,
-          } as unknown as never);
-
-          if (error) {
-            console.error("Failed to save verification", error);
-            return;
-          }
-
-          setVerificationHistory(prev =>
-            prev.map(item =>
-              item.id.startsWith("local-") && item.goal_id === goalId && item.photo_url === localImageUrl
-                ? { ...item, user_id: user.id, photo_url: photoUrl ?? item.photo_url }
-                : item
-            )
-          );
-
-          void supabase
-            .from("profiles")
-            .update({ xp_total: (profile?.xp_total ?? 0) + 10 } as unknown as never)
-            .eq("id", user.id)
-            .then(({ error: profileError }) => {
-              if (profileError) console.error("Failed to update xp total", profileError);
-              else void refreshProfile();
-            });
-        })();
-      }
-    }
     clearVerification();
+
+    // DB에서 최신 데이터를 백그라운드로 재로딩 (XP 반영 등)
+    void refreshGoals();
+  }
+
+  async function refreshGoals() {
+    if (!user) return;
+
+    const [{ data: goalsData, error: goalsError }, { data: verificationData, error: verificationsError }, { data: snoozeData, error: snoozeError }] = await Promise.all([
+      supabase.from("goals").select("*").order("created_at", { ascending: true }),
+      supabase.from("verifications").select("*").order("verified_at", { ascending: false }),
+      supabase.from("snooze_records").select("*").order("snoozed_at", { ascending: false }),
+    ]);
+
+    if (goalsError || verificationsError || snoozeError) return;
+
+    setVerificationHistory(verificationData ?? []);
+    const nextGoals = (goalsData ?? []).map(goal => {
+      const goalVerifications = (verificationData ?? []).filter(item => item.goal_id === goal.id);
+      const goalSnoozes = (snoozeData ?? []).filter(item => item.goal_id === goal.id);
+      return mapDbGoalToAppGoal(goal, goalVerifications, goalSnoozes);
+    });
+    setGoals(nextGoals);
+    void refreshProfile();
   }
 
   function joinGroup(id: string) {
@@ -476,7 +450,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       goals, goalDraft, setGoalDraft, addGoal, completeGoalToday, skipGoalToday,
       verifyingGoalId, setVerifyingGoalId,
       verifyType, setVerifyType,
-      verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification,
+      verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshGoals,
       groups, joinGroup, leaveGroup,
     }}>
       {children}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Share2, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 
@@ -32,7 +32,9 @@ function Confetti({ dots }: { dots: Dot[] }) {
 
 export function Success() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { verifyType, verificationImageUrl, groups, completeCurrentVerification } = useApp();
+  const serverPhotoUrl = (location.state as { photoUrl?: string | null } | null)?.photoUrl;
   const [mounted, setMounted] = useState(false);
 
   // completeCurrentVerification()이 clearVerification()을 호출해 verifyType이 null이 되므로
@@ -43,9 +45,9 @@ export function Success() {
 
   const vt = VERIFY_TYPES[capturedKey];
 
-  // 인증 완료 처리 (한 번만)
+  // 로컬 상태 완료 처리 (한 번만) — DB 저장은 Edge Function이 이미 완료
   useEffect(() => {
-    completeCurrentVerification();
+    completeCurrentVerification(serverPhotoUrl);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -251,7 +251,7 @@ export function Home() {
               {nickname.charAt(0)}
             </div>
             <div>
-              <p className="text-slate-400 text-[11px] font-medium leading-none mb-0.5">챌리</p>
+              <img src="/chally-logo-nobg.png" alt="챌리" className="h-[18px] object-contain mb-0.5" />
               <p className="text-slate-900 font-black text-[17px] leading-none">{nickname} 님</p>
             </div>
           </div>
@@ -365,7 +365,7 @@ export function Home() {
                 <div className="flex-1">
                   <p className="text-slate-800 font-black text-[14px]">내 현재 순위</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Flame className="w-3 h-3 text-orange-400 fill-orange-300" />
+                    <Flame className="w-3 h-3 text-[#FF3355] fill-[#FF3355]/50" />
                     <span className="text-slate-400 text-[11px]">{selectedGroup?.myStreak ?? 0}일 연속 달성 중</span>
                   </div>
                 </div>
