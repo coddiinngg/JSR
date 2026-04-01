@@ -322,9 +322,9 @@ export function GroupDetail() {
               transition: "opacity 0.5s ease 0.1s, transform 0.5s ease 0.1s",
             }}
           >
-            {/* 참여자 아바타 + 수 */}
-            <div className="flex items-center justify-between">
-              <div className="flex -space-x-2.5">
+            {/* 참여자 아바타 + 수 + 달성률 */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2.5 shrink-0">
                 {top3Seeds.map((seed, i) => (
                   <img key={i} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`}
                     className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 shrink-0" />
@@ -333,42 +333,27 @@ export function GroupDetail() {
                   <span className="text-[9px] font-black text-slate-500">+{Math.max(0, group.members - 3)}</span>
                 </div>
               </div>
+              <div className="flex-1" />
               <div className="text-right">
-                <p className="text-[11px] text-slate-400 font-medium">현재 참여 중</p>
-                <p className="text-[20px] font-black text-[#FF3355] leading-none">
-                  {group.members.toLocaleString()}명
-                </p>
+                <p className="text-[10px] text-slate-400 font-medium">현재 참여 중</p>
+                <p className="text-[18px] font-black text-[#FF3355] leading-none">{group.members.toLocaleString()}명</p>
+              </div>
+              <div className="w-px h-8 bg-slate-100 shrink-0" />
+              <div className="text-right shrink-0">
+                <p className="text-[10px] text-slate-400 font-medium">달성률</p>
+                <p className="text-[18px] font-black text-slate-900 leading-none">{group.rate}%</p>
               </div>
             </div>
 
-            {/* 정보 2열 그리드 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 rounded-xl p-3.5 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-[#FFE8EC] flex items-center justify-center shrink-0">
-                  <Users className="w-4 h-4 text-[#FF3355]" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-semibold">달성률</p>
-                  <p className="text-[14px] font-black text-slate-900">{group.rate}%</p>
-                </div>
+            {/* 인증 방식 */}
+            <div className="bg-slate-50 rounded-xl px-3.5 py-3 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                <span className="text-[16px]">{vt.emoji}</span>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3.5 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                  <span className="text-[16px]">{vt.emoji}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-slate-400 font-semibold">인증 방식</p>
-                  <p className="text-[12px] font-black text-slate-900 leading-tight">{detail.rule}</p>
-                </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-semibold">인증 방식</p>
+                <p className="text-[13px] font-black text-slate-900">{vt.label}</p>
               </div>
-            </div>
-
-            {/* 인증 규칙 */}
-            <div className="flex items-start gap-2.5 pt-1 border-t border-slate-50">
-              <div className="w-5 h-5 rounded-md bg-[#FFE8EC] flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-[10px]">📌</span>
-              </div>
-              <p className="text-[12px] text-slate-500 leading-snug flex-1">{detail.rule}</p>
             </div>
           </div>
         </section>
@@ -467,39 +452,53 @@ export function GroupDetail() {
         <div className="pb-6">
           {tab === "leaderboard" ? (
             <div className="px-4 mt-3 space-y-2.5">
-              {/* 상위 3인 포디엄 */}
-              <div className="flex gap-2">
-                {top3.map(({ rank, name, seed, streak, rate: r, isMe }) => (
-                  <div key={rank}
-                    className="flex-1 flex flex-col items-center py-4 px-2 rounded-2xl active:opacity-70 transition-opacity cursor-pointer"
-                    onClick={() => !isMe && navigate(`/user/${seed}`)}
-                    style={{
-                      background: rank === 1 ? "linear-gradient(160deg,rgba(255,51,85,0.08),white)" : "white",
-                      border: rank === 1 ? "1.5px solid rgba(255,51,85,0.2)" : "1px solid rgba(0,0,0,0.06)",
-                      boxShadow: rank === 1 ? "0 6px 24px rgba(255,51,85,0.12)" : "0 2px 10px rgba(0,0,0,0.04)",
-                      opacity: mounted ? 1 : 0,
-                      transform: mounted ? "none" : "translateY(12px)",
-                      transition: `opacity 0.45s ease ${rank * 60}ms, transform 0.45s ease ${rank * 60}ms`,
-                    }}>
-                    <span className="text-[22px] mb-2">{MEDAL[rank - 1]}</span>
-                    <div className="relative mb-2">
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
-                        className="w-12 h-12 rounded-full bg-slate-100" />
-                      {rank === 1 && (
-                        <Crown className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-4 h-4 text-amber-400 fill-amber-400" />
-                      )}
+              {/* 상위 3인 포디엄 — 2·1·3 배치 */}
+              <div className="flex gap-2 items-end" style={{ alignItems: "flex-end" }}>
+                {[
+                  top3.find(r => r.rank === 2),
+                  top3.find(r => r.rank === 1),
+                  top3.find(r => r.rank === 3),
+                ].filter((r): r is typeof top3[number] => !!r).map(({ rank, name, seed, streak, rate: r, isMe }, i) => {
+                  const is1st = rank === 1;
+                  return (
+                    <div key={rank}
+                      className="flex flex-col items-center px-2 rounded-2xl active:opacity-70 transition-opacity cursor-pointer overflow-hidden"
+                      onClick={() => !isMe && navigate(`/user/${seed}`)}
+                      style={{
+                        flex: is1st ? "1.4" : "1",
+                        height: is1st ? 210 : 178,
+                        paddingTop: is1st ? 20 : 14,
+                        paddingBottom: 14,
+                        background: is1st ? "linear-gradient(160deg,rgba(255,51,85,0.08),white)" : "white",
+                        border: is1st ? "1.5px solid rgba(255,51,85,0.2)" : "1px solid rgba(0,0,0,0.06)",
+                        boxShadow: is1st ? "0 6px 24px rgba(255,51,85,0.12)" : "0 2px 10px rgba(0,0,0,0.04)",
+                        opacity: mounted ? 1 : 0,
+                        transform: mounted ? "none" : "translateY(12px)",
+                        transition: `opacity 0.45s ease ${i * 60}ms, transform 0.45s ease ${i * 60}ms`,
+                      }}>
+                      <span className="text-[22px] mb-2 shrink-0">{MEDAL[rank - 1]}</span>
+                      <div className="relative mb-2 shrink-0">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
+                          className="rounded-full bg-slate-100"
+                          style={{ width: is1st ? 52 : 42, height: is1st ? 52 : 42 }} />
+                        {is1st && (
+                          <Crown className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 text-amber-400 fill-amber-400" />
+                        )}
+                      </div>
+                      <p className={cn("font-black text-center leading-tight mb-1.5 px-1 w-full truncate shrink-0",
+                        is1st ? "text-[12px]" : "text-[11px]",
+                        isMe ? "text-[#FF3355]" : "text-slate-800")}>
+                        {name}
+                      </p>
+                      <span className={cn("font-black tabular-nums shrink-0", is1st ? "text-[17px]" : "text-[15px]")}
+                        style={{ color: rateColor(r) }}>{r}%</span>
+                      <div className="flex items-center gap-0.5 mt-1 shrink-0">
+                        <Flame className="w-3 h-3 text-orange-400 fill-orange-300" />
+                        <span className="text-[10px] text-slate-400 font-semibold">{streak}일</span>
+                      </div>
                     </div>
-                    <p className={cn("text-[11px] font-black text-center leading-tight mb-1.5 px-1",
-                      isMe ? "text-[#FF3355]" : "text-slate-800")}>
-                      {name}{isMe && <span className="block text-[9px] text-[#FF3355]/70">나</span>}
-                    </p>
-                    <span className="text-[16px] font-black tabular-nums" style={{ color: rateColor(r) }}>{r}%</span>
-                    <div className="flex items-center gap-0.5 mt-1">
-                      <Flame className="w-3 h-3 text-orange-400 fill-orange-300" />
-                      <span className="text-[10px] text-slate-400 font-semibold">{streak}일</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* 4위~ */}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            font-family: 'Be+Vietnam+Pro', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-container": "#431200",
+                        "surface-container-high": "#e0e3e4",
+                        "outline-variant": "#abadae",
+                        "primary": "#a33800",
+                        "primary-fixed": "#ff7941",
+                        "on-secondary-fixed-variant": "#00694c",
+                        "secondary-dim": "#005b42",
+                        "secondary": "#00694c",
+                        "surface-variant": "#dadddf",
+                        "surface-container": "#e6e8ea",
+                        "primary-container": "#ff7941",
+                        "surface-container-highest": "#dadddf",
+                        "tertiary-fixed": "#e699fd",
+                        "outline": "#757778",
+                        "surface-bright": "#f5f6f7",
+                        "on-secondary-fixed": "#004934",
+                        "on-tertiary": "#ffedfe",
+                        "inverse-primary": "#fc5b00",
+                        "on-primary-fixed-variant": "#531900",
+                        "tertiary-dim": "#76318d",
+                        "primary-dim": "#8f3000",
+                        "secondary-container": "#67fcc6",
+                        "on-secondary-container": "#005e44",
+                        "tertiary-fixed-dim": "#d88cee",
+                        "surface-tint": "#a33800",
+                        "on-tertiary-container": "#570e6f",
+                        "on-primary-fixed": "#000000",
+                        "on-tertiary-fixed-variant": "#611b79",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary": "#ffefeb",
+                        "on-surface": "#2c2f30",
+                        "primary-fixed-dim": "#ff5e07",
+                        "on-secondary": "#c7ffe4",
+                        "on-tertiary-fixed": "#360049",
+                        "surface-container-low": "#eff1f2",
+                        "surface": "#f5f6f7",
+                        "error": "#b31b25",
+                        "secondary-fixed": "#67fcc6",
+                        "on-error-container": "#570008",
+                        "error-dim": "#9f0519",
+                        "background": "#f5f6f7",
+                        "tertiary": "#833e9a",
+                        "secondary-fixed-dim": "#56edb8",
+                        "on-error": "#ffefee",
+                        "on-background": "#2c2f30",
+                        "inverse-surface": "#0c0f10",
+                        "on-surface-variant": "#595c5d",
+                        "inverse-on-surface": "#9b9d9e",
+                        "surface-dim": "#d1d5d7",
+                        "error-container": "#fb5151",
+                        "tertiary-container": "#e699fd"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-sm shadow-zinc-200/50 dark:shadow-none flex items-center justify-between px-6 h-16 w-full">
+<button class="text-zinc-500 hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-orange-700 dark:text-orange-500 font-['Plus_Jakarta_Sans'] font-bold text-lg">상세 정보</h1>
+<button class="text-zinc-500 hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">share</span>
+</button>
+</header>
+<main class="pt-16 max-w-2xl mx-auto">
+<!-- Hero Section -->
+<section class="relative w-full aspect-[4/5] md:aspect-video overflow-hidden">
+<img alt="Morning Yoga" class="w-full h-full object-cover" data-alt="Peaceful morning yoga session in a bright airy studio with sunbeams filtering through large windows and a person in a mountain pose" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9b-n_d8C_-PAQx0snPRYvqqDpXXRstse4DvMx3sQYfr3fgjNSFaisPm1jAVF64061qc8bTX7ESeRkcgyA4asY6d973N9phl_JaR6j_eBnwazwu-kvKavYC-ocIWvovN2LDmBt0iMKBcH5uNmKaY6bqJ9gYxfsaDXvTPwq9DFMGCVK0BjcBwumkmKH7XPl5KI_n8iEleWLfXs-sLCndEPxOwHxtnSk294Qf0w6aEduCWWWhDl4x-KOA-BZ9KAI4QqL2uwCUXWuXxia"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-8 left-6 right-6">
+<span class="inline-block px-3 py-1 bg-primary text-on-primary rounded-full text-xs font-bold mb-3">인기 챌린지</span>
+<h2 class="text-3xl font-black text-white tracking-tight leading-tight">30일 아침 요가</h2>
+<p class="text-white/80 mt-2 font-medium">건강한 아침 습관으로 하루를 활기차게 시작하세요.</p>
+</div>
+</section>
+<!-- Stats & Info -->
+<section class="px-6 -mt-10 relative z-10">
+<div class="bg-surface-container-lowest rounded-lg p-6 shadow-[0_10px_40px_-15px_rgba(163,56,0,0.1)] space-y-6">
+<!-- Participants -->
+<div class="flex items-center justify-between">
+<div class="flex -space-x-3">
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover" data-alt="Close-up portrait of a smiling woman with a natural look" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_zAZLGbE0Nek1ehcSrQq9BQn0bgbM7cmG6GthPsVI2aAGGVWNhpPUzpLu6CsOf5Go6SupseDivwaH1pnHrDwNwcQAvXXVAzgdiSDKS0nr-xJ6pIzOp_6yyKyx4vD9LFqaXmU7RdBWe2-hHTpBNoEWCv7nwFAC9LaJt1uKpgYew8i0jXsunNCGQUhGnPzrX2E57FNrjwD9vRwhS3WLXMle8dx2tvcU8o873hZk5uGgZGvAhs1_tgsSCTNx8pb6msSSEkw4Iqx2JeWl"/>
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover" data-alt="Portrait of a young man with a friendly expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBORXhXkDkGZTMFnJCF5zEQGvk-5QR2-ryeEQ0_p5_sXQlrqaY3_EMdcKPS31HkYWZUpmzzX8hx3xQf8Ctavo0wVaBThZgYfRofM_n0HK07GAnMdPF6Y4btnvHVSqNDkma8_Pa24tWlM_fy9O8R7u_IJie0mnj-UCyer2-buiCsKUWHkiWkNF_D3HtuubIO1dRWg_wY1_LJlnbAccXS22_9eui5bHIb5fVK8zFAxaDmzU9mDjaZJUVTNFCIoEIpJFMqEr3SnbK4RffW"/>
+<img class="w-10 h-10 rounded-full border-2 border-white object-cover" data-alt="Happy professional woman in outdoor setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-x-3tMHK62_qSgQPzR1TAT4dWPEtvXAaV9JN9JaEDltFfp5cQ8Hc1Jq_aYQ3rgIBkiHSUyRcARWV4AC3ri7Ze0V6OvyYXucsQSBvB519JaqTL3nACg7uid9MdDintrp1hXEgy8ijeqYmmqQiT_ioZ7Zos2W8hp-yO3qRputqSKqAqmU3YaccQfd08VIrQr8ONYaa9BcwWKVmdDpK32m4_atEla7PMnLC4bO6-zW7zCgy79yLwXrKrKMLLgAf18ec-fCEWhd4SVa9F"/>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-on-surface-variant">+1.2k</div>
+</div>
+<div class="text-right">
+<p class="text-xs text-on-surface-variant font-medium">현재 참여 중</p>
+<p class="text-lg font-bold text-primary leading-none">1,248명</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-lg flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-primary text-xl">calendar_month</span>
+</div>
+<div>
+<p class="text-[10px] text-on-surface-variant font-semibold">기간</p>
+<p class="text-sm font-bold">10월 1일 ~ 30일</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg flex items-center gap-3">
+<div class="bg-primary/10 p-2 rounded-full">
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+</div>
+<div>
+<p class="text-[10px] text-on-surface-variant font-semibold">시간</p>
+<p class="text-sm font-bold">오전 7:00</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Progress Tracking (Asymmetric Grid) -->
+<section class="mt-10 px-6">
+<h3 class="text-xl font-extrabold tracking-tight mb-4 flex items-center gap-2">
+                챌린지 여정 <span class="material-symbols-outlined text-primary">auto_awesome</span>
+</h3>
+<div class="grid grid-cols-6 gap-3">
+<div class="col-span-4 bg-primary rounded-lg p-5 text-white shadow-lg shadow-primary/20">
+<p class="text-xs font-medium opacity-90">내 달성률</p>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-4xl font-black">75</span>
+<span class="text-lg font-bold">%</span>
+</div>
+<div class="mt-4 h-2 w-full bg-white/30 rounded-full overflow-hidden">
+<div class="h-full bg-white rounded-full w-[75%]"></div>
+</div>
+</div>
+<div class="col-span-2 bg-secondary-container rounded-lg p-5 flex flex-col justify-between">
+<span class="material-symbols-outlined text-on-secondary-container text-3xl">emoji_events</span>
+<p class="text-xs font-bold text-on-secondary-container leading-tight">배지 획득까지<br/>D-3</p>
+</div>
+</div>
+</section>
+<!-- Certification Feed -->
+<section class="mt-12 px-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-extrabold tracking-tight">인증 피드</h3>
+<button class="text-sm font-bold text-primary flex items-center gap-1">
+                    전체보기 <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<!-- Bento-style Grid for Feed -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+<div class="relative rounded-lg overflow-hidden aspect-square group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Close up of yoga mat with a bottle of water and a towel in a sunny room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpZe4Kw12hgxH2pGeoFqoBV3OMW9DN1cy5EyGnGf6v21ExaV8R2qHfkWRX6Jh5iOtyafVDsj4QDM92p-PnSaw893g7HVhYFV4fESSQgAvw7Irr6s3ni-RQLSKtHZWMnKOkRQQhms6KhQDdWpqTW3F_dh4oTLI1ZWYL0YrDYKzuh-VMEDAqIsoYyudi5Y9Y72-XE4U46z8o0YUiR6tb_3r9POEbqzenIt2oeJQlkJCxZRF5xWjQwMFhGSa1OTohOE77B8GbSfz5w-1j"/>
+<div class="absolute top-2 right-2 bg-white/20 backdrop-blur-md rounded-full p-1">
+<span class="material-symbols-outlined text-white text-xs" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+</div>
+<div class="relative rounded-lg overflow-hidden aspect-square group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Person practicing a tree pose yoga stance in front of a mirror" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8yrMK0xFp6qTMWo-AEqvx5lEEasEGFaq2YDO1V5mJFLxqIGnJ_fh7eP5MmlzcTnhudRkPkEe9mW_E47M2p-NY-sBEGX3fFhKpodfC60tHXlyb_6WMZs786N8ML7Ofs2QBcSkd4VXqkTuI7HPDe8n48iXx3vgfadVM6vJsX8LxxCdW-wjzf2fzHUZBk_Q9fbDYfDS1nZtxgJ5tJSbmBxaX-iqOZ8ArUEJUDSJCD5_96usDk0A8gGb0T_T7VLfWEq7CjJbmATbNrJfJ"/>
+<div class="absolute bottom-2 left-2 flex items-center gap-1">
+<img class="w-5 h-5 rounded-full border border-white" data-alt="Profile avatar of a man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA63N84ts1HEoZGweWTgOilKkdnMKrHPdJT7W3w4t19drHCKERjJtb-xskE0zyU0dyjPyml9MRRwMTtQXHGEgxrXB9AqBQy2UD1TUde8tITqHwYKxmb_jb9eZpTQb7_zoPRoHM25kgshfleMAfGl-Ck1LVc1IyqorIen-dScaqb84hVxKKKY3r8JJ7Lh8U9PDiLHTBkb9DyNgv6n4WUZsnjorkgZiZiK1RPePVMkwXe21OKhIMO0zupJR08eY453KR9IrzL1YK53jwv"/>
+<span class="text-[10px] text-white font-bold">김민수</span>
+</div>
+</div>
+<div class="relative rounded-lg overflow-hidden aspect-[3/4] md:aspect-square group md:row-span-2">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Aerial view of colorful yoga mats arranged in a circle in a gym" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByS77CwsGDyh-kkUCPybhWIqqQ7p0xTg-FoL2pT93dmeZm3wmVu2J_tlZDLkxXyNsEwjdK5Qqdfqsk4VnPeEbncUtGE5Hhip7FKOvHTrPbwkxxldUedecwERUwhrpRyXfKVJgu_Z6CCvws8b67nEvpfdadtPAX5kbP8xSaojeoV2xVXWQW4wsY7Q_yY8cp4HkwwgzAbOX5L7zp8RR4yn5KdgBQXfAZIVoO-iIFDdttU19Sau2CIRKD8LKLfW7FMgdfoz9yUzmMLGL1"/>
+<div class="absolute inset-0 bg-black/20"></div>
+<div class="absolute bottom-4 left-4">
+<p class="text-white text-xs font-bold">오전 루틴 성공!</p>
+</div>
+</div>
+<div class="relative rounded-lg overflow-hidden aspect-square group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Sun rising through a window highlighting a serene yoga space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5GypOXA5mEhm3ZNQt4pUohTiBU89pF-PmGi3ab9LwuKlvWm-RTKdnhhaeqsk_crZmOtexWlrIRD-1Y3-BPrJkZoH_Lt-Zdu10901Yxp60T08pN7W70VSaYxdu1y2Ygx6hMeXyK51-jJpVDnw-ugfzKG96BbUuJHbBoEFoOJnKtU6Bdt6jPyQvnmZtv_oRgjDJW6nYdNYJdEij3g8w7Sg__xAdmef_8WT5HxUAJIw8KMi_mpvf4T3rpuXt4Qha8LTwOMUJBkzC0Pcf"/>
+</div>
+<div class="relative rounded-lg overflow-hidden aspect-square group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Two people high-fiving after a workout session in a minimalist studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0q-xwoh9-QWswiDUckfSMcQq3yoAdZ5QOspnLFHrRI6F7v7fLdpRxwG00W0ywJeH_c7zzjDMO0QegVl09s7NfFMHI6kY9p3by3fk7cKrMMye_v84hFVDAvLAS6AQokEjqiQlgNOQIxx19kC9yZDL6xqa8ujaRd86Pojv3YeUbbXFwG8J441occAzks3f5TwRndKUh98jB1oapD2O3tRFbqbPSaUBI1eBlSGamvadcLR9AHQA09nC--f7Z08_b_H-yal7LoOTRjpn-"/>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button Area (Contextual) -->
+<div class="fixed bottom-28 left-0 w-full flex justify-center px-6 z-40">
+<button class="w-full max-w-md bg-gradient-to-r from-primary to-primary-container text-on-primary py-4 rounded-xl font-bold text-lg shadow-[0_10px_30px_-5px_rgba(163,56,0,0.4)] active:scale-95 transition-all duration-300">
+            오늘의 인증하기
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-24 flex justify-around items-center px-4 pb-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl rounded-t-[3rem] z-50 shadow-[0_-10px_40px_-15px_rgba(163,56,0,0.1)]">
+<button class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-orange-600 dark:hover:text-orange-400 active:scale-90 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-['Be_Vietnam_Pro'] text-[10px] font-semibold">홈</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded-full px-5 py-2 scale-110 active:scale-90 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined mb-1">emoji_events</span>
+<span class="font-['Be_Vietnam_Pro'] text-[10px] font-semibold">챌린지</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-orange-600 dark:hover:text-orange-400 active:scale-90 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined mb-1">leaderboard</span>
+<span class="font-['Be_Vietnam_Pro'] text-[10px] font-semibold">통계</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-5 py-2 hover:text-orange-600 dark:hover:text-orange-400 active:scale-90 transition-all duration-300 ease-out">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Be_Vietnam_Pro'] text-[10px] font-semibold">프로필</span>
+</button>
+</nav>
+</body></html>
