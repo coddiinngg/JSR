@@ -51,8 +51,8 @@ export function VerifySelect() {
                 onClick={() => pick(key)}
                 className="relative overflow-hidden rounded-2xl p-4 text-left active:scale-[0.97] transition-transform"
                 style={{
-                  background: `linear-gradient(135deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})`,
-                  boxShadow: `0 6px 20px ${vt.bgGrad[0]}40`,
+                  background: "linear-gradient(135deg, #FF3355, #FF6680)",
+                  boxShadow: "0 6px 20px rgba(255,51,85,0.3)",
                   opacity: mounted ? 1 : 0,
                   transform: mounted ? "translateY(0)" : "translateY(16px)",
                   transition: `opacity 0.45s ease ${i * 70}ms, transform 0.45s cubic-bezier(0.4,0,0.2,1) ${i * 70}ms`,

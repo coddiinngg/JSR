@@ -116,7 +116,7 @@ export function Success() {
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: `${vt.bgGrad[0]}20`,
+                background: "rgba(255,51,85,0.12)",
                 transform: "scale(1.4)",
                 animation: mounted ? "suc-glow 2s ease-in-out infinite 0.5s" : "none",
               }}
@@ -124,8 +124,8 @@ export function Success() {
             <div
               className="w-24 h-24 rounded-full flex items-center justify-center text-[44px] relative z-10"
               style={{
-                background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`,
-                boxShadow: `0 16px 40px -8px ${vt.bgGrad[0]}66`,
+                background: "linear-gradient(135deg,#FF3355,#FF6680)",
+                boxShadow: "0 16px 40px -8px rgba(255,51,85,0.4)",
                 animation: mounted ? "suc-bounce 0.6s cubic-bezier(0.34,1.56,0.64,1) 80ms both" : "none",
               }}
             >
@@ -159,7 +159,7 @@ export function Success() {
               {/* 오버레이 배지 */}
               <div
                 className="absolute bottom-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, boxShadow: `0 4px 12px ${vt.bgGrad[0]}66` }}
+                style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)", boxShadow: "0 4px 12px rgba(255,51,85,0.4)" }}
               >
                 <span className="text-[13px]">{vt.emoji}</span>
                 <span className="text-white font-bold text-[12px]">{vt.label} 인증</span>
@@ -176,8 +176,8 @@ export function Success() {
           onClick={() => navigate("/")}
           className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[16px] active:scale-[0.98] transition-transform mb-3"
           style={{
-            background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`,
-            boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}55`,
+            background: "linear-gradient(135deg,#FF3355,#FF6680)",
+            boxShadow: "0 8px 24px -4px rgba(255,51,85,0.35)",
           }}
         >
           홈으로

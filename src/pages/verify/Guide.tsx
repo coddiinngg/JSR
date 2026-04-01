@@ -51,7 +51,7 @@ export function VerifyGuide() {
           style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 40%, rgba(10,10,15,0.95) 100%)` }} />
         {/* 컬러 글로우 */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: `radial-gradient(ellipse at 60% 80%, ${vt.bgGrad[0]}30 0%, transparent 65%)` }} />
+          style={{ background: `radial-gradient(ellipse at 60% 80%, ${rgba(255,51,85,0.18) 0%, transparent 65%)` }} />
 
         {/* 뒤로가기 */}
         <button
@@ -65,7 +65,7 @@ export function VerifyGuide() {
         <div className="absolute bottom-5 left-5 z-10" style={fade(80)}>
           <div
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold mb-3"
-            style={{ background: `${vt.bgGrad[0]}30`, border: `1px solid ${vt.bgGrad[0]}50`, color: vt.bgGrad[0] }}
+            style={{ background: "rgba(255,51,85,0.18)", border: "1px solid rgba(255,51,85,0.35)", color: "#FF3355" }}
           >
             {vt.emoji} {vt.label}
           </div>
@@ -85,7 +85,7 @@ export function VerifyGuide() {
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <div
                   className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white mt-0.5"
-                  style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})` }}
+                  style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)" }}
                 >
                   {i + 1}
                 </div>
@@ -102,9 +102,9 @@ export function VerifyGuide() {
             {vt.checklist.map((item, i) => (
               <div key={i}
                 className="flex items-center gap-2 p-3 rounded-xl"
-                style={{ background: `${vt.bgGrad[0]}12`, border: `1px solid ${vt.bgGrad[0]}25` }}
+                style={{ background: "rgba(255,51,85,0.07)", border: "1px solid rgba(255,51,85,0.15)" }}
               >
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: vt.bgGrad[0] }} strokeWidth={2.5} />
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: "#FF3355" }} strokeWidth={2.5} />
                 <span className="text-white/70 text-[11px] font-medium leading-tight">{item}</span>
               </div>
             ))}
@@ -129,8 +129,8 @@ export function VerifyGuide() {
           onClick={() => navigate("/verify/camera")}
           className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl text-white font-black text-[16px] active:scale-[0.97] transition-transform"
           style={{
-            background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`,
-            boxShadow: `0 8px 28px -4px ${vt.bgGrad[0]}55`,
+            background: "linear-gradient(135deg,#FF3355,#FF6680)",
+            boxShadow: "0 8px 28px -4px rgba(255,51,85,0.35)",
           }}
         >
           <Camera className="w-5 h-5" />

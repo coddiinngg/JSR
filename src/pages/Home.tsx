@@ -251,7 +251,6 @@ export function Home() {
               {nickname.charAt(0)}
             </div>
             <div>
-              <img src="/chally-logo-nobg.png" alt="챌리" className="h-[18px] object-contain mb-0.5" />
               <p className="text-slate-900 font-black text-[17px] leading-none">{nickname} 님</p>
             </div>
           </div>

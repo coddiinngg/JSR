@@ -580,8 +580,8 @@ export function GroupDetail() {
             }}
             className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl text-white font-black text-[16px] active:scale-[0.98] transition-transform"
             style={{
-              background: `linear-gradient(115deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})`,
-              boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}60`,
+              background: "linear-gradient(115deg, #FF3355, #FF6680)",
+              boxShadow: "0 8px 24px -4px rgba(255,51,85,0.4)",
             }}
           >
             <Camera className="w-5 h-5" />

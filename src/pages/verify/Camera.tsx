@@ -120,7 +120,7 @@ export function Camera() {
             <div
               key={i}
               className={`absolute w-8 h-8 ${cls}`}
-              style={{ borderColor: vt.bgGrad[0], filter: `drop-shadow(0 0 6px ${vt.bgGrad[0]}99)` }}
+              style={{ borderColor: "#FF3355", filter: "drop-shadow(0 0 6px rgba(255,51,85,0.6))" }}
             />
           ))}
 
@@ -128,8 +128,8 @@ export function Camera() {
           <div
             className="absolute left-2 right-2 h-[2px] rounded-full pointer-events-none"
             style={{
-              background: `linear-gradient(to right, transparent, ${vt.bgGrad[0]}, transparent)`,
-              boxShadow: `0 0 12px ${vt.bgGrad[0]}`,
+              background: "linear-gradient(to right, transparent, #FF3355, transparent)",
+              boxShadow: "0 0 12px #FF3355",
               animation: "cam-scan 2.4s ease-in-out infinite",
               top: "10%",
             }}
@@ -141,7 +141,7 @@ export function Camera() {
               style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}>
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, animation: "cam-pulse 0.8s ease-in-out infinite alternate" }}
+                style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)", animation: "cam-pulse 0.8s ease-in-out infinite alternate" }}
               >
                 <Sparkles className="w-7 h-7 text-white" />
               </div>
@@ -179,7 +179,7 @@ export function Camera() {
           <div className="relative flex items-center justify-center">
             <div
               className="absolute w-[92px] h-[92px] rounded-full"
-              style={{ border: `2.5px solid ${vt.bgGrad[0]}70`, animation: "cam-ring 2s ease-in-out infinite" }}
+              style={{ border: "2.5px solid rgba(255,51,85,0.45)", animation: "cam-ring 2s ease-in-out infinite" }}
             />
             <button
               onClick={handleShutter}
@@ -187,7 +187,7 @@ export function Camera() {
             >
               <div
                 className="w-[64px] h-[64px] rounded-full"
-                style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, opacity: 0.18 }}
+                style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)", opacity: 0.18 }}
               />
             </button>
           </div>

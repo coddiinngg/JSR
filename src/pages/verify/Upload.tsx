@@ -139,7 +139,7 @@ export function Upload() {
         <X className="w-4 h-4" />
       </button>
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-        style={{ background: `${accent ?? vt.bgGrad[0]}20`, border: `1px solid ${accent ?? vt.bgGrad[0]}35` }}>
+        style={{ background: `${accent ?? "#FF3355"}20`, border: `1px solid ${accent ?? "#FF3355"}35` }}>
         <span className="text-[13px]">{vt.emoji}</span>
         <span className="text-white text-[12px] font-semibold">{vt.label}</span>
       </div>
@@ -152,7 +152,7 @@ export function Upload() {
     return (
       <Bg glow={isPassed
         ? "radial-gradient(ellipse at 50% 35%, rgba(52,211,153,0.2) 0%, transparent 60%)"
-        : `radial-gradient(ellipse at 50% 35%, ${vt.bgGrad[0]}18 0%, transparent 60%)`
+        : "radial-gradient(ellipse at 50% 35%, rgba(255,51,85,0.12) 0%, transparent 60%)"
       }>
         <TopBar />
 
@@ -171,8 +171,8 @@ export function Upload() {
             {isAnalyzing && (
               <div className="absolute left-2 right-2 h-[2px] rounded-full z-10 pointer-events-none"
                 style={{
-                  background: `linear-gradient(to right, transparent, ${vt.bgGrad[0]}, ${vt.bgGrad[1]}, transparent)`,
-                  boxShadow: `0 0 12px ${vt.bgGrad[0]}`,
+                  background: "linear-gradient(to right, transparent, #FF3355, #FF6680, transparent)",
+                  boxShadow: "0 0 12px #FF3355",
                   animation: "upl-scan 1.8s ease-in-out infinite",
                 }} />
             )}
@@ -184,7 +184,7 @@ export function Upload() {
               "bottom-2 right-2 border-b-2 border-r-2 rounded-br-lg",
             ].map((cls, i) => (
               <div key={i} className={`absolute w-6 h-6 z-10 transition-colors duration-500 ${cls}`}
-                style={{ borderColor: isPassed ? "#34d399" : vt.bgGrad[0] }} />
+                style={{ borderColor: isPassed ? "#34d399" : "#FF3355" }} />
             ))}
 
             {/* 통과 아이콘 */}
@@ -217,7 +217,7 @@ export function Upload() {
           {isAnalyzing && (
             <div className="w-full max-w-[240px] h-[3px] bg-white/10 rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all duration-150"
-                style={{ width: `${progress}%`, background: `linear-gradient(90deg,${vt.bgGrad[0]},${vt.bgGrad[1]})` }} />
+                style={{ width: `${progress}%`, background: "linear-gradient(90deg,#FF3355,#FF6680)" }} />
             </div>
           )}
         </div>
@@ -296,7 +296,7 @@ export function Upload() {
                 style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 55%, transparent 100%)" }} />
               {/* 통과 예시 뱃지 */}
               <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-                style={{ background: `${vt.bgGrad[0]}CC`, backdropFilter: "blur(4px)" }}>
+                style={{ background: "#FF3355CC", backdropFilter: "blur(4px)" }}>
                 <CheckCircle2 className="w-3 h-3 text-white" strokeWidth={3} />
                 <span className="text-white text-[10px] font-black">통과 예시</span>
               </div>
@@ -351,7 +351,7 @@ export function Upload() {
         <div className="shrink-0 px-5 pb-10 pt-3 relative z-10 flex flex-col gap-2">
           <button onClick={() => navigate("/verify/camera")}
             className="w-full h-[52px] flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[15px] active:scale-[0.98] transition-transform"
-            style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})`, boxShadow: `0 8px 24px -4px ${vt.bgGrad[0]}50` }}>
+            style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)", boxShadow: "0 8px 24px -4px rgba(255,51,85,0.35)" }}>
             <Camera className="w-4 h-4" />
             다시 찍기
           </button>
@@ -374,7 +374,7 @@ export function Upload() {
         <p className="text-white/40 text-[12px] text-center leading-relaxed">{errorMessage || "네트워크를 확인하고 다시 시도해주세요"}</p>
         <button onClick={() => navigate("/verify/camera")}
           className="mt-2 px-8 py-3 rounded-2xl text-white font-semibold text-[14px]"
-          style={{ background: `linear-gradient(135deg,${vt.bgGrad[0]},${vt.bgGrad[1]})` }}>
+          style={{ background: "linear-gradient(135deg,#FF3355,#FF6680)" }}>
           다시 찍기
         </button>
       </div>
