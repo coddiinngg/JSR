@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Flame, CheckCircle2, ArrowRight,
-  Camera, Trophy, Users, Star, Zap, User,
+  Camera, Trophy, Users, Zap, User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -121,7 +121,7 @@ function Slide1({ on }: { on: boolean }) {
         </div>
       </div>
 
-      <TextBlock on={on} tag="함께하는 챌린지" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
+      <TextBlock on={on}>
         <span className="text-white">목표가 있다면</span>
         <br />
         <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>이루어 내는 사람들</span>
@@ -282,23 +282,26 @@ function Slide3({ on }: { on: boolean }) {
             </div>
           </div>
 
-          {/* 포인트 배지 */}
+          {/* 연속 달성 배지 */}
           <div
-            className="absolute bottom-[8%] right-[4%] rounded-2xl px-3 py-2 flex items-center gap-1.5"
+            className="absolute bottom-[8%] right-[4%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
             style={{
-              background: "linear-gradient(135deg,#FF3355,#FF6680)",
-              boxShadow: "0 8px 24px rgba(255,51,85,0.45)",
+              background: "linear-gradient(135deg,#f97316,#ef4444)",
+              boxShadow: "0 8px 24px rgba(239,68,68,0.45)",
               border: "1px solid rgba(255,255,255,0.2)",
               animation: on ? cardAnim(330, "ob-float-c") : "none",
             }}
           >
-            <Star className="w-4 h-4 text-yellow-300 fill-yellow-300/60" strokeWidth={2} />
-            <span className="text-white font-bold text-xs">+120 포인트 획득!</span>
+            <Flame className="w-4 h-4 text-white fill-white/80" />
+            <div>
+              <div className="text-orange-100/60 text-[8px] font-semibold mb-0.5">연속 달성</div>
+              <div className="text-white font-extrabold text-sm leading-none">21일 🔥</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <TextBlock on={on} tag="실시간 공동 달성" tagColor="text-amber-300" tagBg="bg-amber-500/15 border-amber-500/25">
+      <TextBlock on={on}>
         <span className="text-white">중요한 건</span>
         <br />
         <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>꺾이지 않는 의지</span>
@@ -376,18 +379,18 @@ function Slide5({ on, selected, toggle }: {
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6 pb-3 z-10">
         <div
-          className="inline-flex items-center gap-1.5 bg-[#3b82f6]/15 border border-[#3b82f6]/25 rounded-full px-3 py-1 mb-3"
+          className="inline-flex items-center gap-1.5 bg-[#FF3355]/15 border border-[#FF3355]/25 rounded-full px-3 py-1 mb-3"
           style={{ animation: on ? "ob-fade 0.5s ease 100ms both" : "none" }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-400" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-          <span className="text-blue-300 text-xs font-semibold tracking-wide">관심 분야</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-[#FF9DB2] text-xs font-semibold tracking-wide">관심 분야</span>
         </div>
         <h1
           className="text-[28px] leading-tight font-extrabold tracking-tight break-keep text-white"
           style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 180ms both" : "none" }}
         >
           어떤 분야에<br />
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#60a5fa,#a78bfa)" }}>관심 있나요?</span>
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF9DB2)" }}>관심 있나요?</span>
         </h1>
         <p
           className="text-white/40 text-[13px] mt-1.5 break-keep"
@@ -452,24 +455,24 @@ function Slide6({ on, selected, toggle }: {
     <div className="flex flex-col h-full">
       <div className="px-6 pt-6 pb-3 z-10">
         <div
-          className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/25 rounded-full px-3 py-1 mb-3"
+          className="inline-flex items-center gap-1.5 bg-[#FF3355]/15 border border-[#FF3355]/25 rounded-full px-3 py-1 mb-3"
           style={{ animation: on ? "ob-fade 0.5s ease 100ms both" : "none" }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-          <span className="text-amber-300 text-xs font-semibold tracking-wide">챌린지 참여</span>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-[#FF9DB2] text-xs font-semibold tracking-wide">챌린지 참여</span>
         </div>
         <h1
           className="text-[28px] leading-tight font-extrabold tracking-tight break-keep text-white"
           style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 180ms both" : "none" }}
         >
           참여할 챌린지를<br />
-          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>골라보세요</span>
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF9DB2)" }}>골라보세요</span>
         </h1>
         <p
           className="text-white/40 text-[13px] mt-1.5 break-keep"
           style={{ animation: on ? "ob-fade 0.5s ease 280ms both" : "none" }}
         >
-          최대 2개까지 선택할 수 있어요{selected.length > 0 && <span className="text-amber-400 font-semibold"> · {selected.length}개 선택됨</span>}
+          최대 2개까지 선택할 수 있어요{selected.length > 0 && <span className="text-[#FF9DB2] font-semibold"> · {selected.length}개 선택됨</span>}
         </p>
       </div>
 
@@ -529,17 +532,19 @@ function Slide6({ on, selected, toggle }: {
 
 /* ─── 공통 텍스트 블록 ─────────────────────────── */
 function TextBlock({ on, tag, tagColor, tagBg, children }: {
-  on: boolean; tag: string; tagColor: string; tagBg: string; children: React.ReactNode;
+  on: boolean; tag?: string; tagColor?: string; tagBg?: string; children: React.ReactNode;
 }) {
   return (
     <div className="px-8 z-10 text-center">
-      <div
-        className={`inline-flex items-center gap-1.5 ${tagBg} border rounded-full px-3 py-1 mb-4`}
-        style={{ animation: on ? "ob-fade 0.5s ease 180ms both" : "none" }}
-      >
-        <div className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-        <span className={`${tagColor} text-xs font-semibold tracking-wide`}>{tag}</span>
-      </div>
+      {tag && (
+        <div
+          className={`inline-flex items-center gap-1.5 ${tagBg} border rounded-full px-3 py-1 mb-4`}
+          style={{ animation: on ? "ob-fade 0.5s ease 180ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className={`${tagColor} text-xs font-semibold tracking-wide`}>{tag}</span>
+        </div>
+      )}
       <div className="overflow-hidden mb-1.5">
         <h1
           className="text-[36px] leading-[1.15] font-extrabold tracking-tight break-keep"

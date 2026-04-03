@@ -51,7 +51,7 @@ export function VerifyGuide() {
           style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 40%, rgba(10,10,15,0.95) 100%)` }} />
         {/* 컬러 글로우 */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: `radial-gradient(ellipse at 60% 80%, ${rgba(255,51,85,0.18) 0%, transparent 65%)` }} />
+          style={{ background: `radial-gradient(ellipse at 60% 80%, rgba(255,51,85,0.18) 0%, transparent 65%)` }} />
 
         {/* 뒤로가기 */}
         <button

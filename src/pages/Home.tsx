@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Camera, Flame, Send, Crown, ChevronRight, Zap } from "lucide-react";
+import { Bell, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
@@ -49,11 +49,17 @@ const GROUP_RANKERS: Record<string, { rank: number; name: string; streak: number
 interface ChatMsg {
   id: string; sender: string; text: string;
   seed: string; time: string; isMe?: boolean;
+  type?: "achievement";
+  achieverName?: string;
+  streak?: number;
 }
+
+const EMOJI_REACTIONS = ["❤️", "😂", "🔥", "👍", "😮", "🎉"];
 
 const GROUP_CHATS: Record<string, ChatMsg[]> = {
   "1": [ // 매일 5,000보 걷기
     { id: "1", sender: "김지수", text: "오늘 아침 산책 인증 완료! 👟",           seed: "Felix",  time: "07:32" },
+    { id: "1a", sender: "system", text: "", seed: "", time: "07:40", type: "achievement", achieverName: "김지수", streak: 28 },
     { id: "2", sender: "박민혁", text: "어제 13,000보 달성했어요 😄",            seed: "Aneka",  time: "08:10" },
     { id: "3", sender: "이성민", text: "저도요! 점심에 공원 한 바퀴 했어요",     seed: "Jude",   time: "08:45" },
     { id: "4", sender: "나",     text: "오늘도 같이 열심히 걸어봐요!",           seed: "MyUser", time: "09:00", isMe: true },
@@ -61,6 +67,7 @@ const GROUP_CHATS: Record<string, ChatMsg[]> = {
   ],
   "2": [ // 러닝 크루
     { id: "1", sender: "강민준", text: "새벽 5km 완주! 오늘 풍경 진짜 예뻤어요 🌅", seed: "Leo",    time: "06:20" },
+    { id: "1a", sender: "system", text: "", seed: "", time: "06:30", type: "achievement", achieverName: "강민준", streak: 30 },
     { id: "2", sender: "오서연", text: "와 대단해요! 저도 곧 나갈게요 🏃",          seed: "Mia",    time: "07:05" },
     { id: "3", sender: "유하늘", text: "한강 러닝 사진 올렸어요~ 다들 봐주세요",    seed: "Zoe",    time: "07:48" },
     { id: "4", sender: "나",     text: "멋진 풍경이네요! 저도 따라갈게요",          seed: "MyUser", time: "08:00", isMe: true },
@@ -150,15 +157,18 @@ export function Home() {
   const { nickname, beginVerification, groups } = useApp();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
-  const [showAllFeed, setShowAllFeed]         = useState(false);
   const [chats, setChats]                     = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput]             = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState(() => myGroups[0]?.id ?? "1");
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [btnFlash, setBtnFlash]               = useState(false);
 
-  const chatEndRef    = useRef<HTMLDivElement>(null);
-  const startX        = useRef(0);
+  const [reactions, setReactions]         = useState<Record<string, Record<string, number>>>({});
+  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
+
+  const chatEndRef     = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startX         = useRef(0);
   const startY        = useRef(0);
   const dragging      = useRef(false);
   const isHoriz       = useRef<boolean | null>(null);
@@ -186,8 +196,6 @@ export function Home() {
     return m ? parseInt(m[1]) : 999;
   }
   const recentFeed  = FEED_ITEMS.filter(item => parseMinutes(item.time) <= 30);
-  const hiddenCount = FEED_ITEMS.length - recentFeed.length;
-  const visibleFeed = showAllFeed ? FEED_ITEMS : recentFeed;
 
   /* ── 스와이프: 수평/수직 판별 ── */
   function touchBegin(x: number, y: number) {
@@ -211,6 +219,20 @@ export function Home() {
     }
     if (dx < -50 && slideIdx < SLIDE_COUNT - 1) setSlideIdx(i => i + 1);
     if (dx >  50 && slideIdx > 0)               setSlideIdx(i => i - 1);
+  }
+
+  function startLongPress(msgId: string) {
+    longPressTimer.current = setTimeout(() => setEmojiPickerFor(msgId), 500);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  }
+  function addReaction(msgId: string, emoji: string) {
+    setReactions(prev => ({
+      ...prev,
+      [msgId]: { ...prev[msgId], [emoji]: ((prev[msgId]?.[emoji]) ?? 0) + 1 },
+    }));
+    setEmojiPickerFor(null);
   }
 
   function selectGroup(id: string) {
@@ -243,7 +265,7 @@ export function Home() {
       `}</style>
 
       {/* 헤더 */}
-      <header className="shrink-0 bg-white z-10 px-6 pt-4 pb-1.5"
+      <header className="shrink-0 bg-white z-10 px-6 pt-4 pb-1.5 relative"
         style={{ animation: "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -254,11 +276,24 @@ export function Home() {
               <p className="text-slate-900 font-black text-[17px] leading-none">{nickname} 님</p>
             </div>
           </div>
-          <button onClick={() => navigate("/notifications")}
-            className="relative w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors">
-            <Bell className="w-5 h-5 text-slate-500" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF3355]" />
-          </button>
+          {/* 헤더 중앙 챌리 로고 */}
+          <img
+            src="/chally-logo-nobg.png"
+            alt="Chally"
+            className="absolute left-1/2 -translate-x-1/2 h-8 w-auto object-contain opacity-75 pointer-events-none select-none"
+            draggable={false}
+          />
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate("/challenge/request")}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full bg-[#FF3355]/10 active:bg-[#FF3355]/20 transition-colors">
+              <Lightbulb className="w-5 h-5 text-[#FF3355]" />
+            </button>
+            <button onClick={() => navigate("/notifications")}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors">
+              <Bell className="w-5 h-5 text-slate-500" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF3355]" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -291,6 +326,13 @@ export function Home() {
                   style={{ background: "radial-gradient(circle, #FF6680 0%, transparent 70%)" }} />
                 <div className="absolute inset-0 opacity-[0.03]"
                   style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, #fff 0px, transparent 1px, transparent 32px)" }} />
+                {/* 챌리 로고 워터마크 */}
+                <img
+                  src="/chally-logo-nobg.png"
+                  alt=""
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 object-contain opacity-[0.07] pointer-events-none select-none"
+                  draggable={false}
+                />
               </div>
               {/* 그라데이션 오버레이 */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
@@ -417,32 +459,80 @@ export function Home() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50">
-                {chats.map((msg) => (
-                  <div key={msg.id} className={`flex gap-2 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
-                    {!msg.isMe && (
-                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
-                        className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mt-0.5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
-                        onClick={() => navigate(`/user/${msg.seed}`)} />
-                    )}
-                    <div className={`flex flex-col gap-0.5 max-w-[72%] ${msg.isMe ? "items-end" : "items-start"}`}>
-                      {!msg.isMe && (
-                        <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
-                          onClick={() => navigate(`/user/${msg.seed}`)}>
-                          {msg.sender}
-                        </span>
-                      )}
-                      <div className="px-3 py-2 text-[13px] leading-snug"
-                        style={{ background: msg.isMe ? "#FF3355" : "white",
-                          color: msg.isMe ? "white" : "#1e293b",
-                          borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                          boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}>
-                        {msg.text}
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
+                onScroll={() => setEmojiPickerFor(null)}
+                onClick={() => emojiPickerFor && setEmojiPickerFor(null)}>
+                {chats.map((msg) => {
+                  if (msg.type === "achievement") {
+                    return (
+                      <div key={msg.id} className="flex justify-center my-1">
+                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                          style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,115,22,0.12))", border: "1px solid rgba(251,191,36,0.3)" }}>
+                          <Flame className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
+                          <span className="text-amber-700 text-[11px] font-bold">{msg.achieverName} · {msg.streak}일 연속 달성! 🎉</span>
+                        </div>
                       </div>
-                      <span className="text-slate-400 text-[10px] px-1">{msg.time}</span>
+                    );
+                  }
+                  return (
+                    <div key={msg.id} className={`flex gap-2 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
+                      {!msg.isMe && (
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
+                          className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mt-0.5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
+                          onClick={() => navigate(`/user/${msg.seed}`)} />
+                      )}
+                      <div className={`flex flex-col gap-0.5 max-w-[72%] ${msg.isMe ? "items-end" : "items-start"}`}>
+                        {!msg.isMe && (
+                          <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
+                            onClick={() => navigate(`/user/${msg.seed}`)}>
+                            {msg.sender}
+                          </span>
+                        )}
+                        {/* 이모지 피커 */}
+                        {emojiPickerFor === msg.id && (
+                          <div className={`flex gap-1 mb-1 ${msg.isMe ? "justify-end" : "justify-start"}`}
+                            onTouchStart={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                            <div className="flex gap-1 bg-white rounded-2xl px-2 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-100">
+                              {EMOJI_REACTIONS.map(emoji => (
+                                <button key={emoji}
+                                  className="w-8 h-8 flex items-center justify-center text-[17px] rounded-xl active:bg-slate-100 transition-colors"
+                                  onTouchStart={e => e.stopPropagation()}
+                                  onClick={() => addReaction(msg.id, emoji)}>
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        <div className="px-3 py-2 text-[13px] leading-snug select-none"
+                          style={{ background: msg.isMe ? "#FF3355" : "white",
+                            color: msg.isMe ? "white" : "#1e293b",
+                            borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                            boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}
+                          onTouchStart={() => startLongPress(msg.id)}
+                          onTouchEnd={cancelLongPress}
+                          onTouchMove={cancelLongPress}>
+                          {msg.text}
+                        </div>
+                        {/* 이모지 반응 */}
+                        {reactions[msg.id] && Object.keys(reactions[msg.id]).length > 0 && (
+                          <div className={`flex gap-1 mt-0.5 flex-wrap ${msg.isMe ? "justify-end" : "justify-start"}`}
+                            onTouchStart={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                            {Object.entries(reactions[msg.id]).map(([emoji, count]) => (
+                              <button key={emoji}
+                                className="flex items-center gap-0.5 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-sm active:scale-95 transition-transform"
+                                onClick={() => addReaction(msg.id, emoji)}>
+                                <span className="text-[12px]">{emoji}</span>
+                                <span className="text-slate-500 font-bold text-[10px]">{count}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <span className="text-slate-400 text-[10px] px-1">{msg.time}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={chatEndRef} />
               </div>
 
@@ -515,7 +605,8 @@ export function Home() {
         </div>
 
         {/* ── 실시간 인증 피드 ── */}
-        <div className="px-4 pb-6 pt-1">
+        <div className="mx-4 mt-8 border-t border-slate-200" />
+        <div className="px-4 pb-6 pt-1 mt-8">
 
           {/* 헤더 */}
           <div className="flex items-center justify-between mb-3">
@@ -528,10 +619,10 @@ export function Home() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
             <button
-              onClick={() => setShowAllFeed(v => !v)}
+              onClick={() => navigate("/feed")}
               className="text-[12px] font-bold text-slate-400 active:text-slate-600 transition-colors"
             >
-              {showAllFeed ? "최근만 보기" : `전체보기${hiddenCount > 0 ? ` +${hiddenCount}` : ""}`}
+              전체보기
             </button>
           </div>
 
@@ -539,13 +630,13 @@ export function Home() {
           <div className="grid grid-cols-2 gap-2.5">
             {/* 왼쪽 컬럼 */}
             <div className="flex flex-col gap-2.5">
-              {visibleFeed.filter((_, i) => i % 2 === 0).map((item) => (
+              {recentFeed.filter((_, i) => i % 2 === 0).map((item) => (
                 <FeedCard key={item.id} item={item} />
               ))}
             </div>
             {/* 오른쪽 컬럼 — 위로 오프셋 */}
             <div className="flex flex-col gap-2.5 mt-6">
-              {visibleFeed.filter((_, i) => i % 2 === 1).map((item) => (
+              {recentFeed.filter((_, i) => i % 2 === 1).map((item) => (
                 <FeedCard key={item.id} item={item} />
               ))}
             </div>

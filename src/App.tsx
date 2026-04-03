@@ -20,13 +20,14 @@ import { EditProfile } from "./pages/EditProfile";
 import { NotificationSettings } from "./pages/NotificationSettings";
 import { Challenge } from "./pages/Challenge";
 import { GroupDetail } from "./pages/challenge/GroupDetail";
-import { Ranking } from "./pages/Ranking";
 import { Gallery } from "./pages/Gallery";
 import { Rewards } from "./pages/Rewards";
 import { Notifications } from "./pages/Notifications";
 import { WeeklyReport } from "./pages/WeeklyReport";
 import { FriendInvite } from "./pages/FriendInvite";
 import { UserProfile } from "./pages/UserProfile";
+import { FeedAll } from "./pages/FeedAll";
+import { ChallengeRequest } from "./pages/ChallengeRequest";
 
 export default function App() {
   return (
@@ -47,7 +48,6 @@ export default function App() {
           <Route path="/verify/camera" element={<Camera />} />
           <Route path="/verify/upload" element={<Upload />} />
           <Route path="/success" element={<Success />} />
-          <Route path="/ranking" element={<Ranking />} />
           <Route path="/settings/notifications" element={<NotificationSettings />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/gallery" element={<Gallery />} />
@@ -57,6 +57,8 @@ export default function App() {
           <Route path="/friends/invite" element={<FriendInvite />} />
           <Route path="/challenge/group/:groupId" element={<GroupDetail />} />
           <Route path="/user/:seed" element={<UserProfile />} />
+          <Route path="/feed" element={<FeedAll />} />
+          <Route path="/challenge/request" element={<ChallengeRequest />} />
         </Route>
 
         {/* 바텀 네비 있는 메인 탭 */}
