@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../types/database';
+import { setGuestMode } from '../App';
 
 interface AuthContextType {
   user: User | null;
@@ -45,7 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (data) setProfile(data);
-    } catch {}
+    } catch (err) {
+    console.error("fetchProfile failed:", err);
+  }
   }
 
   async function refreshProfile() {
@@ -75,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    setGuestMode(false);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }

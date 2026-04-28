@@ -25,6 +25,7 @@ export interface Database {
           xp_total?: number;
         };
         Update: Partial<Omit<Database['public']['Tables']['profiles']['Insert'], 'id'>>;
+        Relationships: [];
       };
       goals: {
         Row: {
@@ -51,6 +52,7 @@ export interface Database {
           status?: 'active' | 'completed' | 'paused';
         };
         Update: Partial<Omit<Database['public']['Tables']['goals']['Insert'], 'user_id' | 'id'>>;
+        Relationships: [];
       };
       verifications: {
         Row: {
@@ -72,6 +74,7 @@ export interface Database {
           xp_earned?: number;
         };
         Update: Partial<Pick<Database['public']['Tables']['verifications']['Insert'], 'photo_url' | 'status' | 'xp_earned'>>;
+        Relationships: [];
       };
       groups: {
         Row: {
@@ -96,6 +99,7 @@ export interface Database {
           created_by?: string | null;
         };
         Update: Partial<Omit<Database['public']['Tables']['groups']['Insert'], 'created_by' | 'id'>>;
+        Relationships: [];
       };
       group_members: {
         Row: {
@@ -112,6 +116,7 @@ export interface Database {
           role?: 'admin' | 'member';
         };
         Update: Pick<Database['public']['Tables']['group_members']['Insert'], 'role'>;
+        Relationships: [];
       };
       snooze_records: {
         Row: {
@@ -128,15 +133,20 @@ export interface Database {
           reason?: string | null;
         };
         Update: never;
+        Relationships: [];
       };
     };
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
+    Enums: Record<never, never>;
+    CompositeTypes: Record<never, never>;
   };
 }
 
 // 편의 타입
-export type Profile = Database['public']['Tables']['profiles']['Row'];
-export type Goal = Database['public']['Tables']['goals']['Row'];
+export type Profile    = Database['public']['Tables']['profiles']['Row'];
+export type Goal       = Database['public']['Tables']['goals']['Row'];
 export type Verification = Database['public']['Tables']['verifications']['Row'];
-export type Group = Database['public']['Tables']['groups']['Row'];
+export type Group      = Database['public']['Tables']['groups']['Row'];
 export type GroupMember = Database['public']['Tables']['group_members']['Row'];
 export type SnoozeRecord = Database['public']['Tables']['snooze_records']['Row'];

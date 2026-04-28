@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 
 /* 카드에 spring-in + float 콤보 animation 문자열 생성 */
 function cardAnim(delay: number, floatName = "ob-float-a") {
@@ -64,9 +65,9 @@ function Slide1({ on }: { on: boolean }) {
               <span className="text-white/45 text-[9px] font-bold uppercase tracking-widest">함께하는 챌린지</span>
             </div>
             {[
-              { name: "김민준", rate: 98, color: "#f59e0b" },
-              { name: "이서연", rate: 94, color: "#94a3b8" },
-              { name: "나",     rate: 87, color: "#FF3355", me: true },
+              { name: "sm", rate: 98, color: "#f59e0b" },
+              { name: "ms", rate: 94, color: "#94a3b8" },
+              { name: "나", rate: 87, color: "#FF3355", me: true },
             ].map((u, i) => (
               <div
                 key={u.name}
@@ -243,9 +244,9 @@ function Slide3({ on }: { on: boolean }) {
               <span className="text-white/50 text-[9px] font-bold uppercase tracking-widest">이번 주 랭킹</span>
             </div>
             {([
-              { rank: 1, name: "김민준", score: 2840, color: "#f59e0b", me: false },
-              { rank: 2, name: "이서연", score: 2650, color: "#94a3b8", me: false },
-              { rank: 3, name: "나",    score: 2480, color: "#cd7c32", me: true  },
+              { rank: 1, name: "sm", score: 2840, color: "#f59e0b", me: false },
+              { rank: 2, name: "ms", score: 2650, color: "#94a3b8", me: false },
+              { rank: 3, name: "나", score: 2480, color: "#cd7c32", me: true  },
             ] as const).map((u, i) => (
               <div
                 key={u.rank}
@@ -574,6 +575,7 @@ const TOTAL = 7;
 export function Onboarding() {
   const navigate = useNavigate();
   const { setNickname, joinGroup } = useApp();
+  const { user } = useAuth();
   const [current, setCurrent] = useState(0);
   const [on, setOn] = useState(false);
   const [nicknameInput, setNicknameInput] = useState("");
@@ -603,6 +605,7 @@ export function Onboarding() {
   const handleStart = () => {
     if (nicknameInput.trim()) setNickname(nicknameInput.trim());
     selectedChallenges.forEach(id => joinGroup(id));
+    if (user?.id) localStorage.setItem(`ob_done_${user.id}`, "1");
     navigate("/");
   };
 

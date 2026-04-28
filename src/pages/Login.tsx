@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { setGuestMode } from "../App";
+import { supabase } from "../lib/supabase";
 
 export function Login() {
   const navigate = useNavigate();
@@ -22,7 +24,10 @@ export function Login() {
     setLoading(true);
     try {
       await signInWithEmail(email.trim(), password);
-      navigate("/");
+      const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+      const uid = loggedInUser?.id;
+      const onboardingDone = uid ? localStorage.getItem(`ob_done_${uid}`) : null;
+      navigate(onboardingDone ? "/" : "/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인에 실패했어요.");
     } finally {
@@ -55,8 +60,60 @@ export function Login() {
           </p>
         </div>
 
+        {/* 이메일 폼 */}
+        <form onSubmit={handleLogin} className="px-6 space-y-3 mb-4">
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="이메일"
+            className="w-full h-14 px-5 rounded-2xl border border-white/10 bg-white/[0.07] text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF3355] transition-colors text-[15px]"
+          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="비밀번호"
+              className="w-full h-14 pl-5 pr-12 rounded-2xl border border-white/10 bg-white/[0.07] text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF3355] transition-colors text-[15px]"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[15px] transition-all active:scale-[0.98] disabled:opacity-60"
+            style={{ background: "linear-gradient(135deg, #FF3355, #ff5570)", boxShadow: "0 8px 24px -4px rgba(255,51,85,0.5)" }}
+          >
+            {loading ? "로그인 중..." : (<>로그인 <ArrowRight className="w-4 h-4" /></>)}
+          </button>
+        </form>
+
+        {/* 링크 */}
+        <div className="flex items-center justify-center gap-4 text-[13px] text-white/30 mb-6">
+          <Link to="/forgot-password" className="hover:text-white/60 transition-colors">비밀번호 찾기</Link>
+          <div className="w-px h-3 bg-white/10" />
+          <Link to="/signup" className="text-[#FF3355] font-bold hover:text-[#ff5570] transition-colors">회원가입</Link>
+        </div>
+
+        {/* 구분선 */}
+        <div className="flex items-center gap-4 px-6 mb-5">
+          <div className="h-px bg-white/10 flex-1" />
+          <span className="text-white/30 text-[12px] font-medium">또는 소셜 로그인</span>
+          <div className="h-px bg-white/10 flex-1" />
+        </div>
+
         {/* 소셜 로그인 */}
-        <div className="px-6 space-y-3 mb-6">
+        <div className="px-6 space-y-3 mb-5">
           <button
             type="button"
             onClick={() => setError("소셜 로그인은 아직 준비 중이에요. 이메일 로그인을 사용해주세요.")}
@@ -94,67 +151,10 @@ export function Login() {
           </button>
         </div>
 
-        {/* 구분선 */}
-        <div className="flex items-center gap-4 px-6 mb-6">
-          <div className="h-px bg-white/10 flex-1" />
-          <span className="text-white/30 text-[12px] font-medium">또는 이메일로</span>
-          <div className="h-px bg-white/10 flex-1" />
-        </div>
-
-        {/* 이메일 폼 */}
-        <form onSubmit={handleLogin} className="px-6 space-y-3 mb-6">
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="이메일"
-            className="w-full h-14 px-5 rounded-2xl border border-white/10 bg-white/[0.07] text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF3355] transition-colors text-[15px]"
-          />
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="비밀번호"
-              className="w-full h-14 pl-5 pr-12 rounded-2xl border border-white/10 bg-white/[0.07] text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF3355] transition-colors text-[15px]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(v => !v)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
-
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl text-white font-bold text-[15px] transition-all active:scale-[0.98] disabled:opacity-60"
-            style={{ background: "linear-gradient(135deg, #FF3355, #ff5570)", boxShadow: "0 8px 24px -4px rgba(255,51,85,0.5)" }}
-          >
-            {loading ? "로그인 중..." : (
-              <>
-                로그인
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* 링크 */}
-        <div className="flex items-center justify-center gap-4 text-[13px] text-white/30 pb-4">
-          <Link to="/forgot-password" className="hover:text-white/60 transition-colors">비밀번호 찾기</Link>
-          <div className="w-px h-3 bg-white/10" />
-          <Link to="/signup" className="text-[#FF3355] font-bold hover:text-[#ff5570] transition-colors">회원가입</Link>
-        </div>
-
         <div className="px-6 pb-4">
           <button
             type="button"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => { setGuestMode(true); navigate("/"); }}
             className="w-full h-12 rounded-2xl border border-white/10 bg-white/[0.05] text-white/70 text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-white/[0.08]"
           >
             로그인 없이 둘러보기

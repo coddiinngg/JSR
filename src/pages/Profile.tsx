@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { Bell, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus, Moon, Sun, Smartphone } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useGuestGuard } from "../contexts/GuestGuardContext";
 
 function useCountUp(target: number, duration = 900, delay = 400) {
   const [val, setVal] = useState(0);
   useEffect(() => {
+    let rafId: number;
     const timeout = setTimeout(() => {
       const start = performance.now();
       const tick = (now: number) => {
         const p = Math.min((now - start) / duration, 1);
         setVal(Math.round((1 - Math.pow(1 - p, 3)) * target));
-        if (p < 1) requestAnimationFrame(tick);
+        if (p < 1) { rafId = requestAnimationFrame(tick); }
       };
-      requestAnimationFrame(tick);
+      rafId = requestAnimationFrame(tick);
     }, delay);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      cancelAnimationFrame(rafId);
+    };
   }, [target, duration, delay]);
   return val;
 }
@@ -39,6 +44,7 @@ export function Profile() {
   const navigate = useNavigate();
   const { nickname, theme, setTheme, goals, recoveryTickets } = useApp();
   const { signOut, profile } = useAuth();
+  const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
   const planLabel = profile?.plan_type === "premium" ? "Premium Plan" : "Free Plan";
   const avatarUrl = profile?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
@@ -101,13 +107,13 @@ export function Profile() {
                   boxShadow: "0 0 0 2px rgba(255,255,255,0.9), 0 0 0 4px rgba(255,51,85,0.5)",
                 }}
               />
-              <Link
-                to="/profile/edit"
+              <button
+                onClick={() => guardAction(() => navigate("/profile/edit"))}
                 className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white"
                 style={{ boxShadow: "0 4px 10px rgba(0,0,0,0.2)", border: "2px solid #FF3355" }}
               >
                 <Pencil className="w-2.5 h-2.5 text-[#FF3355]" />
-              </Link>
+              </button>
             </div>
 
             {/* 이름 + 레벨 (가운데) */}
@@ -178,9 +184,9 @@ export function Profile() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">설정</p>
           <div className="rounded-2xl overflow-hidden bg-white border border-black/[0.04]">
             {[
-              { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",    onClick: () => navigate("/settings/notifications") },
-              { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => navigate("/rewards") },
-              { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",    onClick: () => navigate("/friends/invite") },
+              { icon: Bell,         bg: "bg-[#FFE8EC]", color: "text-[#FF3355]", label: "알림 설정",    onClick: () => guardAction(() => navigate("/settings/notifications")) },
+              { icon: Star,         bg: "bg-amber-50",  color: "text-amber-500", label: "리워드 & 배지", onClick: () => guardAction(() => navigate("/rewards")) },
+              { icon: UserPlus,     bg: "bg-sky-50",    color: "text-sky-500",   label: "친구 초대",    onClick: () => guardAction(() => navigate("/friends/invite")) },
             ].map(({ icon: Icon, bg, color, label, onClick }, i) => (
               <div key={label}>
                 {i > 0 && <div className="h-px bg-slate-100 mx-4" />}

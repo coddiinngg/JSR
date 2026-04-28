@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import React, { useState, useEffect } from "react";
 import { useApp } from "../contexts/AppContext";
+import { useGuestGuard } from "../contexts/GuestGuardContext";
 
 // 카테고리 아이콘 + 배경
 const CAT_META: Record<string, { icon: React.ElementType; bg: string; color: string; glow: string; grad: string; cardGrad: string; iconColor: string }> = {
@@ -36,6 +37,7 @@ function CatTag({ category }: { category: string }) {
 export function Challenge() {
   const navigate = useNavigate();
   const { groups, joinGroup, leaveGroup } = useApp();
+  const { guardAction } = useGuestGuard();
   const [activeCat, setActiveCat] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -245,7 +247,7 @@ export function Challenge() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      isJoined ? leaveGroup(id) : joinGroup(id);
+                      guardAction(() => { isJoined ? leaveGroup(id) : joinGroup(id); });
                     }}
                     className={cn(
                       "w-full py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 active:scale-[0.98]",
