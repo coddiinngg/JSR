@@ -166,14 +166,39 @@ CREATE OR REPLACE TRIGGER profiles_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================================
--- 보안 패치: 하루 중복 인증 방지 (DB 레벨)
+-- 보안 패치: 하루 중복 인증 방지 (DB 레벨, KST 기준)
 -- ============================================================
 
--- 같은 goal을 같은 날 두 번 completed 상태로 인증하는 것을 막습니다.
--- verified_at은 UTC 기준으로 날짜를 추출합니다.
+-- !! 기존 인덱스가 있으면 먼저 삭제 후 재생성하세요:
+-- DROP INDEX IF EXISTS verifications_goal_user_day;
+
+-- KST(UTC+9) 기준으로 날짜를 추출합니다.
+-- 이전 방식(verified_at::date)은 UTC 기준이라 KST 00:00~08:59 인증이
+-- "전날"로 저장돼 같은 KST 날짜에 2회 인증이 가능했습니다.
 CREATE UNIQUE INDEX IF NOT EXISTS verifications_goal_user_day
-  ON verifications (goal_id, user_id, (verified_at::date))
+  ON verifications (goal_id, user_id, ((verified_at AT TIME ZONE 'Asia/Seoul')::date))
   WHERE status = 'completed';
+
+-- ============================================================
+-- Rate Limiting: 인증 시도 횟수 추적
+-- ============================================================
+
+-- verify_attempts: Gemini API 호출마다 기록 (성공/실패 무관)
+-- Edge Function이 service role로 INSERT, 유저는 자신 것만 SELECT 가능
+CREATE TABLE IF NOT EXISTS verify_attempts (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id      UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  goal_id      UUID REFERENCES goals(id) ON DELETE SET NULL,
+  attempted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS verify_attempts_user_date
+  ON verify_attempts (user_id, attempted_at);
+
+ALTER TABLE verify_attempts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "verify_attempts_select" ON verify_attempts
+  FOR SELECT USING (auth.uid() = user_id);
 
 -- ============================================================
 -- XP 원자적 증가 함수 (Edge Function에서 호출)

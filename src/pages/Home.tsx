@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb } from "lucide-react";
+import { Bell, BellRing, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb, SmilePlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 import { useGuestGuard } from "../contexts/GuestGuardContext";
+
+const MEDAL = ["🥇", "🥈", "🥉"];
+const rateColor = (r: number) => r >= 80 ? "#10B981" : r >= 50 ? "#F59E0B" : "#FF3355";
+
+const RECENT_NOTIFS = [
+  { id: 1, emoji: "🔥", text: "하준님이 14일 연속 달성!", time: "방금 전" },
+  { id: 2, emoji: "📸", text: "수빈님이 인증했습니다",      time: "1분 전"  },
+  { id: 3, emoji: "💬", text: "서아님이 채팅을 남겼습니다", time: "2분 전"  },
+  { id: 4, emoji: "🎉", text: "유나님이 반응했습니다",       time: "3분 전"  },
+  { id: 5, emoji: "📸", text: "도윤님이 인증했습니다",       time: "5분 전"  },
+];
 
 const GROUP_RANKERS: Record<string, { rank: number; name: string; streak: number; rate: number; seed: string; isMe: boolean }[]> = {
   "1": [
@@ -138,22 +149,27 @@ const FEED_ITEMS: FeedItem[] = [
 
 export function Home() {
   const navigate = useNavigate();
-  const { nickname, beginVerification, groups } = useApp();
+  const { nickname, beginVerification, groups, selectedGroupId, setSelectedGroupId } = useApp();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
   const [chats, setChats]                     = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput]             = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState(() => myGroups[0]?.id ?? "1");
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [btnFlash, setBtnFlash]               = useState(false);
-
+  const [notifMode, setNotifMode]             = useState(false);
   const { guardAction } = useGuestGuard();
-  const [reactions, setReactions]           = useState<Record<string, Record<string, number>>>({});
+  const [reactions, setReactions]           = useState<Record<string, string>>({});
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
 
   const chatEndRef      = useRef<HTMLDivElement>(null);
+  const chatScrollRef   = useRef<HTMLDivElement>(null);
   const longPressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnFlashTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animFrameRef    = useRef<number | null>(null);
+  const rateDisplayRef  = useRef<HTMLSpanElement>(null);
+  const notifModeRef    = useRef(false);
+  notifModeRef.current  = notifMode;
+  const ignoreTapRef    = useRef(false);
   const startX          = useRef(0);
   const startY         = useRef(0);
   const dragging       = useRef(false);
@@ -165,8 +181,29 @@ export function Home() {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
       if (btnFlashTimer.current)  clearTimeout(btnFlashTimer.current);
+      if (animFrameRef.current)   cancelAnimationFrame(animFrameRef.current);
     };
   }, []);
+
+  // notifMode 진입 시 퍼센트 카운트업 — DOM 직접 조작으로 re-render 없이 60fps
+  const groupRate = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.rate ?? 0;
+  useEffect(() => {
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    const el = rateDisplayRef.current;
+    if (!el) return;
+    if (!notifMode) { el.textContent = String(groupRate); return; }
+    el.textContent = "0";
+    const start = performance.now();
+    const duration = 600;
+    function step(now: number) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(eased * groupRate));
+      if (t < 1) animFrameRef.current = requestAnimationFrame(step);
+    }
+    animFrameRef.current = requestAnimationFrame(step);
+    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
+  }, [notifMode, groupRate]);
 
   // 그룹이 바뀌면 채팅 초기화
   useEffect(() => {
@@ -179,7 +216,7 @@ export function Home() {
     if (myGroups.length > 0 && !myGroups.find(g => g.id === selectedGroupId)) {
       setSelectedGroupId(myGroups[0].id);
     }
-  }, [myGroups, selectedGroupId]);
+  }, [myGroups.length, selectedGroupId]);
 
   const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
   const rankers       = GROUP_RANKERS[selectedGroupId] ?? GROUP_RANKERS["1"];
@@ -193,6 +230,7 @@ export function Home() {
 
   /* ── 스와이프: 수평/수직 판별 ── */
   function touchBegin(x: number, y: number) {
+    if (ignoreTapRef.current) { ignoreTapRef.current = false; return; }
     startX.current = x; startY.current = y;
     dragging.current = true; isHoriz.current = null; moved.current = false;
   }
@@ -203,12 +241,21 @@ export function Home() {
     if (isHoriz.current && dx > 8) moved.current = true;
   }
   function touchEnd(x: number) {
+    if (ignoreTapRef.current) { ignoreTapRef.current = false; dragging.current = false; return; }
     if (!dragging.current) return;
     dragging.current = false;
     if (isHoriz.current === false) return; // 수직 스와이프는 무시
     const dx = x - startX.current;
     if (!moved.current) {
-      if (slideIdx === 0 && !showGroupPicker) navigate(`/challenge/group/${selectedGroupId}`);
+      if (slideIdx === 0 && !showGroupPicker) {
+        if (notifModeRef.current) {
+          if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+          if (rateDisplayRef.current) rateDisplayRef.current.textContent = String(groupRate);
+          setNotifMode(false);
+        } else if (myGroups.length > 0) {
+          navigate(`/challenge/group/${selectedGroupId}`);
+        }
+      }
       return;
     }
     if (dx < -50 && slideIdx < SLIDE_COUNT - 1) setSlideIdx(i => i + 1);
@@ -222,16 +269,19 @@ export function Home() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }
   function addReaction(msgId: string, emoji: string) {
-    setReactions(prev => ({
-      ...prev,
-      [msgId]: { ...prev[msgId], [emoji]: ((prev[msgId]?.[emoji]) ?? 0) + 1 },
-    }));
+    setReactions(prev => {
+      const next = { ...prev };
+      if (next[msgId] === emoji) delete next[msgId]; // 같은 이모지 탭 → 제거
+      else next[msgId] = emoji;
+      return next;
+    });
     setEmojiPickerFor(null);
   }
 
   function selectGroup(id: string) {
     setSelectedGroupId(id);
     setShowGroupPicker(false);
+    setNotifMode(false);
     setBtnFlash(true);
     if (btnFlashTimer.current) clearTimeout(btnFlashTimer.current);
     btnFlashTimer.current = setTimeout(() => setBtnFlash(false), 600);
@@ -244,12 +294,15 @@ export function Home() {
     const hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0");
     setChats(p => [...p, { id: Date.now().toString(), sender: "나", text, seed: "MyUser", time: `${hh}:${mm}`, isMe: true }]);
     setChatInput("");
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => {
+      const el = chatScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 50);
   }
 
-  // 슬라이드별 transform: 각 슬라이드 absolute inset-0, 100%씩 이동
   const slideTx = (i: number) => `translate3d(${(i - slideIdx) * 100}%, 0, 0)`;
   const trans = "transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)";
+  const unreadCount = 3;
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-white relative">
@@ -257,6 +310,14 @@ export function Home() {
         @keyframes hm-in     { from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);} }
         @keyframes picker-in { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
         @keyframes btn-flash { 0%{opacity:1} 30%{opacity:0.6;transform:scale(0.98)} 60%{opacity:1;transform:scale(1.01)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes notif-drop {
+          from { opacity: 0; transform: translateY(-14px) scale(0.93); }
+          to   { opacity: 1; transform: translateY(0)     scale(1); }
+        }
+        @keyframes badge-pulse {
+          0%, 100% { transform: scale(1); }
+          50%      { transform: scale(1.12); }
+        }
       `}</style>
 
       {/* 헤더 */}
@@ -309,34 +370,141 @@ export function Home() {
             onMouseLeave={() => { dragging.current = false; isHoriz.current = null; }}
           >
 
-            {/* ─── 슬라이드 1: 오늘의 목표 ─── */}
+            {/* ─── 슬라이드 1 ─── */}
             <div className="absolute inset-0 overflow-hidden"
               style={{ transform: slideTx(0), transition: trans, willChange: "transform" }}>
-              {/* 배경 */}
-              <div className="absolute inset-0 overflow-hidden"
-                style={{ background: "linear-gradient(160deg, #0d0d18 0%, #1a0810 50%, #250b14 100%)" }}>
-                <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full opacity-25"
-                  style={{ background: "radial-gradient(circle, #FF3355 0%, transparent 70%)" }} />
-                <div className="absolute bottom-10 -left-16 w-56 h-56 rounded-full opacity-10"
-                  style={{ background: "radial-gradient(circle, #FF6680 0%, transparent 70%)" }} />
-                <div className="absolute inset-0 opacity-[0.03]"
-                  style={{ backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, #fff 0px, transparent 1px, transparent 32px)" }} />
-                {/* 챌리 로고 워터마크 */}
+
+              {myGroups.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-50">
+                  <span className="text-4xl">🏃</span>
+                  <p className="text-slate-700 font-black text-[16px]">참여 중인 그룹이 없어요</p>
+                  <p className="text-slate-400 text-[13px]">챌린지 탭에서 그룹에 참여해보세요</p>
+                  <button onClick={() => navigate("/challenge")}
+                    className="mt-1 px-5 py-2.5 rounded-2xl text-white font-bold text-[14px] active:scale-95 transition-transform"
+                    style={{ background: "linear-gradient(135deg,#FF3355,#C8002B)" }}>
+                    그룹 둘러보기
+                  </button>
+                </div>
+              ) : (<>
+
+              {/* 배경: 그룹 대표 이미지 */}
+              <div className="absolute inset-0 overflow-hidden bg-slate-900">
                 <img
-                  src="/chally-logo-nobg.png"
-                  alt=""
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 object-contain opacity-[0.07] pointer-events-none select-none"
+                  src={selectedGroup?.cover}
+                  alt={selectedGroup?.title ?? ""}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                   draggable={false}
+                  style={{
+                    transform: notifMode ? "scale(1.05)" : "scale(1)",
+                    transition: "transform 0.6s cubic-bezier(0.4,0,0.2,1)",
+                  }}
+                />
+                <div className="absolute inset-0"
+                  style={{
+                    background: notifMode
+                      ? "linear-gradient(180deg,rgba(0,0,0,0.50) 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.62) 100%)"
+                      : "linear-gradient(180deg,rgba(0,0,0,0.18) 0%,rgba(0,0,0,0.08) 40%,rgba(0,0,0,0.65) 100%)",
+                    transition: "background 0.5s ease",
+                  }}
                 />
               </div>
-              {/* 그라데이션 오버레이 */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent pointer-events-none" />
+
+              {/* 알림 배지 — 우측 상단, 탭하면 notifMode 토글 */}
+              <button
+                className="absolute z-20 active:scale-90 transition-all duration-300"
+                style={{
+                  top: 14, right: 14,
+                  opacity: notifMode ? 0 : 1,
+                  transform: notifMode ? "scale(0.6)" : "scale(1)",
+                  pointerEvents: notifMode ? "none" : "auto",
+                }}
+                onTouchStart={e => { e.stopPropagation(); ignoreTapRef.current = true; }}
+                onTouchEnd={e => { e.stopPropagation(); }}
+                onMouseDown={e => { e.stopPropagation(); ignoreTapRef.current = true; }}
+                onMouseUp={e => e.stopPropagation()}
+                onClick={() => setNotifMode(true)}
+              >
+                <div className="relative w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.18)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}>
+                  <BellRing className="w-5 h-5 text-white" />
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center text-white text-[11px] font-black tabular-nums"
+                    style={{
+                      background: "#FF3355",
+                      boxShadow: "0 2px 8px rgba(255,51,85,0.5)",
+                      animation: "badge-pulse 1.8s ease-in-out infinite",
+                    }}
+                  >
+                    {unreadCount}
+                  </span>
+                </div>
+              </button>
+
+              {/* 퍼센트 — 기본: 카드 중앙 / 알림 모드: 우측 상단으로 이동 */}
+              <div
+                className="absolute z-10 flex items-baseline pointer-events-none select-none"
+                style={{
+                  top: notifMode ? "4%" : "32%",
+                  right: notifMode ? "5%" : undefined,
+                  left: notifMode ? undefined : "50%",
+                  transform: notifMode ? "translate(0,0)" : "translate(-50%,0)",
+                  transition: "top 0.55s cubic-bezier(0.4,0,0.2,1), right 0.55s cubic-bezier(0.4,0,0.2,1), left 0.55s cubic-bezier(0.4,0,0.2,1), transform 0.55s cubic-bezier(0.4,0,0.2,1)",
+                }}
+              >
+                <span
+                  ref={rateDisplayRef}
+                  className="text-white font-black tabular-nums leading-none"
+                  style={{
+                    fontSize: notifMode ? "44px" : "92px",
+                    letterSpacing: "-0.04em",
+                    textShadow: "0 4px 24px rgba(0,0,0,0.45)",
+                    transition: "font-size 0.55s cubic-bezier(0.4,0,0.2,1)",
+                  }}
+                >
+                  {groupRate}
+                </span>
+                <span
+                  className="text-white font-black leading-none ml-0.5"
+                  style={{
+                    fontSize: notifMode ? "20px" : "36px",
+                    opacity: 0.85,
+                    transition: "font-size 0.55s cubic-bezier(0.4,0,0.2,1)",
+                  }}
+                >
+                  %
+                </span>
+              </div>
+
+              {/* 알림 리스트 (notifMode에서만 표시) */}
+              {notifMode && (
+                <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-center gap-2 px-4"
+                  style={{ paddingTop: "18%", paddingBottom: "28%" }}>
+                  {RECENT_NOTIFS.map((n, i) => (
+                    <div
+                      key={n.id}
+                      className="flex items-center gap-2 px-3 py-2 rounded-2xl"
+                      style={{
+                        background: "rgba(0,0,0,0.42)",
+                        backdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        animation: "notif-drop 0.2s ease-out forwards",
+                        animationDelay: `${i * 0.04}s`,
+                        opacity: 0,
+                      }}
+                    >
+                      <span className="text-[15px] leading-none shrink-0">{n.emoji}</span>
+                      <span className="text-white text-[12px] font-semibold leading-none flex-1">{n.text}</span>
+                      <span className="text-white/40 text-[10px] font-medium shrink-0">{n.time}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 하단 텍스트 + 그룹 피커 */}
-              <div className="absolute bottom-0 left-0 right-0 px-5 pb-5"
+              <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 z-20"
                 onTouchStart={e => e.stopPropagation()} onMouseDown={e => e.stopPropagation()}>
 
-                {/* 그룹 피커 */}
                 {showGroupPicker && (
                   <div className="mb-3" style={{ animation: "picker-in 0.2s ease both" }}>
                     <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar">
@@ -357,7 +525,6 @@ export function Home() {
                   </div>
                 )}
 
-                {/* 그룹 이름 + > 버튼 */}
                 <div className="flex items-center gap-2 mb-1.5">
                   <button onClick={() => setShowGroupPicker(v => !v)}
                     className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 active:scale-90 transition-all"
@@ -370,77 +537,126 @@ export function Home() {
                   </h2>
                 </div>
 
-                {/* 고정 높이 서브라인 — 항상 렌더링해서 높이 유지 */}
                 <div className="pl-9 h-5 flex items-center">
                   {showGroupPicker ? (
                     <p className="text-white/50 text-[12px] font-medium">참여 중인 그룹을 선택하세요</p>
                   ) : (
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="shrink-0 text-[10px] font-bold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">
-                        오늘의 목표
-                      </span>
+                      <span className="shrink-0 text-[10px] font-bold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">그룹 평균</span>
                       <p className="text-white/70 text-[12px] font-semibold truncate">{selectedGroup?.goal ?? ""}</p>
                       <span className="shrink-0 text-white/40 text-[12px]">· {selectedGroup?.members ?? 0}명</span>
                     </div>
                   )}
                 </div>
               </div>
+              </>)}
             </div>
 
             {/* ─── 슬라이드 2: 그룹 내 순위 ─── */}
             <div className="absolute inset-0 overflow-hidden flex flex-col bg-white"
               style={{ transform: slideTx(1), transition: trans, willChange: "transform" }}>
 
-              <div className="px-5 pt-6 pb-3 shrink-0">
-                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-1">그룹 내 순위</p>
-                <p className="text-slate-900 font-black text-[19px]">{selectedGroup?.title ?? ""}</p>
-              </div>
-              <div className="mx-5 mb-4 rounded-2xl px-4 py-3 flex items-center gap-3 shrink-0"
-                style={{ background: "rgba(255,51,85,0.07)", border: "1px solid rgba(255,51,85,0.18)" }}>
-                <span className="text-[#FF3355] font-black text-[28px] w-9 text-center tabular-nums leading-none">#{selectedGroup?.myRank ?? "-"}</span>
-                <div className="flex-1">
-                  <p className="text-slate-800 font-black text-[14px]">내 현재 순위</p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Flame className="w-3 h-3 text-[#FF3355] fill-[#FF3355]/50" />
-                    <span className="text-slate-400 text-[11px]">{selectedGroup?.myStreak ?? 0}일 연속 달성 중</span>
-                  </div>
+              {myGroups.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                  <span className="text-4xl">🏆</span>
+                  <p className="text-slate-700 font-black text-[15px]">순위 정보가 없어요</p>
+                  <p className="text-slate-400 text-[12px]">그룹에 참여하면 순위를 확인할 수 있어요</p>
                 </div>
-                <span className="text-[#FF3355] font-black text-[20px] tabular-nums">{selectedGroup?.myRate ?? 0}%</span>
+              ) : (<>
+
+              {/* 헤더 */}
+              <div className="px-4 pt-4 pb-2 shrink-0">
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">그룹 내 순위</p>
+                <p className="text-slate-900 font-black text-[16px] leading-tight truncate">{selectedGroup?.title ?? ""}</p>
               </div>
-              <div className="flex-1 px-5 pb-4 space-y-2 overflow-y-auto overscroll-contain">
-                {rankers.map(({ rank, name, streak, rate, seed, isMe }) => (
-                  <div key={rank}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 active:opacity-70 transition-opacity"
-                    style={{ background: isMe ? "rgba(255,51,85,0.10)" : "#F8F8FA",
-                      border: isMe ? "1px solid rgba(255,51,85,0.25)" : "1px solid rgba(0,0,0,0.06)",
-                      cursor: isMe ? "default" : "pointer" }}
-                    onClick={() => !isMe && navigate(`/user/${seed}`)}>
-                    <div className="w-5 flex items-center justify-center shrink-0">
-                      {rank === 1
-                        ? <Crown className="w-4 h-4 text-[#FF3355]" />
-                        : <span className="text-[13px] font-black tabular-nums"
-                            style={{ color: isMe ? "#FF3355" : "rgba(150,150,150,0.6)" }}>{rank}</span>}
+
+              {/* 포디엄 top 3 — 2위·1위·3위 순 */}
+              {(() => {
+                const top3 = rankers.slice(0, 3);
+                const rest = rankers.slice(3);
+                const podium = [
+                  top3.find(r => r.rank === 2),
+                  top3.find(r => r.rank === 1),
+                  top3.find(r => r.rank === 3),
+                ].filter(Boolean) as typeof rankers;
+                return (
+                  <>
+                    <div className="px-3 shrink-0 flex gap-2 items-end">
+                      {podium.map(({ rank, name, seed, streak, rate, isMe }, i) => {
+                        const is1st = rank === 1;
+                        return (
+                          <div key={rank}
+                            className="flex-1 flex flex-col items-center rounded-2xl py-3 active:opacity-70 transition-opacity cursor-pointer"
+                            style={{
+                              height: is1st ? 148 : 122,
+                              background: isMe ? "linear-gradient(160deg,rgba(255,51,85,0.08),white)" : "#F8F8FA",
+                              border: isMe ? "1.5px solid rgba(255,51,85,0.22)" : "1px solid rgba(0,0,0,0.06)",
+                            }}
+                            onClick={() => !isMe && navigate(`/user/${seed}`)}>
+                            <span className="text-[18px] mb-1.5 leading-none">{MEDAL[rank - 1]}</span>
+                            <div className="relative mb-1.5">
+                              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
+                                className="rounded-full bg-slate-100 border-2"
+                                style={{ width: is1st ? 44 : 36, height: is1st ? 44 : 36, borderColor: isMe ? "#FF3355" : "transparent" }}
+                                draggable={false} />
+                              {is1st && <Crown className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
+                            </div>
+                            <p className={`text-[10px] font-black truncate w-full text-center px-1 mb-0.5 ${isMe ? "text-[#FF3355]" : "text-slate-700"}`}>{name}</p>
+                            <span className="text-[12px] font-black tabular-nums" style={{ color: rateColor(rate) }}>{rate}%</span>
+                            <div className="flex items-center gap-0.5 mt-0.5">
+                              <Flame className="w-2.5 h-2.5 text-orange-400 fill-orange-300" />
+                              <span className="text-[9px] text-slate-400">{streak}일</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
-                      className="w-8 h-8 rounded-full bg-slate-100 shrink-0" draggable={false} />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-[13px] font-bold truncate ${isMe ? "text-[#FF3355]" : "text-slate-700"}`}>
-                        {name}{isMe && <span className="text-[#FF3355] text-[10px] ml-1">나</span>}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <Flame className="w-2.5 h-2.5 text-orange-400" />
-                        <span className="text-slate-400 text-[10px]">{streak}일</span>
+
+                    {/* 4위~ 리스트 */}
+                    {rest.length > 0 && (
+                      <div className="flex-1 overflow-y-auto overscroll-contain mx-3 mt-2 mb-3 rounded-2xl bg-[#F8F8FA] border border-black/[0.05]">
+                        {rest.map(({ rank, name, seed, streak, rate, isMe }, i) => (
+                          <div key={rank}>
+                            {i > 0 && <div className="h-px bg-slate-100 mx-3" />}
+                            <div className={`flex items-center gap-2.5 px-3 py-2.5 active:opacity-70 transition-opacity cursor-pointer ${isMe ? "bg-[#FFF5F7]" : ""}`}
+                              onClick={() => !isMe && navigate(`/user/${seed}`)}>
+                              <span className="w-5 text-center text-[12px] font-black tabular-nums shrink-0"
+                                style={{ color: isMe ? "#FF3355" : "rgba(160,160,160,0.7)" }}>{rank}</span>
+                              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name}
+                                className="w-7 h-7 rounded-full bg-slate-100 shrink-0" draggable={false} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1">
+                                  <p className={`text-[12px] font-bold truncate ${isMe ? "text-[#FF3355]" : "text-slate-700"}`}>{name}</p>
+                                  {isMe && <span className="text-[8px] font-black text-white bg-[#FF3355] px-1 py-0.5 rounded-full shrink-0">나</span>}
+                                </div>
+                                <div className="flex items-center gap-0.5">
+                                  <Flame className="w-2.5 h-2.5 text-orange-400 fill-orange-300" />
+                                  <span className="text-[10px] text-slate-400">{streak}일</span>
+                                </div>
+                              </div>
+                              <span className="text-[12px] font-black tabular-nums shrink-0" style={{ color: rateColor(rate) }}>{rate}%</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                    <span className={`text-[13px] font-black tabular-nums shrink-0 ${isMe ? "text-[#FF3355]" : "text-slate-400"}`}>{rate}%</span>
-                  </div>
-                ))}
-              </div>
+                    )}
+                  </>
+                );
+              })()}
+              </>)}
             </div>
 
             {/* ─── 슬라이드 3: 그룹 채팅 ─── */}
             <div className="absolute inset-0 overflow-hidden flex flex-col bg-white"
               style={{ transform: slideTx(2), transition: trans, willChange: "transform" }}>
+
+              {myGroups.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2">
+                  <span className="text-4xl">💬</span>
+                  <p className="text-slate-700 font-black text-[15px]">채팅이 없어요</p>
+                  <p className="text-slate-400 text-[12px]">그룹에 참여하면 채팅할 수 있어요</p>
+                </div>
+              ) : (<>
 
               <div className="px-5 pt-6 pb-3 shrink-0"
                 style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
@@ -454,7 +670,8 @@ export function Home() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
+              <div ref={chatScrollRef}
+                className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
                 onScroll={() => setEmojiPickerFor(null)}
                 onClick={() => emojiPickerFor && setEmojiPickerFor(null)}>
                 {chats.map((msg) => {
@@ -469,14 +686,15 @@ export function Home() {
                       </div>
                     );
                   }
+                  const isPickerOpen = emojiPickerFor === msg.id;
                   return (
-                    <div key={msg.id} className={`flex gap-2 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
+                    <div key={msg.id} className={`flex gap-2 items-end ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
                       {!msg.isMe && (
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
-                          className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mt-0.5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
+                          className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mb-5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
                           onClick={() => navigate(`/user/${msg.seed}`)} />
                       )}
-                      <div className={`flex flex-col gap-0.5 max-w-[72%] ${msg.isMe ? "items-end" : "items-start"}`}>
+                      <div className={`flex flex-col gap-0.5 max-w-[68%] ${msg.isMe ? "items-end" : "items-start"}`}>
                         {!msg.isMe && (
                           <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
                             onClick={() => navigate(`/user/${msg.seed}`)}>
@@ -484,10 +702,11 @@ export function Home() {
                           </span>
                         )}
                         {/* 이모지 피커 */}
-                        {emojiPickerFor === msg.id && (
+                        {isPickerOpen && (
                           <div className={`flex gap-1 mb-1 ${msg.isMe ? "justify-end" : "justify-start"}`}
                             onTouchStart={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-                            <div className="flex gap-1 bg-white rounded-2xl px-2 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-100">
+                            <div className="flex gap-1 bg-white rounded-2xl px-2 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-100"
+                              style={{ animation: "picker-in 0.15s ease both" }}>
                               {EMOJI_REACTIONS.map(emoji => (
                                 <button key={emoji}
                                   className="w-8 h-8 flex items-center justify-center text-[17px] rounded-xl active:bg-slate-100 transition-colors"
@@ -499,29 +718,37 @@ export function Home() {
                             </div>
                           </div>
                         )}
-                        <div className="px-3 py-2 text-[13px] leading-snug select-none"
-                          style={{ background: msg.isMe ? "#FF3355" : "white",
-                            color: msg.isMe ? "white" : "#1e293b",
-                            borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                            boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}
-                          onTouchStart={() => startLongPress(msg.id)}
-                          onTouchEnd={cancelLongPress}
-                          onTouchMove={cancelLongPress}>
-                          {msg.text}
-                        </div>
-                        {/* 이모지 반응 */}
-                        {reactions[msg.id] && Object.keys(reactions[msg.id]).length > 0 && (
-                          <div className={`flex gap-1 mt-0.5 flex-wrap ${msg.isMe ? "justify-end" : "justify-start"}`}
-                            onTouchStart={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-                            {Object.entries(reactions[msg.id]).map(([emoji, count]) => (
-                              <button key={emoji}
-                                className="flex items-center gap-0.5 bg-white border border-slate-200 rounded-full px-2 py-0.5 shadow-sm active:scale-95 transition-transform"
-                                onClick={() => addReaction(msg.id, emoji)}>
-                                <span className="text-[12px]">{emoji}</span>
-                                <span className="text-slate-500 font-bold text-[10px]">{count}</span>
-                              </button>
-                            ))}
+                        {/* 말풍선 + 반응 버튼 */}
+                        <div className={`flex items-center gap-1.5 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
+                          <div className="px-3 py-2 text-[13px] leading-snug select-none"
+                            style={{ background: msg.isMe ? "#FF3355" : "white",
+                              color: msg.isMe ? "white" : "#1e293b",
+                              borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                              boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}
+                            onTouchStart={() => startLongPress(msg.id)}
+                            onTouchEnd={cancelLongPress}
+                            onTouchMove={cancelLongPress}>
+                            {msg.text}
                           </div>
+                          {/* 반응 추가 버튼 — 상대방 메시지에만 */}
+                          {!msg.isMe && <button
+                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                            style={{ background: isPickerOpen ? "rgba(255,51,85,0.12)" : "rgba(0,0,0,0.06)" }}
+                            onTouchStart={e => e.stopPropagation()}
+                            onMouseDown={e => e.stopPropagation()}
+                            onClick={e => { e.stopPropagation(); setEmojiPickerFor(isPickerOpen ? null : msg.id); }}>
+                            <SmilePlus className="w-3.5 h-3.5" style={{ color: isPickerOpen ? "#FF3355" : "#94a3b8" }} />
+                          </button>}
+                        </div>
+                        {/* 이모지 반응 — 하나만 */}
+                        {reactions[msg.id] && (
+                          <button
+                            className={`mt-0.5 px-2 py-0.5 rounded-full text-[14px] active:scale-90 transition-transform`}
+                            style={{ background: "white", border: "1.5px solid rgba(255,51,85,0.25)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
+                            onTouchStart={e => e.stopPropagation()}
+                            onClick={e => { e.stopPropagation(); addReaction(msg.id, reactions[msg.id]); }}>
+                            {reactions[msg.id]}
+                          </button>
                         )}
                         <span className="text-slate-400 text-[10px] px-1">{msg.time}</span>
                       </div>
@@ -537,6 +764,12 @@ export function Home() {
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && sendChat()}
                   onTouchStart={e => e.stopPropagation()}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      const el = chatScrollRef.current;
+                      if (el) el.scrollTop = el.scrollHeight;
+                    }, 300);
+                  }}
                   placeholder="메시지 입력..."
                   className="flex-1 h-9 px-3.5 rounded-full text-[13px] text-slate-700 placeholder-slate-300 focus:outline-none"
                   style={{ background: "#F4F4F6", border: "1px solid rgba(0,0,0,0.08)", color: "#1e293b" }} />
@@ -546,6 +779,7 @@ export function Home() {
                   <Send className="w-4 h-4 text-white" />
                 </button>
               </div>
+              </>)}
             </div>
 
           </div>{/* 카드 끝 */}
@@ -645,8 +879,27 @@ export function Home() {
 }
 
 function FeedCard({ item }: { item: FeedItem; key?: React.Key }) {
+  const navigate = useNavigate();
+
+  function goToPhoto() {
+    navigate("/challenge/group/feed/activity", {
+      state: {
+        imgSrc: item.img,
+        grad: ["#FF3355", "#FF6680"] as [string, string],
+        name: item.user,
+        seed: item.seed,
+        time: item.time,
+        msg: item.caption,
+        type: "verify",
+      },
+    });
+  }
+
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.97] transition-transform cursor-pointer border border-black/[0.04]">
+    <div
+      className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.97] transition-transform cursor-pointer border border-black/[0.04]"
+      onClick={goToPhoto}
+    >
       {/* 이미지 */}
       <div className={`relative ${item.aspect === "tall" ? "aspect-[3/4]" : "aspect-square"}`}>
         <img
@@ -667,14 +920,17 @@ function FeedCard({ item }: { item: FeedItem; key?: React.Key }) {
         </div>
         {/* 하단 유저 + 캡션 */}
         <div className="absolute bottom-0 left-0 right-0 p-3">
-          <div className="flex items-center gap-1.5 mb-1">
+          <button
+            className="flex items-center gap-1.5 mb-1 w-full active:opacity-70 transition-opacity"
+            onClick={e => { e.stopPropagation(); navigate(`/user/${item.seed}`); }}
+          >
             <img
               src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`}
               alt={item.user}
               className="w-5 h-5 rounded-full bg-white/20 shrink-0"
             />
             <span className="text-white text-[11px] font-black truncate">{item.user}</span>
-          </div>
+          </button>
           <p className="text-white/75 text-[11px] leading-snug line-clamp-2">{item.caption}</p>
         </div>
       </div>

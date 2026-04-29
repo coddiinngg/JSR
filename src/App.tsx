@@ -22,6 +22,7 @@ import { EditProfile } from "./pages/EditProfile";
 import { NotificationSettings } from "./pages/NotificationSettings";
 import { Challenge } from "./pages/Challenge";
 import { GroupDetail } from "./pages/challenge/GroupDetail";
+import { ActivityPhoto } from "./pages/challenge/ActivityPhoto";
 import { Gallery } from "./pages/Gallery";
 import { Rewards } from "./pages/Rewards";
 import { Notifications } from "./pages/Notifications";
@@ -97,6 +98,7 @@ export default function App() {
               <Route path="/stats/weekly-report" element={<WeeklyReport />} />
               <Route path="/friends/invite" element={<FriendInvite />} />
               <Route path="/challenge/group/:groupId" element={<GroupDetail />} />
+              <Route path="/challenge/group/:groupId/activity" element={<ActivityPhoto />} />
               <Route path="/user/:seed" element={<UserProfile />} />
               <Route path="/feed" element={<FeedAll />} />
               <Route path="/challenge/request" element={<ChallengeRequest />} />

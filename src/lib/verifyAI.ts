@@ -45,6 +45,7 @@ function mergeSignals(signals: AbortSignal[]): AbortController {
  * 사진을 Supabase Edge Function으로 전송해 AI 인증을 수행합니다.
  * - Gemini API 키는 서버(Edge Function)에서만 사용됩니다.
  * - 인증 통과 시 Edge Function이 DB 저장 + XP 지급까지 처리합니다.
+ * - 재시도 횟수 제한은 서버에서 관리합니다 (429 응답).
  */
 export async function verifyPhotoWithAI(
   file: File,
@@ -86,6 +87,11 @@ export async function verifyPhotoWithAI(
 
     if (response.status === 409) {
       throw new Error("오늘 이미 인증했어요.");
+    }
+
+    if (response.status === 429) {
+      const err = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(err?.error ?? "오늘 인증 시도 횟수를 초과했습니다. 내일 다시 시도해주세요.");
     }
 
     if (!response.ok) {

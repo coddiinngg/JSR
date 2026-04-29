@@ -1,20 +1,46 @@
 import { ChevronLeft, Camera, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useApp } from "../contexts/AppContext";
+import { supabase } from "../lib/supabase";
 
 export function EditProfile() {
   const navigate = useNavigate();
-  const [name, setName] = useState("김지수");
-  const [nickname, setNickname] = useState("jisu_kim");
-  const [bio, setBio] = useState("매일 조금씩 더 나아지는 중 🌱");
+  const { user, profile, refreshProfile } = useAuth();
+  const { setNickname } = useApp();
+  const [username, setUsername] = useState(profile?.username ?? "");
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      navigate(-1);
-    }, 800);
+  useEffect(() => {
+    setUsername(profile?.username ?? "");
+  }, [profile?.username]);
+
+  const avatarUrl = profile?.avatar_url ?? null;
+  const initial = (username || profile?.username || "?").charAt(0).toUpperCase();
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ username: username.trim() || null })
+        .eq("id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      setNickname(username.trim() || "이름");
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        navigate(-1);
+      }, 800);
+    } catch (e) {
+      console.error("프로필 저장 실패:", e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -30,7 +56,8 @@ export function EditProfile() {
         <h1 className="text-[17px] font-black text-slate-900">프로필 수정</h1>
         <button
           onClick={handleSave}
-          className="h-9 px-4 flex items-center gap-1.5 rounded-full font-bold text-[13px] transition-all active:scale-95"
+          disabled={saving}
+          className="h-9 px-4 flex items-center gap-1.5 rounded-full font-bold text-[13px] transition-all active:scale-95 disabled:opacity-60"
           style={{
             background: saved ? "#22c55e" : "linear-gradient(135deg, #FF3355, #ff5570)",
             color: "white",
@@ -46,13 +73,17 @@ export function EditProfile() {
         <div className="flex flex-col items-center pt-8 pb-6 bg-white border-b border-slate-100">
           <div className="relative mb-3">
             <div
-              className="w-24 h-24 rounded-full bg-cover bg-center"
+              className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden"
               style={{
-                backgroundImage: 'url("https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop")',
                 border: "3px solid #FF3355",
                 boxShadow: "0 0 0 3px white, 0 6px 20px rgba(255,51,85,0.2)",
+                ...(avatarUrl ? { backgroundImage: `url("${avatarUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : {}),
               }}
-            />
+            >
+              {!avatarUrl && (
+                <span className="text-3xl font-black text-slate-400">{initial}</span>
+              )}
+            </div>
             <button
               className="absolute bottom-0 right-0 w-9 h-9 flex items-center justify-center rounded-full border-2 border-white shadow-lg text-white"
               style={{ background: "linear-gradient(135deg, #FF3355, #ff5570)" }}
@@ -64,42 +95,15 @@ export function EditProfile() {
         </div>
 
         {/* 입력 필드 */}
-        <div className="px-4 pt-5 space-y-4 pb-8">
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">이름</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">닉네임</label>
-            <div className="relative">
-              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-[15px] font-medium">@</span>
-              <input
-                type="text"
-                value={nickname}
-                onChange={e => setNickname(e.target.value)}
-                className="w-full h-14 pl-9 pr-5 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">한 줄 소개</label>
-            <textarea
-              value={bio}
-              onChange={e => setBio(e.target.value)}
-              rows={3}
-              maxLength={80}
-              className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors resize-none"
-            />
-            <p className="text-[11px] text-slate-300 text-right mt-1 mr-1">{bio.length}/80</p>
-          </div>
-
+        <div className="px-4 pt-5 pb-8">
+          <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 ml-1 mb-2 block">닉네임</label>
+          <input
+            type="text"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="닉네임 입력"
+            className="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-white text-slate-900 text-[15px] font-medium focus:outline-none focus:border-[#FF3355] transition-colors"
+          />
         </div>
       </div>
     </div>

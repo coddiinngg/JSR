@@ -47,7 +47,8 @@ export function Profile() {
   const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
   const planLabel = profile?.plan_type === "premium" ? "Premium Plan" : "Free Plan";
-  const avatarUrl = profile?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop';
+  const avatarUrl = profile?.avatar_url ?? null;
+  const avatarInitial = (nickname || "?").charAt(0).toUpperCase();
 
   const totalDone = goals.reduce((s, g) => s + g.streak, 0);
   const maxStreak = Math.max(...goals.map(g => g.streak), 0);
@@ -101,12 +102,16 @@ export function Profile() {
                 style={{ background: "conic-gradient(from 0deg, rgba(255,255,255,0.8), rgba(255,255,255,0.3), rgba(255,255,255,0.8))", borderRadius: "50%" }}
               />
               <div
-                className="relative w-20 h-20 rounded-full bg-cover bg-center"
+                className="relative w-20 h-20 rounded-full bg-white/20 flex items-center justify-center overflow-hidden"
                 style={{
-                  backgroundImage: `url("${avatarUrl}")`,
                   boxShadow: "0 0 0 2px rgba(255,255,255,0.9), 0 0 0 4px rgba(255,51,85,0.5)",
+                  ...(avatarUrl ? { backgroundImage: `url("${avatarUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : {}),
                 }}
-              />
+              >
+                {!avatarUrl && (
+                  <span className="text-[28px] font-black text-white">{avatarInitial}</span>
+                )}
+              </div>
               <button
                 onClick={() => guardAction(() => navigate("/profile/edit"))}
                 className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white"

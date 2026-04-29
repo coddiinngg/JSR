@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Share2, Users, Flame, Crown, Copy, Check, X, Camera } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useApp } from "../../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../lib/verifyTypes";
@@ -176,12 +176,14 @@ export function GroupDetail() {
   const navigate = useNavigate();
   const { groupId = "1" } = useParams<{ groupId: string }>();
   const { groups, joinGroup, leaveGroup, beginVerification } = useApp();
+  const { state: locState } = useLocation() as { state: { tab?: "leaderboard" | "activity"; skipAnimation?: boolean } | null };
 
   const group  = groups.find(g => g.id === groupId) ?? groups[0];
   const detail = GROUPS_DETAIL[groupId] ?? GROUPS_DETAIL["1"];
 
-  const [mounted, setMounted]                   = useState(false);
-  const [tab, setTab]                           = useState<"leaderboard" | "activity">("leaderboard");
+  const skipAnim = locState?.skipAnimation ?? false;
+  const [mounted, setMounted]                   = useState(skipAnim);
+  const [tab, setTab]                           = useState<"leaderboard" | "activity">(locState?.tab ?? "leaderboard");
   const [copied, setCopied]                     = useState(false);
   const [showInvite, setShowInvite]             = useState(false);
   const [showJoinConfirm, setShowJoinConfirm]   = useState(false);
@@ -189,10 +191,31 @@ export function GroupDetail() {
   const [scrolled, setScrolled]                 = useState(false);
   const [showMyRate, setShowMyRate]             = useState(false);
   const scrollRef                               = useRef<HTMLDivElement>(null);
+  const scrollKey                               = `gd-scroll-${groupId}`;
 
   useEffect(() => {
+    if (skipAnim) return;
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
+  }, []);
+
+  // 뒤로 돌아왔을 때 스크롤 위치 복원
+  useEffect(() => {
+    if (!skipAnim || !scrollRef.current) return;
+    const saved = sessionStorage.getItem(scrollKey);
+    if (saved) {
+      scrollRef.current.scrollTop = parseInt(saved);
+      sessionStorage.removeItem(scrollKey);
+    }
+  }, []);
+
+  // 떠날 때 스크롤 위치 저장
+  useEffect(() => {
+    return () => {
+      if (scrollRef.current) {
+        sessionStorage.setItem(scrollKey, String(scrollRef.current.scrollTop));
+      }
+    };
   }, []);
 
   const inviteLink = `${INVITE_BASE}${groupId.padStart(4, "0")}`;
@@ -548,7 +571,7 @@ export function GroupDetail() {
                     const imgSrc = actImgs[i * 2] ?? actImgs[0];
                     return (
                       <ActivityCard key={i} item={item} imgSrc={isVerify ? imgSrc : undefined}
-                        aspect={i === 0 ? "tall" : "square"} mounted={mounted} delay={i * 80} />
+                        aspect={i === 0 ? "tall" : "square"} mounted={mounted} delay={i * 80} groupId={groupId} />
                     );
                   })}
                 </div>
@@ -559,7 +582,7 @@ export function GroupDetail() {
                     const imgSrc = actImgs[i * 2 + 1] ?? actImgs[1];
                     return (
                       <ActivityCard key={i} item={item} imgSrc={isVerify ? imgSrc : undefined}
-                        aspect={i === 0 ? "square" : "tall"} mounted={mounted} delay={i * 80 + 40} />
+                        aspect={i === 0 ? "square" : "tall"} mounted={mounted} delay={i * 80 + 40} groupId={groupId} />
                     );
                   })}
                 </div>
@@ -683,15 +706,22 @@ export function GroupDetail() {
 }
 
 function ActivityCard({
-  item, imgSrc, aspect, mounted, delay,
+  item, imgSrc, aspect, mounted, delay, groupId,
 }: {
   item: ActivityItem; imgSrc?: string; aspect: "tall" | "square";
-  mounted: boolean; delay: number; key?: React.Key;
+  mounted: boolean; delay: number; groupId: string; key?: React.Key;
 }) {
+  const navigate = useNavigate();
   const typeEmoji  = item.type === "verify" ? "📸" : item.type === "streak" ? "🔥" : item.type === "rank" ? "🏆" : "💬";
   const typeLabel  = item.type === "verify" ? "인증" : item.type === "streak" ? "연속달성" : item.type === "rank" ? "순위" : "댓글";
   const typeBg     = item.type === "verify" ? "#FFF0F3" : item.type === "streak" ? "#FFF7ED" : "#F1F5F9";
   const typeColor  = item.type === "verify" ? "#FF3355" : item.type === "streak" ? "#FB923C" : "#64748B";
+
+  function goToPhoto() {
+    navigate(`/challenge/group/${groupId}/activity`, {
+      state: { imgSrc, grad: item.grad, name: item.name, seed: item.seed, time: item.time, msg: item.msg, type: item.type },
+    });
+  }
 
   return (
     <div
@@ -701,6 +731,7 @@ function ActivityCard({
         transform: mounted ? "none" : "translateY(12px)",
         transition: `opacity 0.4s ease ${delay}ms, transform 0.4s ease ${delay}ms`,
       }}
+      onClick={goToPhoto}
     >
       {/* 이미지 영역 */}
       <div className={`relative ${aspect === "tall" ? "aspect-[3/4]" : "aspect-square"}`}>
@@ -717,12 +748,15 @@ function ActivityCard({
         </div>
         {/* 하단 유저 + 메시지 */}
         <div className="absolute bottom-0 left-0 right-0 p-3">
-          <div className="flex items-center gap-1.5 mb-1">
+          <button
+            className="flex items-center gap-1.5 mb-1 w-full active:opacity-70 transition-opacity"
+            onClick={e => { e.stopPropagation(); navigate(`/user/${item.seed}`); }}
+          >
             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`}
               className="w-5 h-5 rounded-full bg-white/20 shrink-0" />
             <span className="text-white text-[11px] font-black truncate">{item.name}</span>
             <span className="text-white/50 text-[10px] ml-auto shrink-0">{item.time}</span>
-          </div>
+          </button>
           <p className="text-white/80 text-[11px] leading-snug line-clamp-2">{item.msg}</p>
         </div>
       </div>

@@ -25,15 +25,16 @@ export interface Group {
   myRank: number;
   myRate: number;
   myStreak: number;
+  cover: string;
 }
 
 const DEFAULT_GROUPS: Group[] = [
-  { id: "1", title: "매일 5,000보 걷기",  desc: "걸음 수 인증으로 함께 건강해져요",    members: 38, rate: 72, status: "인기",    statusColor: "#FF3355", category: "운동", joined: false, verifyType: "step_walk",      rule: "매일 5,000보 이상 만보기 스크린샷 인증",         goal: "오늘 5,000보 달성",   myRank: 4,  myRate: 75, myStreak: 8  },
-  { id: "2", title: "러닝 크루",       desc: "러닝하며 최애 풍경을 함께 공유해요",  members: 24, rate: 80, status: "진행중",  statusColor: "#10B981", category: "운동", joined: false, verifyType: "run_scenery",    rule: "러닝 중 찍은 풍경 사진 인증",                   goal: "러닝 풍경 사진 찍기", myRank: 12, myRate: 50, myStreak: 2  },
-  { id: "3", title: "일일 독서 클럽", desc: "매일 읽는 책 표지를 함께 모아요",     members: 15, rate: 65, status: "진행중",  statusColor: "#10B981", category: "학습", joined: false, verifyType: "book_cover",     rule: "매일 읽는 책 표지 사진 인증",                   goal: "책 30분 읽기",        myRank: 3,  myRate: 75, myStreak: 5  },
-  { id: "4", title: "필사 챌린지",    desc: "곱씹게 되는 문장을 함께 모아요",     members: 11, rate: 58, status: "마감임박", statusColor: "#F59E0B", category: "학습", joined: false, verifyType: "quote_photo",    rule: "오늘의 인상 깊은 문장 사진 인증",               goal: "인상 문장 필사",      myRank: 6,  myRate: 60, myStreak: 3  },
-  { id: "5", title: "포즈 챌린지",    desc: "오늘의 지정 포즈에 도전해요",        members: 42, rate: 88, status: "인기",    statusColor: "#FF3355", category: "생활", joined: false, verifyType: "celeb_pose",     rule: "오늘의 지정 포즈로 셀카 인증",                  goal: "오늘의 포즈 찍기",    myRank: 20, myRate: 40, myStreak: 1  },
-  { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4  },
+  { id: "1", title: "매일 5,000보 걷기",  desc: "걸음 수 인증으로 함께 건강해져요",    members: 38, rate: 72, status: "인기",    statusColor: "#FF3355", category: "운동", joined: false, verifyType: "step_walk",      rule: "매일 5,000보 이상 만보기 스크린샷 인증",         goal: "오늘 5,000보 달성",   myRank: 4,  myRate: 75, myStreak: 8,  cover: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&fit=crop" },
+  { id: "2", title: "러닝 크루",       desc: "러닝하며 최애 풍경을 함께 공유해요",  members: 24, rate: 80, status: "진행중",  statusColor: "#10B981", category: "운동", joined: false, verifyType: "run_scenery",    rule: "러닝 중 찍은 풍경 사진 인증",                   goal: "러닝 풍경 사진 찍기", myRank: 12, myRate: 50, myStreak: 2,  cover: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&fit=crop" },
+  { id: "3", title: "일일 독서 클럽", desc: "매일 읽는 책 표지를 함께 모아요",     members: 15, rate: 65, status: "진행중",  statusColor: "#10B981", category: "학습", joined: false, verifyType: "book_cover",     rule: "매일 읽는 책 표지 사진 인증",                   goal: "책 30분 읽기",        myRank: 3,  myRate: 75, myStreak: 5,  cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&fit=crop" },
+  { id: "4", title: "필사 챌린지",    desc: "곱씹게 되는 문장을 함께 모아요",     members: 11, rate: 58, status: "마감임박", statusColor: "#F59E0B", category: "학습", joined: false, verifyType: "quote_photo",    rule: "오늘의 인상 깊은 문장 사진 인증",               goal: "인상 문장 필사",      myRank: 6,  myRate: 60, myStreak: 3,  cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&fit=crop" },
+  { id: "5", title: "포즈 챌린지",    desc: "오늘의 지정 포즈에 도전해요",        members: 42, rate: 88, status: "인기",    statusColor: "#FF3355", category: "생활", joined: false, verifyType: "celeb_pose",     rule: "오늘의 지정 포즈로 셀카 인증",                  goal: "오늘의 포즈 찍기",    myRank: 20, myRate: 40, myStreak: 1,  cover: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&fit=crop" },
+  { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4,  cover: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&fit=crop" },
 ];
 
 /* ── 카테고리 메타 ── */
@@ -158,6 +159,8 @@ interface AppContextType {
   groups: Group[];
   joinGroup: (id: string) => void;
   leaveGroup: (id: string) => void;
+  selectedGroupId: string;
+  setSelectedGroupId: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -190,6 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [verificationImageFile, setVerificationImageFile] = useState<File | null>(null);
   const [verificationHistory, setVerificationHistory] = useState<DbVerification[]>([]);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
   const verificationImageUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -451,7 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       verifyingGoalId, setVerifyingGoalId,
       verifyType, setVerifyType,
       verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshGoals,
-      groups, joinGroup, leaveGroup,
+      groups, joinGroup, leaveGroup, selectedGroupId, setSelectedGroupId,
     }}>
       {children}
     </AppContext.Provider>

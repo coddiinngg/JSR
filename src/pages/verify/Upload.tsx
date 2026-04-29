@@ -20,25 +20,11 @@ export function Upload() {
   const [key] = useState<VerifyTypeKey>(() => (verifyType as VerifyTypeKey) ?? "step_walk");
   const vt = VERIFY_TYPES[key] ?? VERIFY_TYPES["step_walk"];
 
-  const MAX_DAILY_RETRIES = 3;
-
   useEffect(() => {
     if (calledRef.current) return;
     calledRef.current = true;
 
     if (!verificationImageFile) { navigate("/verify/camera"); return; }
-
-    // ── 하루 재시도 횟수 제한 ──
-    const today = new Date().toISOString().slice(0, 10);
-    const retryKey = `chally_retries_${verifyingGoalId ?? "none"}_${today}`;
-    const retryCount = parseInt(localStorage.getItem(retryKey) ?? "0", 10);
-
-    if (retryCount >= MAX_DAILY_RETRIES) {
-      setErrorMessage(`오늘 인증 시도 횟수(${MAX_DAILY_RETRIES}회)를 초과했습니다. 내일 다시 시도해주세요.`);
-      setPhase("error");
-      return;
-    }
-    localStorage.setItem(retryKey, String(retryCount + 1));
 
     const abortCtrl = new AbortController();
     let rafId: number;

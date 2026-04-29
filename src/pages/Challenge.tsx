@@ -44,6 +44,8 @@ export function Challenge() {
   const [filterMode, setFilterMode] = useState<"전체" | "참여중">("전체");
   const [showDropdown, setShowDropdown] = useState(false);
   const [mounted,   setMounted]   = useState(false);
+  const [joinTarget, setJoinTarget] = useState<{ id: string; title: string; desc: string; members: number } | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -67,6 +69,7 @@ export function Challenge() {
       <style>{`
         @keyframes ch-down  { from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);} }
         @keyframes ch-scale { from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);} }
+        @keyframes ch-sheet { from{transform:translateY(100%);}to{transform:translateY(0);} }
       `}</style>
 
       {/* 헤더 */}
@@ -247,7 +250,11 @@ export function Challenge() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      guardAction(() => { isJoined ? leaveGroup(id) : joinGroup(id); });
+                      if (isJoined) {
+                        guardAction(() => setLeaveTarget({ id, title }));
+                      } else {
+                        guardAction(() => setJoinTarget({ id, title, desc, members }));
+                      }
                     }}
                     className={cn(
                       "w-full py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 active:scale-[0.98]",
@@ -265,6 +272,93 @@ export function Challenge() {
           })}
         </div>
       </div>
+
+      {/* 탈퇴 확인 바텀 시트 */}
+      {leaveTarget && (
+        <div className="fixed inset-0 z-[200] flex items-end" onClick={() => setLeaveTarget(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full bg-white rounded-t-3xl px-5 pt-5"
+            style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))", animation: "ch-sheet 0.3s cubic-bezier(0.32,0.72,0,1) both", boxShadow: "0 -8px 40px rgba(0,0,0,0.12)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-9 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+
+            <div className="mb-5">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">그룹 탈퇴</p>
+              <h2 className="text-[20px] font-black text-slate-900 leading-snug mb-1">{leaveTarget.title}</h2>
+              <p className="text-[13px] text-slate-400 leading-relaxed">탈퇴하면 달성 기록이 초기화될 수 있어요.</p>
+            </div>
+
+            <div className="h-px bg-slate-100 mb-5" />
+
+            <p className="text-[14px] text-slate-500 text-center mb-5">정말 탈퇴할까요?</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setLeaveTarget(null)}
+                className="flex-[2] py-3.5 rounded-2xl bg-slate-100 text-slate-500 text-[14px] font-bold active:bg-slate-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => { leaveGroup(leaveTarget.id); setLeaveTarget(null); }}
+                className="flex-1 py-3.5 rounded-2xl text-white text-[14px] font-bold active:opacity-90 transition-opacity"
+                style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: "0 6px 16px -4px rgba(255,51,85,0.45)" }}
+              >
+                탈퇴
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 참여 확인 바텀 시트 */}
+      {joinTarget && (
+        <div className="fixed inset-0 z-[200] flex items-end" onClick={() => setJoinTarget(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full bg-white rounded-t-3xl px-5 pt-5"
+            style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))", animation: "ch-sheet 0.3s cubic-bezier(0.32,0.72,0,1) both", boxShadow: "0 -8px 40px rgba(0,0,0,0.12)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 핸들 */}
+            <div className="w-9 h-1 rounded-full bg-slate-200 mx-auto mb-5" />
+
+            {/* 그룹 정보 */}
+            <div className="mb-5">
+              <p className="text-[11px] font-bold text-[#FF3355] uppercase tracking-widest mb-1">그룹 참여</p>
+              <h2 className="text-[20px] font-black text-slate-900 leading-snug mb-1">{joinTarget.title}</h2>
+              <p className="text-[13px] text-slate-400 leading-relaxed mb-3">{joinTarget.desc}</p>
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-[13px]">현재 {joinTarget.members}명 참여 중</span>
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-100 mb-5" />
+
+            <p className="text-[14px] text-slate-500 text-center mb-5">이 그룹에 참여할까요?</p>
+
+            {/* 버튼 */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setJoinTarget(null)}
+                className="flex-1 py-3.5 rounded-2xl bg-slate-100 text-slate-500 text-[14px] font-bold active:bg-slate-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => { joinGroup(joinTarget.id); setJoinTarget(null); }}
+                className="flex-[2] py-3.5 rounded-2xl text-white text-[14px] font-bold active:opacity-90 transition-opacity"
+                style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: "0 6px 16px -4px rgba(255,51,85,0.45)" }}
+              >
+                참여하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ function cardAnim(delay: number, floatName = "ob-float-a") {
 function Slide0({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full items-center justify-center px-8 relative z-10">
+
       {/* 로고 */}
       <div
         className="mb-8"
@@ -24,7 +25,8 @@ function Slide0({ on }: { on: boolean }) {
         <img
           src="/chally-logo-nobg.png"
           alt="Chally"
-          className="w-40 h-40 object-contain drop-shadow-2xl"
+          className="w-40 h-40 object-contain"
+          style={{ animation: on ? "ob-logo-fire 1.2s ease-out 80ms both" : "none" }}
         />
       </div>
 
@@ -33,8 +35,11 @@ function Slide0({ on }: { on: boolean }) {
         className="text-center"
         style={{ animation: on ? "ob-fade 0.5s ease 350ms both" : "none" }}
       >
-        <h1 className="text-[36px] font-black text-white leading-tight mb-3">
-          챌리<span className="text-[#FF9DB2]">(Chally)</span>
+        <h1
+          className="text-[36px] font-black leading-tight mb-3 bg-clip-text text-transparent"
+          style={{ backgroundImage: "linear-gradient(90deg, #ffffff 0%, #FF3355 60%, #FF9DB2 100%)" }}
+        >
+          챌리(Chally)
         </h1>
         <p className="text-white/50 text-[16px] font-medium">챌린지로 모임, 챌린지가 모임!</p>
       </div>
@@ -47,7 +52,15 @@ function Slide1({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="relative w-[300px] h-[280px]">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#FF3355]/40 bg-[#FF3355]/10"
+            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+            <span className="text-[#FF9DB2] text-[12px] font-semibold tracking-wide">함께하는 챌린지</span>
+          </div>
+          <div className="relative w-[300px] h-[280px]">
 
           {/* 그룹 멤버 카드 */}
           <div
@@ -119,6 +132,7 @@ function Slide1({ on }: { on: boolean }) {
               <div className="text-white font-extrabold text-sm leading-none">7일 🔥</div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
@@ -137,7 +151,15 @@ function Slide2({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="relative w-[300px] h-[280px]">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-violet-500/40 bg-violet-500/10"
+            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+            <span className="text-violet-300 text-[12px] font-semibold tracking-wide">AI 사진 인증</span>
+          </div>
+          <div className="relative w-[300px] h-[280px]">
 
           {/* 카메라 카드 */}
           <div
@@ -208,10 +230,11 @@ function Slide2({ on }: { on: boolean }) {
               ))}
             </div>
           </div>
+          </div>
         </div>
       </div>
 
-      <TextBlock on={on} tag="AI 사진 인증" tagColor="text-violet-300" tagBg="bg-violet-500/15 border-violet-500/25">
+      <TextBlock on={on}>
         <span className="text-white">사진 한 장으로</span>
         <br />
         <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#a78bfa,#818cf8)" }}>끝나는 인증</span>
@@ -226,7 +249,15 @@ function Slide3({ on }: { on: boolean }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="relative w-[300px] h-[280px]">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10"
+            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+            <span className="text-amber-300 text-[12px] font-semibold tracking-wide">실시간 공동 달성</span>
+          </div>
+          <div className="relative w-[300px] h-[280px]">
 
           {/* 랭킹 카드 */}
           <div
@@ -299,6 +330,7 @@ function Slide3({ on }: { on: boolean }) {
               <div className="text-white font-extrabold text-sm leading-none">21일 🔥</div>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
@@ -353,7 +385,7 @@ function Slide4({ on, value, onChange }: { on: boolean; value: string; onChange:
         </div>
       </div>
 
-      <TextBlock on={on} tag="프로필 설정" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25">
+      <TextBlock on={on} tag="프로필 설정" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25" noDot>
         <span className="text-white">어떻게</span>
         <br />
         <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>불러드릴까요?</span>
@@ -532,17 +564,17 @@ function Slide6({ on, selected, toggle }: {
 }
 
 /* ─── 공통 텍스트 블록 ─────────────────────────── */
-function TextBlock({ on, tag, tagColor, tagBg, children }: {
-  on: boolean; tag?: string; tagColor?: string; tagBg?: string; children: React.ReactNode;
+function TextBlock({ on, tag, tagColor, tagBg, noDot, children }: {
+  on: boolean; tag?: string; tagColor?: string; tagBg?: string; noDot?: boolean; children: React.ReactNode;
 }) {
   return (
-    <div className="px-8 z-10 text-center">
+    <div className="px-8 z-10 text-center flex flex-col items-center">
       {tag && (
         <div
           className={`inline-flex items-center gap-1.5 ${tagBg} border rounded-full px-3 py-1 mb-4`}
           style={{ animation: on ? "ob-fade 0.5s ease 180ms both" : "none" }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          {!noDot && <div className="w-1.5 h-1.5 rounded-full bg-current" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />}
           <span className={`${tagColor} text-xs font-semibold tracking-wide`}>{tag}</span>
         </div>
       )}

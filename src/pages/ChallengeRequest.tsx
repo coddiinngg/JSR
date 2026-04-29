@@ -407,7 +407,7 @@ const WIZARD_STEPS = [
   {
     key: "details",
     question: "마지막으로\n조금만 더요! 🙌",
-    hint: "카테고리와 기간을 선택해주세요 (선택사항이에요)",
+    hint: "카테고리와 기간을 선택해주세요",
     type: "details" as const,
   },
 ];
@@ -430,7 +430,7 @@ function NewRequestView({ onBack }: { onBack: () => void }) {
   const canNext =
     step === 0 ? name.trim().length > 0 :
     step === 1 ? reason.trim().length > 0 :
-    true;
+    category !== null && duration !== null;
 
   function goNext() {
     if (!canNext) return;
@@ -450,21 +450,60 @@ function NewRequestView({ onBack }: { onBack: () => void }) {
 
   if (submitted) {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center px-6 bg-white gap-5">
-        <div className="text-6xl" style={{ animation: "g-pop 0.55s cubic-bezier(0.34,1.56,0.64,1) both" }}>
-          🎉
+      <div className="flex flex-col flex-1 items-center justify-center px-6 bg-white gap-6 relative overflow-hidden">
+        <style>{`
+          @keyframes letter-fly {
+            0%   { opacity: 0; transform: translateY(220px) scale(0.75) rotate(12deg); }
+            45%  { opacity: 1; transform: translateY(-18px) scale(1.1) rotate(-4deg); }
+            70%  { transform: translateY(8px) scale(0.96) rotate(2deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+          }
+          @keyframes success-in {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+
+        {/* 배경 장식 */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(255,51,85,0.06) 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(255,51,85,0.04) 0%, transparent 70%)" }} />
+
+        {/* 편지 날아오르기 */}
+        <div style={{ animation: "letter-fly 0.95s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+          <div className="w-24 h-24 rounded-3xl flex items-center justify-center text-6xl"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,51,85,0.08), rgba(255,51,85,0.04))",
+              border: "2px solid rgba(255,51,85,0.12)",
+              boxShadow: "0 12px 40px rgba(255,51,85,0.15)",
+            }}>
+            ✉️
+          </div>
         </div>
-        <div className="text-center" style={{ animation: "g-fade 0.4s ease 0.25s both", opacity: 0 }}>
-          <h2 className="text-[22px] font-bold text-slate-900 mb-2">고마워요!</h2>
+
+        {/* 텍스트 */}
+        <div className="text-center" style={{ animation: "success-in 0.5s ease 0.55s both", opacity: 0 }}>
+          <h2 className="text-[22px] font-black text-slate-900 mb-3 leading-snug">
+            챌린지가 성공적으로<br />요청되었어요!
+          </h2>
           <p className="text-[14px] text-slate-500 leading-relaxed">
-            건의가 잘 도착했어요.<br />
-            운영팀이 검토한 뒤 투표에 올려드릴게요 💛
+            운영팀이 검토 후 개발 여부를<br />
+            알림으로 알려드릴게요 🔔
           </p>
         </div>
+
+        {/* 돌아가기 버튼 */}
         <button
           onClick={onBack}
-          className="w-full py-3.5 rounded-2xl bg-slate-900 text-white font-bold text-[15px] active:scale-[0.97] transition-transform"
-          style={{ animation: "g-fade 0.4s ease 0.4s both", opacity: 0 }}
+          className="w-full py-3.5 rounded-2xl font-bold text-[15px] active:scale-[0.97] transition-transform"
+          style={{
+            animation: "success-in 0.5s ease 0.75s both",
+            opacity: 0,
+            background: "linear-gradient(135deg, #FF3355, #C8002B)",
+            color: "white",
+            boxShadow: "0 8px 24px rgba(255,51,85,0.25)",
+          }}
         >
           건의함으로 돌아가기
         </button>
@@ -531,7 +570,7 @@ function NewRequestView({ onBack }: { onBack: () => void }) {
           <div className="space-y-6">
             {/* 카테고리 */}
             <div>
-              <p className="text-[13px] font-semibold text-slate-600 mb-2.5">카테고리</p>
+              <p className="text-[13px] font-semibold text-slate-600 mb-2.5">카테고리 <span className="text-[#FF3355]">*</span></p>
               <div className="grid grid-cols-3 gap-2">
                 {categories.map(c => (
                   <button
@@ -551,7 +590,7 @@ function NewRequestView({ onBack }: { onBack: () => void }) {
 
             {/* 기간 */}
             <div>
-              <p className="text-[13px] font-semibold text-slate-600 mb-2.5">챌린지 기간</p>
+              <p className="text-[13px] font-semibold text-slate-600 mb-2.5">챌린지 기간 <span className="text-[#FF3355]">*</span></p>
               <div className="flex gap-2">
                 {durations.map(d => (
                   <button
@@ -596,7 +635,7 @@ function NewRequestView({ onBack }: { onBack: () => void }) {
             canNext ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
           }`}
         >
-          {isLast ? "건의 제출하기 🎉" : <>다음 <ArrowRight className="w-4 h-4" /></>}
+          {isLast ? "건의 제출하기 ✉️" : <>다음 <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
     </div>

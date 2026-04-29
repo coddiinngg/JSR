@@ -1,5 +1,4 @@
 // Supabase Edge Function: verify-photo
-// Gemini API 호출 및 인증 DB 저장을 서버에서 처리합니다.
 // 배포: supabase functions deploy verify-photo
 // 시크릿 설정: supabase secrets set GEMINI_API_KEY=<your_key>
 
@@ -10,6 +9,13 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// 사용자당 하루 최대 AI 호출 횟수 (전체)
+const MAX_DAILY_USER_CALLS = 10;
+// 목표당 하루 최대 재시도 횟수
+const MAX_DAILY_GOAL_ATTEMPTS = 5;
+// 요청 본문 최대 크기: 8MB (base64 기준 ~6MB 이미지)
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
 
 type VerifyTypeKey =
   | "step_walk" | "run_scenery" | "quote_photo"
@@ -60,6 +66,21 @@ const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
     rejectReasons: ["장소를 특정할 수 없음", "너무 어두워서 배경 불명", "이전 사진 재사용 의심", "실내 일반 공간 (무의미한 장소)"],
   },
 };
+
+/**
+ * KST(UTC+9) 기준 오늘 하루의 시작/끝을 UTC ISO 문자열로 반환합니다.
+ * 이전 코드의 setUTCHours(0,0,0,0) 방식은 UTC 자정 기준이라
+ * KST 00:00~08:59 인증이 "전날"로 저장돼 하루 2회 인증이 가능했습니다.
+ */
+function kstTodayRange(): { start: string; end: string } {
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  const kstNow = new Date(Date.now() + KST_OFFSET_MS);
+  const kstDate = kstNow.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return {
+    start: new Date(`${kstDate}T00:00:00+09:00`).toISOString(),
+    end:   new Date(`${kstDate}T23:59:59.999+09:00`).toISOString(),
+  };
+}
 
 function todayLabel(): string {
   return new Date().toLocaleDateString("ko-KR", {
@@ -145,6 +166,25 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** Storage 업로드를 최대 2회 시도하고, 성공 시 public URL을 반환합니다. */
+async function uploadWithRetry(
+  serviceClient: ReturnType<typeof createClient>,
+  filePath: string,
+  imageBytes: Uint8Array,
+): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { error } = await serviceClient.storage
+      .from("verifications")
+      .upload(filePath, imageBytes, { contentType: "image/jpeg", upsert: false });
+    if (!error) {
+      return serviceClient.storage.from("verifications").getPublicUrl(filePath).data.publicUrl;
+    }
+    console.error(`Storage upload attempt ${attempt + 1} failed:`, error);
+    if (attempt === 0) await new Promise(r => setTimeout(r, 600));
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -161,20 +201,23 @@ serve(async (req) => {
 
   if (!geminiKey) return jsonResponse({ error: "Server misconfigured" }, 500);
 
-  // 유저 컨텍스트 클라이언트 (JWT 검증용)
   const userClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: { user }, error: authError } = await userClient.auth.getUser();
   if (authError || !user) return jsonResponse({ error: "Unauthorized" }, 401);
 
-  // 서비스 롤 클라이언트 (RLS 우회 DB/Storage 쓰기)
   const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-  /* ── 요청 파싱 ── */
+  /* ── 요청 파싱 + 본문 크기 제한 ── */
+  const rawBody = await req.text();
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return jsonResponse({ error: "이미지 크기가 너무 큽니다. 6MB 이하 이미지를 사용해주세요." }, 413);
+  }
+
   let body: { image: string; verifyType: string; goalId: string | null };
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
     return jsonResponse({ error: "Invalid request body" }, 400);
   }
@@ -185,21 +228,58 @@ serve(async (req) => {
   }
   const key = verifyType as VerifyTypeKey;
 
-  /* ── 중복 인증 방지 (DB 레벨) ── */
-  if (goalId) {
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setUTCHours(23, 59, 59, 999);
+  /* ── KST 기준 오늘 범위 계산 ── */
+  const { start: todayStart, end: todayEnd } = kstTodayRange();
 
+  /* ── 서버 사이드 rate limit: 사용자 전체 일일 호출 한도 ── */
+  const { count: totalTodayAttempts } = await serviceClient
+    .from("verify_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("attempted_at", todayStart)
+    .lte("attempted_at", todayEnd);
+
+  if ((totalTodayAttempts ?? 0) >= MAX_DAILY_USER_CALLS) {
+    return jsonResponse(
+      { error: `하루 인증 시도 한도(${MAX_DAILY_USER_CALLS}회)에 도달했습니다. 내일 다시 시도해주세요.` },
+      429,
+    );
+  }
+
+  /* ── 목표별 일일 재시도 한도 ── */
+  if (goalId) {
+    const { count: goalTodayAttempts } = await serviceClient
+      .from("verify_attempts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("goal_id", goalId)
+      .gte("attempted_at", todayStart)
+      .lte("attempted_at", todayEnd);
+
+    if ((goalTodayAttempts ?? 0) >= MAX_DAILY_GOAL_ATTEMPTS) {
+      return jsonResponse(
+        { error: `이 목표는 오늘 최대 ${MAX_DAILY_GOAL_ATTEMPTS}회까지 시도할 수 있습니다. 내일 다시 시도해주세요.` },
+        429,
+      );
+    }
+  }
+
+  /* ── 시도 기록 (Gemini 호출 전에 기록해 과금 추적) ── */
+  await serviceClient.from("verify_attempts").insert({
+    user_id: user.id,
+    goal_id: goalId ?? null,
+  });
+
+  /* ── 중복 인증 방지: KST 기준 오늘 이미 완료한 인증이 있으면 차단 ── */
+  if (goalId) {
     const { data: existing } = await serviceClient
       .from("verifications")
       .select("id")
       .eq("goal_id", goalId)
       .eq("user_id", user.id)
       .eq("status", "completed")
-      .gte("verified_at", todayStart.toISOString())
-      .lte("verified_at", todayEnd.toISOString())
+      .gte("verified_at", todayStart)
+      .lte("verified_at", todayEnd)
       .maybeSingle();
 
     if (existing) {
@@ -252,24 +332,15 @@ serve(async (req) => {
     result = { passed: false, score: 0, failedChecks: [], reason: "AI 응답 파싱 실패" };
   }
 
-  /* ── 통과 시: Storage 업로드 + DB 저장 + XP 지급 ── */
+  /* ── 통과 시: Storage 업로드 → DB 저장 → XP 지급 ── */
   if (result.passed && goalId) {
-    let photoUrl: string | null = null;
+    const imageBytes = Uint8Array.from(atob(image), (c) => c.charCodeAt(0));
+    const filePath = `${user.id}/${goalId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
-    try {
-      const imageBytes = Uint8Array.from(atob(image), (c) => c.charCodeAt(0));
-      const filePath = `${user.id}/${goalId}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
-      const { error: uploadError } = await serviceClient.storage
-        .from("verifications")
-        .upload(filePath, imageBytes, { contentType: "image/jpeg", upsert: false });
-
-      if (!uploadError) {
-        photoUrl = serviceClient.storage.from("verifications").getPublicUrl(filePath).data.publicUrl;
-      } else {
-        console.error("Storage upload failed:", uploadError);
-      }
-    } catch (e) {
-      console.error("Storage error:", e);
+    const photoUrl = await uploadWithRetry(serviceClient, filePath, imageBytes);
+    if (!photoUrl) {
+      // 사진 증거 없이 인증을 기록하지 않고 오류를 반환합니다.
+      return jsonResponse({ error: "인증 사진 저장에 실패했습니다. 잠시 후 다시 시도해주세요." }, 500);
     }
 
     const { error: insertError } = await serviceClient.from("verifications").insert({
@@ -285,7 +356,6 @@ serve(async (req) => {
       return jsonResponse({ error: "DB 저장 실패. 다시 시도해주세요." }, 500);
     }
 
-    // XP 원자적 증가 (SELECT 없이 UPDATE만으로 처리)
     await serviceClient.rpc("increment_user_xp", { p_user_id: user.id, p_amount: 10 });
 
     return jsonResponse({ ...result, photoUrl });
