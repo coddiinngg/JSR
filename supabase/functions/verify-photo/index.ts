@@ -169,7 +169,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 /** Gemini API 단건 호출 */
 async function callGemini(geminiKey: string, key: VerifyTypeKey, image: string): Promise<Response> {
   return fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -178,7 +178,7 @@ async function callGemini(geminiKey: string, key: VerifyTypeKey, image: string):
           { inlineData: { mimeType: "image/jpeg", data: image } },
           { text: buildPrompt(key) },
         ]}],
-        generationConfig: { maxOutputTokens: 1024, temperature: 0, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: { maxOutputTokens: 1024, temperature: 0, responseMimeType: "application/json" },
       }),
     },
   );
