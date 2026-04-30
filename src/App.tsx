@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "./contexts/AuthContext";
 import { GuestGuardProvider } from "./contexts/GuestGuardContext";
 import { Layout } from "./components/Layout";
@@ -7,10 +8,6 @@ import { SignUp } from "./pages/SignUp";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { Onboarding } from "./pages/Onboarding";
 import { Home } from "./pages/Home";
-import { GoalDetail } from "./pages/GoalDetail";
-import { Category } from "./pages/goal-setting/Category";
-import { GoalFrequency } from "./pages/goal-setting/GoalFrequency";
-import { GoalName } from "./pages/goal-setting/GoalName";
 import { Camera } from "./pages/verify/Camera";
 import { Upload } from "./pages/verify/Upload";
 import { VerifySelect } from "./pages/verify/Select";
@@ -31,6 +28,7 @@ import { FriendInvite } from "./pages/FriendInvite";
 import { UserProfile } from "./pages/UserProfile";
 import { FeedAll } from "./pages/FeedAll";
 import { ChallengeRequest } from "./pages/ChallengeRequest";
+import { UIGallery } from "./pages/UIGallery";
 
 export function setGuestMode(on: boolean) {
   if (on) sessionStorage.setItem("guestMode", "1");
@@ -41,18 +39,31 @@ export function isGuestMode() {
   return sessionStorage.getItem("guestMode") === "1";
 }
 
+/** ?preview=1 파라미터가 있으면 guestMode 자동 활성화 */
+function PreviewModeInit() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("preview") === "1") setGuestMode(true);
+  }, [searchParams]);
+  return null;
+}
+
+function isPreview() {
+  return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
+}
+
 /** 비로그인 + 비게스트 → /login 리다이렉트 */
 function ProtectedRoute() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return (user || isGuestMode()) ? <Outlet /> : <Navigate to="/login" replace />;
+  return (user || isGuestMode() || isPreview()) ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 /** 로그인 유저만 통과. 게스트 → /login 리다이렉트 */
 function AuthOnlyRoute() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  return (user || isPreview() || isGuestMode()) ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 export default function App() {
@@ -60,6 +71,12 @@ export default function App() {
     <BrowserRouter>
       <GuestGuardProvider>
         <Routes>
+          {/* preview=1 파라미터 → guestMode 자동 활성화 */}
+          <Route path="*" element={<PreviewModeInit />} />
+
+          {/* UI 갤러리 — 인증 불필요 */}
+          <Route path="/ui-gallery" element={<UIGallery />} />
+
           {/* 공개 라우트 — 누구나 */}
           <Route element={<Layout showNav={false} />}>
             <Route path="/login" element={<Login />} />
@@ -81,10 +98,6 @@ export default function App() {
           <Route element={<AuthOnlyRoute />}>
             <Route element={<Layout showNav={false} />}>
               <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/goal-setting/category" element={<Category />} />
-              <Route path="/goal-setting/frequency" element={<GoalFrequency />} />
-              <Route path="/goal-setting/name" element={<GoalName />} />
-              <Route path="/goals/:id" element={<GoalDetail />} />
               <Route path="/verify/select" element={<VerifySelect />} />
               <Route path="/verify/guide/:type" element={<VerifyGuide />} />
               <Route path="/verify/camera" element={<Camera />} />

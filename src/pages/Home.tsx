@@ -8,13 +8,6 @@ import { useGuestGuard } from "../contexts/GuestGuardContext";
 const MEDAL = ["🥇", "🥈", "🥉"];
 const rateColor = (r: number) => r >= 80 ? "#10B981" : r >= 50 ? "#F59E0B" : "#FF3355";
 
-const RECENT_NOTIFS = [
-  { id: 1, emoji: "🔥", text: "하준님이 14일 연속 달성!", time: "방금 전" },
-  { id: 2, emoji: "📸", text: "수빈님이 인증했습니다",      time: "1분 전"  },
-  { id: 3, emoji: "💬", text: "서아님이 채팅을 남겼습니다", time: "2분 전"  },
-  { id: 4, emoji: "🎉", text: "유나님이 반응했습니다",       time: "3분 전"  },
-  { id: 5, emoji: "📸", text: "도윤님이 인증했습니다",       time: "5분 전"  },
-];
 
 const GROUP_RANKERS: Record<string, { rank: number; name: string; streak: number; rate: number; seed: string; isMe: boolean }[]> = {
   "1": [
@@ -149,7 +142,7 @@ const FEED_ITEMS: FeedItem[] = [
 
 export function Home() {
   const navigate = useNavigate();
-  const { nickname, beginVerification, groups, selectedGroupId, setSelectedGroupId } = useApp();
+  const { nickname, beginVerification, groups, selectedGroupId, setSelectedGroupId, notifications } = useApp();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
   const [chats, setChats]                     = useState<ChatMsg[]>([]);
@@ -302,7 +295,8 @@ export function Home() {
 
   const slideTx = (i: number) => `translate3d(${(i - slideIdx) * 100}%, 0, 0)`;
   const trans = "transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)";
-  const unreadCount = 3;
+  const recentNotifs = notifications.slice(0, 5);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-white relative">
@@ -347,7 +341,9 @@ export function Home() {
             <button onClick={() => navigate("/notifications")}
               className="relative w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors">
               <Bell className="w-5 h-5 text-slate-500" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF3355]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#FF3355]" />
+              )}
             </button>
           </div>
         </div>
@@ -404,7 +400,7 @@ export function Home() {
                   style={{
                     background: notifMode
                       ? "linear-gradient(180deg,rgba(0,0,0,0.50) 0%,rgba(0,0,0,0.35) 40%,rgba(0,0,0,0.62) 100%)"
-                      : "linear-gradient(180deg,rgba(0,0,0,0.18) 0%,rgba(0,0,0,0.08) 40%,rgba(0,0,0,0.65) 100%)",
+                      : "linear-gradient(180deg,rgba(0,0,0,0.28) 0%,rgba(0,0,0,0.42) 40%,rgba(0,0,0,0.70) 100%)",
                     transition: "background 0.5s ease",
                   }}
                 />
@@ -441,31 +437,30 @@ export function Home() {
                 </div>
               </button>
 
-              {/* 퍼센트 — 기본: 카드 중앙 / 알림 모드: 우측 상단으로 이동 */}
+              {/* 퍼센트 — 기본: 카드 세로 중앙 / 알림 모드: 우측 상단으로 이동 */}
               <div
                 className="absolute z-10 flex items-baseline pointer-events-none select-none"
                 style={{
-                  top: notifMode ? "4%" : "32%",
-                  right: notifMode ? "5%" : undefined,
-                  left: notifMode ? undefined : "50%",
-                  transform: notifMode ? "translate(0,0)" : "translate(-50%,0)",
-                  transition: "top 0.55s cubic-bezier(0.4,0,0.2,1), right 0.55s cubic-bezier(0.4,0,0.2,1), left 0.55s cubic-bezier(0.4,0,0.2,1), transform 0.55s cubic-bezier(0.4,0,0.2,1)",
+                  top: notifMode ? "4%" : "50%",
+                  right: notifMode ? "5%" : "50%",
+                  transform: notifMode ? "translateX(0)" : "translate(50%, -50%)",
+                  transition: "top 0.55s cubic-bezier(0.4,0,0.2,1), right 0.55s cubic-bezier(0.4,0,0.2,1), transform 0.55s cubic-bezier(0.4,0,0.2,1)",
                 }}
               >
                 <span
                   ref={rateDisplayRef}
-                  className="text-white font-black tabular-nums leading-none"
+                  className="text-white font-black tabular-nums leading-none italic"
                   style={{
                     fontSize: notifMode ? "44px" : "92px",
                     letterSpacing: "-0.04em",
-                    textShadow: "0 4px 24px rgba(0,0,0,0.45)",
+                    textShadow: "0 4px 24px rgba(0,0,0,0.55)",
                     transition: "font-size 0.55s cubic-bezier(0.4,0,0.2,1)",
                   }}
                 >
                   {groupRate}
                 </span>
                 <span
-                  className="text-white font-black leading-none ml-0.5"
+                  className="text-white font-black leading-none ml-0.5 italic"
                   style={{
                     fontSize: notifMode ? "20px" : "36px",
                     opacity: 0.85,
@@ -480,7 +475,11 @@ export function Home() {
               {notifMode && (
                 <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-center gap-2 px-4"
                   style={{ paddingTop: "18%", paddingBottom: "28%" }}>
-                  {RECENT_NOTIFS.map((n, i) => (
+                  {recentNotifs.length === 0 ? (
+                    <div className="flex justify-center">
+                      <span className="text-white/50 text-[13px] font-semibold">최근 알림이 없어요</span>
+                    </div>
+                  ) : recentNotifs.map((n, i) => (
                     <div
                       key={n.id}
                       className="flex items-center gap-2 px-3 py-2 rounded-2xl"
@@ -493,8 +492,8 @@ export function Home() {
                         opacity: 0,
                       }}
                     >
-                      <span className="text-[15px] leading-none shrink-0">{n.emoji}</span>
-                      <span className="text-white text-[12px] font-semibold leading-none flex-1">{n.text}</span>
+                      <span className="text-[15px] leading-none shrink-0">{n.emoji ?? "🔔"}</span>
+                      <span className="text-white text-[12px] font-semibold leading-none flex-1">{n.body}</span>
                       <span className="text-white/40 text-[10px] font-medium shrink-0">{n.time}</span>
                     </div>
                   ))}

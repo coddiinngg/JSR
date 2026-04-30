@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Flame, CheckCircle2, ArrowRight,
-  Camera, Trophy, Users, Zap, User,
+  Zap, User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -50,21 +50,19 @@ function Slide0({ on }: { on: boolean }) {
 /* ─── 슬라이드 1 ───────────────────────────────── */
 function Slide1({ on }: { on: boolean }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="flex flex-col items-center gap-4">
+    <div className="flex-1 flex flex-col items-center justify-center px-8 gap-6 relative z-10">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#FF3355]/40 bg-[#FF3355]/10"
+          style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-[#FF9DB2] text-[12px] font-semibold tracking-wide">함께하는 챌린지</span>
+        </div>
+        <div className="relative w-[300px] h-[280px]">
+          {/* 메인 글라스 카드 — 실제 챌린지 커버 사진 + 멤버 목록 */}
           <div
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#FF3355]/40 bg-[#FF3355]/10"
-            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-            <span className="text-[#FF9DB2] text-[12px] font-semibold tracking-wide">함께하는 챌린지</span>
-          </div>
-          <div className="relative w-[300px] h-[280px]">
-
-          {/* 그룹 멤버 카드 */}
-          <div
-            className="absolute top-[10%] left-[4%] w-[74%] rounded-3xl p-4"
+            className="absolute top-[5%] left-[3%] w-[76%] rounded-3xl overflow-hidden"
             style={{
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(20px)",
@@ -73,33 +71,43 @@ function Slide1({ on }: { on: boolean }) {
               animation: on ? cardAnim(0) : "none",
             }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-[#FF9DB2]" strokeWidth={2} />
-              <span className="text-white/45 text-[9px] font-bold uppercase tracking-widest">함께하는 챌린지</span>
-            </div>
-            {[
-              { name: "sm", rate: 98, color: "#f59e0b" },
-              { name: "ms", rate: 94, color: "#94a3b8" },
-              { name: "나", rate: 87, color: "#FF3355", me: true },
-            ].map((u, i) => (
-              <div
-                key={u.name}
-                className={`flex items-center gap-2.5 py-1.5 ${u.me ? "rounded-xl px-2 -mx-2" : ""}`}
-                style={{
-                  ...(u.me ? { background: "rgba(255,51,85,0.15)", border: "1px solid rgba(255,51,85,0.2)" } : {}),
-                  animation: on ? `ob-slide-in-l 0.4s ease ${300 + i * 80}ms both` : "none",
-                }}
-              >
-                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] text-white/60">{u.name[0]}</span>
+            <div className="relative h-[88px] overflow-hidden">
+              <img src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&fit=crop&q=80" alt="" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/75" />
+              <div className="absolute bottom-0 inset-x-0 px-3 pb-2">
+                <p className="text-white font-black text-[13px]">매일 5,000보 걷기</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex-1 h-1 bg-white/25 rounded-full overflow-hidden">
+                    <div className="h-full w-[72%] rounded-full" style={{ background: "linear-gradient(90deg,#FF3355,#FF6680)" }} />
+                  </div>
+                  <span className="text-white/80 text-[10px] font-black">72%</span>
                 </div>
-                <span className={`text-xs font-semibold flex-1 ${u.me ? "text-[#FF9DB2]" : "text-white/70"}`}>{u.name}</span>
-                <span className="text-[10px] font-bold" style={{ color: u.color }}>{u.rate}%</span>
               </div>
-            ))}
+            </div>
+            <div className="p-3">
+              {[
+                { name: "sm", rate: 98, color: "#f59e0b" },
+                { name: "ms", rate: 94, color: "#94a3b8" },
+                { name: "나", rate: 87, color: "#FF3355", me: true },
+              ].map((u, i) => (
+                <div
+                  key={u.name}
+                  className={`flex items-center gap-2.5 py-1.5 ${u.me ? "rounded-xl px-2 -mx-2" : ""}`}
+                  style={{
+                    ...(u.me ? { background: "rgba(255,51,85,0.15)", border: "1px solid rgba(255,51,85,0.2)" } : {}),
+                    animation: on ? `ob-slide-in-l 0.4s ease ${300 + i * 80}ms both` : "none",
+                  }}
+                >
+                  <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <span className="text-[8px] text-white/60">{u.name[0]}</span>
+                  </div>
+                  <span className={`text-[11px] font-semibold flex-1 ${u.me ? "text-[#FF9DB2]" : "text-white/70"}`}>{u.name}</span>
+                  <span className="text-[10px] font-bold" style={{ color: u.color }}>{u.rate}%</span>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* 참여 배지 */}
+          {/* 플로팅 — 참여 배지 */}
           <div
             className="absolute top-[2%] right-[0%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
             style={{
@@ -109,14 +117,13 @@ function Slide1({ on }: { on: boolean }) {
               animation: on ? cardAnim(130, "ob-float-b") : "none",
             }}
           >
-            <Users className="w-4 h-4 text-white" strokeWidth={2} />
+            <span className="text-sm">👥</span>
             <div>
               <div className="text-white/60 text-[8px] font-semibold mb-0.5">지금 참여 중</div>
               <div className="text-white font-extrabold text-sm leading-none">38명</div>
             </div>
           </div>
-
-          {/* 연속 달성 배지 */}
+          {/* 플로팅 — 연속 달성 배지 */}
           <div
             className="absolute bottom-[8%] right-[2%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
             style={{
@@ -132,16 +139,25 @@ function Slide1({ on }: { on: boolean }) {
               <div className="text-white font-extrabold text-sm leading-none">7일 🔥</div>
             </div>
           </div>
-          </div>
         </div>
       </div>
 
-      <TextBlock on={on}>
-        <span className="text-white">목표가 있다면</span>
-        <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>이루어 내는 사람들</span>
-      </TextBlock>
-      <SubText on={on}>같은 목표를 바라보는 사람들과 함께 해요.</SubText>
+      <div className="text-center">
+        <h1
+          className="text-[36px] leading-[1.15] font-extrabold tracking-tight break-keep"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 260ms both" : "none" }}
+        >
+          <span className="text-white">목표가 있다면</span>
+          <br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>이루어 내는 사람들</span>
+        </h1>
+        <p
+          className="text-[14px] leading-relaxed text-white/45 font-medium break-keep mt-2"
+          style={{ animation: on ? "ob-fade 0.5s ease 380ms both" : "none" }}
+        >
+          같은 목표를 바라보는 사람들과 함께 해요.
+        </p>
+      </div>
     </div>
   );
 }
@@ -149,21 +165,19 @@ function Slide1({ on }: { on: boolean }) {
 /* ─── 슬라이드 2 ───────────────────────────────── */
 function Slide2({ on }: { on: boolean }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="flex flex-col items-center gap-4">
+    <div className="flex-1 flex flex-col items-center justify-center px-8 gap-6 relative z-10">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-violet-500/40 bg-violet-500/10"
+          style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-violet-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-violet-300 text-[12px] font-semibold tracking-wide">AI 사진 인증</span>
+        </div>
+        <div className="relative w-[300px] h-[280px]">
+          {/* 메인 글라스 카드 — Camera.tsx 뷰파인더 + 실제 인증 배경 사진 */}
           <div
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-violet-500/40 bg-violet-500/10"
-            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-            <span className="text-violet-300 text-[12px] font-semibold tracking-wide">AI 사진 인증</span>
-          </div>
-          <div className="relative w-[300px] h-[280px]">
-
-          {/* 카메라 카드 */}
-          <div
-            className="absolute top-[10%] left-[8%] w-[75%] rounded-3xl overflow-hidden"
+            className="absolute top-[3%] left-[6%] w-[74%] rounded-3xl overflow-hidden"
             style={{
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(20px)",
@@ -172,22 +186,33 @@ function Slide2({ on }: { on: boolean }) {
               animation: on ? cardAnim(0) : "none",
             }}
           >
-            <div className="relative h-28 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-[#FF3355]/20 flex items-center justify-center">
-                <Camera className="w-8 h-8 text-[#FF9DB2]" strokeWidth={1.5} />
-              </div>
+            <div className="relative h-[128px]">
+              <img
+                src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=400&fit=crop&q=80"
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ opacity: 0.5 }}
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-black/20" />
+              {/* 모서리 가이드 (Camera.tsx 스타일) */}
               {[["top-3 left-3","border-l-2 border-t-2"],["top-3 right-3","border-r-2 border-t-2"],
                 ["bottom-3 left-3","border-l-2 border-b-2"],["bottom-3 right-3","border-r-2 border-b-2"]].map(([pos, border], i) => (
-                <div key={i} className={`absolute ${pos} w-5 h-5 ${border} border-[#FF3355]/60 rounded-sm`} />
+                <div key={i} className={`absolute ${pos} w-5 h-5 ${border} border-white/65 rounded-sm`} />
               ))}
+              {/* 인증 완료 체크 */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 4px 18px rgba(124,58,237,0.65)" }}>
+                  <CheckCircle2 className="w-6 h-6 text-white" strokeWidth={2.5} />
+                </div>
+              </div>
             </div>
             <div className="p-3.5">
               <div className="text-white font-bold text-sm mb-1">사진으로 인증하기</div>
               <div className="text-white/40 text-[10px]">AI가 자동으로 인증을 확인해요</div>
             </div>
           </div>
-
-          {/* AI 배지 */}
+          {/* 플로팅 — AI 배지 */}
           <div
             className="absolute top-[2%] right-[0%] rounded-2xl px-3 py-2.5 flex items-center gap-2"
             style={{
@@ -203,8 +228,7 @@ function Slide2({ on }: { on: boolean }) {
               <div className="text-white font-extrabold text-sm leading-none">통과!</div>
             </div>
           </div>
-
-          {/* 주간 인증 */}
+          {/* 플로팅 — 주간 인증 */}
           <div
             className="absolute bottom-[5%] right-[-2%] rounded-2xl px-3.5 py-2.5"
             style={{
@@ -230,16 +254,25 @@ function Slide2({ on }: { on: boolean }) {
               ))}
             </div>
           </div>
-          </div>
         </div>
       </div>
 
-      <TextBlock on={on}>
-        <span className="text-white">사진 한 장으로</span>
-        <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#a78bfa,#818cf8)" }}>끝나는 인증</span>
-      </TextBlock>
-      <SubText on={on}>챌린지를 가장 쉽게 인증해요.</SubText>
+      <div className="text-center">
+        <h1
+          className="text-[36px] leading-[1.15] font-extrabold tracking-tight break-keep"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 260ms both" : "none" }}
+        >
+          <span className="text-white">사진 한 장으로</span>
+          <br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#a78bfa,#818cf8)" }}>끝나는 인증</span>
+        </h1>
+        <p
+          className="text-[14px] leading-relaxed text-white/45 font-medium break-keep mt-2"
+          style={{ animation: on ? "ob-fade 0.5s ease 380ms both" : "none" }}
+        >
+          챌린지를 가장 쉽게 인증해요.
+        </p>
+      </div>
     </div>
   );
 }
@@ -247,21 +280,19 @@ function Slide2({ on }: { on: boolean }) {
 /* ─── 슬라이드 3 ───────────────────────────────── */
 function Slide3({ on }: { on: boolean }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        <div className="flex flex-col items-center gap-4">
+    <div className="flex-1 flex flex-col items-center justify-center px-8 gap-6 relative z-10">
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10"
+          style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-amber-300 text-[12px] font-semibold tracking-wide">실시간 공동 달성</span>
+        </div>
+        <div className="relative w-[300px] h-[280px]">
+          {/* 메인 글라스 카드 — 러닝 크루 커버 사진 + 랭킹 */}
           <div
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10"
-            style={{ animation: on ? "ob-fade 0.5s ease 80ms both" : "none" }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-300" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
-            <span className="text-amber-300 text-[12px] font-semibold tracking-wide">실시간 공동 달성</span>
-          </div>
-          <div className="relative w-[300px] h-[280px]">
-
-          {/* 랭킹 카드 */}
-          <div
-            className="absolute top-[5%] left-[4%] w-[76%] rounded-3xl p-4"
+            className="absolute top-[5%] left-[4%] w-[76%] rounded-3xl overflow-hidden"
             style={{
               background: "rgba(255,255,255,0.07)",
               backdropFilter: "blur(20px)",
@@ -270,51 +301,62 @@ function Slide3({ on }: { on: boolean }) {
               animation: on ? cardAnim(0) : "none",
             }}
           >
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="w-4 h-4 text-amber-400" strokeWidth={2} />
-              <span className="text-white/50 text-[9px] font-bold uppercase tracking-widest">이번 주 랭킹</span>
-            </div>
-            {([
-              { rank: 1, name: "sm", score: 2840, color: "#f59e0b", me: false },
-              { rank: 2, name: "ms", score: 2650, color: "#94a3b8", me: false },
-              { rank: 3, name: "나", score: 2480, color: "#cd7c32", me: true  },
-            ] as const).map((u, i) => (
-              <div
-                key={u.rank}
-                className={`flex items-center gap-2.5 py-1.5 ${u.me ? "rounded-xl px-2 -mx-2" : ""}`}
-                style={{
-                  ...(u.me ? { background: "rgba(255,51,85,0.15)", border: "1px solid rgba(255,51,85,0.2)" } : {}),
-                  animation: on ? `ob-slide-in-l 0.4s ease ${340 + i * 80}ms both` : "none",
-                }}
-              >
-                <span className="font-extrabold text-sm w-4 text-center" style={{ color: u.color }}>{u.rank}</span>
-                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] text-white/60">{u.name[0]}</span>
+            <div className="relative h-[72px] overflow-hidden">
+              <img src="https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&fit=crop&q=80" alt="" className="absolute inset-0 w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <div className="absolute inset-0 bg-black/50" />
+              <div className="absolute inset-0 flex items-center px-3 gap-2">
+                <span className="text-lg leading-none">🏃</span>
+                <div>
+                  <p className="text-white font-black text-[13px]">러닝 크루</p>
+                  <p className="text-white/45 text-[9px] font-bold uppercase tracking-widest">이번 주 랭킹</p>
                 </div>
-                <span className={`text-xs font-semibold flex-1 ${u.me ? "text-[#FF9DB2]" : "text-white/70"}`}>{u.name}</span>
-                <span className="text-[10px] font-bold text-white/50">{u.score.toLocaleString()}</span>
               </div>
-            ))}
+            </div>
+            <div className="p-3">
+              {([
+                { rank: 1, name: "sm", streak: 15, rate: 96, color: "#f59e0b", me: false },
+                { rank: 2, name: "나", streak:  3, rate: 50, color: "#94a3b8", me: true  },
+                { rank: 3, name: "ms", streak:  1, rate: 40, color: "#cd7c32", me: false },
+              ] as const).map((u, i) => (
+                <div
+                  key={u.rank}
+                  className={`flex items-center gap-2.5 py-1.5 ${u.me ? "rounded-xl px-2 -mx-2" : ""}`}
+                  style={{
+                    ...(u.me ? { background: "rgba(255,51,85,0.15)", border: "1px solid rgba(255,51,85,0.2)" } : {}),
+                    animation: on ? `ob-slide-in-l 0.4s ease ${340 + i * 80}ms both` : "none",
+                  }}
+                >
+                  <span className="font-extrabold text-sm w-4 text-center" style={{ color: u.color }}>{u.rank}</span>
+                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                    <span className="text-[9px] text-white/60">{u.name[0]}</span>
+                  </div>
+                  <span className={`text-xs font-semibold flex-1 ${u.me ? "text-[#FF9DB2]" : "text-white/70"}`}>{u.name}</span>
+                  <div className="flex items-center gap-1">
+                    <Flame className={`w-3 h-3 ${u.me ? "text-[#FF9DB2] fill-[#FF9DB2]/60" : "text-orange-400 fill-orange-400/60"}`} />
+                    <span className={`text-[10px] font-bold ${u.me ? "text-[#FF9DB2]" : "text-orange-400"}`}>{u.streak}일</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-white/50">{u.rate}%</span>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* 챌린지 배지 */}
+          {/* 플로팅 — 신기록 배지 (amber → emerald로 색상 차별화) */}
           <div
             className="absolute top-[2%] right-[-2%] rounded-2xl px-3 py-2.5 flex items-center gap-2"
             style={{
-              background: "linear-gradient(135deg,#f59e0b,#d97706)",
-              boxShadow: "0 8px 28px rgba(245,158,11,0.45)",
+              background: "linear-gradient(135deg,#10b981,#059669)",
+              boxShadow: "0 8px 28px rgba(16,185,129,0.45)",
               border: "1px solid rgba(255,255,255,0.2)",
               animation: on ? cardAnim(180, "ob-float-b") : "none",
             }}
           >
-            <Users className="w-4 h-4 text-white" strokeWidth={2} />
+            <span className="text-sm">🌅</span>
             <div>
-              <div className="text-amber-100/70 text-[8px] font-semibold mb-0.5">챌린지</div>
-              <div className="text-white font-extrabold text-sm leading-none">12명 참여</div>
+              <div className="text-emerald-100/70 text-[8px] font-semibold mb-0.5">이번 주 최고</div>
+              <div className="text-white font-extrabold text-sm leading-none">sm 96%</div>
             </div>
           </div>
-
-          {/* 연속 달성 배지 */}
+          {/* 플로팅 — 연속 달성 배지 */}
           <div
             className="absolute bottom-[8%] right-[4%] rounded-2xl px-3.5 py-2.5 flex items-center gap-2"
             style={{
@@ -327,19 +369,28 @@ function Slide3({ on }: { on: boolean }) {
             <Flame className="w-4 h-4 text-white fill-white/80" />
             <div>
               <div className="text-orange-100/60 text-[8px] font-semibold mb-0.5">연속 달성</div>
-              <div className="text-white font-extrabold text-sm leading-none">21일 🔥</div>
+              <div className="text-white font-extrabold text-sm leading-none">15일 🔥</div>
             </div>
-          </div>
           </div>
         </div>
       </div>
 
-      <TextBlock on={on}>
-        <span className="text-white">중요한 건</span>
-        <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>꺾이지 않는 의지</span>
-      </TextBlock>
-      <SubText on={on}>하고자 하는 마음만 있다면 하게 됩니다.</SubText>
+      <div className="text-center">
+        <h1
+          className="text-[36px] leading-[1.15] font-extrabold tracking-tight break-keep"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 260ms both" : "none" }}
+        >
+          <span className="text-white">중요한 건</span>
+          <br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#fbbf24,#f97316)" }}>꺾이지 않는 의지</span>
+        </h1>
+        <p
+          className="text-[14px] leading-relaxed text-white/45 font-medium break-keep mt-2"
+          style={{ animation: on ? "ob-fade 0.5s ease 380ms both" : "none" }}
+        >
+          하고자 하는 마음만 있다면 하게 됩니다.
+        </p>
+      </div>
     </div>
   );
 }

@@ -118,6 +118,35 @@ export interface Database {
         Update: Pick<Database['public']['Tables']['group_members']['Insert'], 'role'>;
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: 'goal' | 'badge' | 'group' | 'rank' | 'streak';
+          title: string;
+          body: string;
+          emoji: string | null;
+          actionable: boolean;
+          action_done: boolean;
+          read_at: string | null;
+          created_at: string;
+          related_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: 'goal' | 'badge' | 'group' | 'rank' | 'streak';
+          title: string;
+          body: string;
+          emoji?: string | null;
+          actionable?: boolean;
+          action_done?: boolean;
+          read_at?: string | null;
+          related_id?: string | null;
+        };
+        Update: Partial<Pick<Database['public']['Tables']['notifications']['Row'], 'read_at' | 'action_done'>>;
+        Relationships: [];
+      };
       snooze_records: {
         Row: {
           id: string;
@@ -150,3 +179,4 @@ export type Verification = Database['public']['Tables']['verifications']['Row'];
 export type Group      = Database['public']['Tables']['groups']['Row'];
 export type GroupMember = Database['public']['Tables']['group_members']['Row'];
 export type SnoozeRecord = Database['public']['Tables']['snooze_records']['Row'];
+export type NotificationRecord = Database['public']['Tables']['notifications']['Row'];

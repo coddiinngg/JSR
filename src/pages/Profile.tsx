@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useGuestGuard } from "../contexts/GuestGuardContext";
+import { getGrade, getNextGrade } from "../lib/grades";
 
 function useCountUp(target: number, duration = 900, delay = 400) {
   const [val, setVal] = useState(0);
@@ -46,7 +47,9 @@ export function Profile() {
   const { signOut, profile } = useAuth();
   const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
-  const planLabel = profile?.plan_type === "premium" ? "Premium Plan" : "Free Plan";
+  const xpTotal = profile?.xp_total ?? 0;
+  const grade = getGrade(xpTotal);
+  const nextGrade = getNextGrade(grade.level);
   const avatarUrl = profile?.avatar_url ?? null;
   const avatarInitial = (nickname || "?").charAt(0).toUpperCase();
 
@@ -131,9 +134,39 @@ export function Profile() {
               }}
             >
               <h2 className="text-[18px] font-black text-white text-center">{nickname}</h2>
-              <span className="rounded-lg px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30 mt-1">
-                {planLabel}
-              </span>
+              {/* 등급 뱃지 */}
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span
+                  className="rounded-lg px-2 py-0.5 text-[10px] font-black tracking-widest uppercase"
+                  style={{
+                    background: `${grade.color}30`,
+                    border: `1px solid ${grade.color}60`,
+                    color: "white",
+                  }}
+                >
+                  {grade.code}
+                </span>
+                <span className="text-white font-bold text-[13px]">{grade.name}</span>
+                <span className="text-white/40 text-[11px]">Lv.{grade.level}</span>
+              </div>
+              {/* XP 진행 바 */}
+              {nextGrade && (
+                <div className="w-full mt-2 px-2">
+                  <div className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.min(((xpTotal - grade.minXp) / (nextGrade.minXp - grade.minXp)) * 100, 100)}%`,
+                        background: "rgba(255,255,255,0.8)",
+                        transition: "width 1s cubic-bezier(0.4,0,0.2,1) 0.4s",
+                      }}
+                    />
+                  </div>
+                  <p className="text-white/35 text-[9px] text-center mt-0.5">
+                    {xpTotal.toLocaleString()} / {nextGrade.minXp.toLocaleString()} XP
+                  </p>
+                </div>
+              )}
             </div>
 
           </div>

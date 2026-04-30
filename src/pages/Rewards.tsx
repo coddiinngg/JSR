@@ -4,20 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
-
-/* ── 레벨 계산 ── */
-const XP_THRESHOLDS = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000, 5000];
-const RANK_NAMES = ["새싹", "새싹", "새내기", "새내기", "도전자", "도전자", "도전자", "전사", "전사", "영웅", "레전드"];
-
-function computeLevel(xp: number) {
-  let level = 1;
-  for (let i = 1; i < XP_THRESHOLDS.length; i++) {
-    if (xp >= XP_THRESHOLDS[i]) level = i + 1;
-    else break;
-  }
-  const nextXp = XP_THRESHOLDS[Math.min(level, XP_THRESHOLDS.length - 1)];
-  return { level, nextXp };
-}
+import { GRADES, getGrade, getNextGrade } from "../lib/grades";
 
 function computeCurrentStreak(verifications: { verified_at: string; status: string }[]) {
   const completedDays = new Set(
@@ -256,7 +243,9 @@ export function Rewards() {
   const [todayXp, setTodayXp] = useState(0);
 
   const xpTotal = profile?.xp_total ?? 0;
-  const { level, nextXp } = computeLevel(xpTotal);
+  const currentGrade = getGrade(xpTotal);
+  const nextGrade = getNextGrade(currentGrade.level);
+  const nextXp = nextGrade?.minXp ?? currentGrade.minXp;
   const xpDisplay = useCountUp(xpTotal, 1200, 400);
 
   useEffect(() => {
@@ -344,7 +333,7 @@ export function Rewards() {
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
 
-        {/* ── 레벨 히어로 ── */}
+        {/* ── 등급 히어로 ── */}
         <div
           className="relative overflow-hidden px-5 pt-6 pb-7"
           style={{ background: "linear-gradient(150deg, #FF3355 0%, #CC0030 55%, #A00025 100%)", ...anim(40, 0) }}
@@ -355,23 +344,29 @@ export function Rewards() {
             style={{ background: "linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.09) 50%, transparent 65%)", animation: "rw-shine 4s ease 0.8s 1 both" }} />
 
           <div className="relative z-10 flex items-center gap-4 mb-5">
+            {/* 등급 뱃지 */}
             <div
-              className="shrink-0 w-[72px] h-[72px] rounded-full bg-white/20 border-2 border-white/40 flex flex-col items-center justify-center"
+              className="shrink-0 w-[72px] h-[72px] rounded-2xl flex flex-col items-center justify-center"
               style={{
+                background: "rgba(255,255,255,0.15)",
+                border: "2px solid rgba(255,255,255,0.35)",
+                boxShadow: `0 0 0 6px rgba(255,255,255,0.07), 0 8px 24px ${currentGrade.glow}`,
                 opacity: mounted ? 1 : 0,
                 transform: mounted ? "scale(1)" : "scale(0.4)",
                 transition: "opacity 0.5s ease 0.1s, transform 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s",
-                boxShadow: "0 0 0 6px rgba(255,255,255,0.08)",
               }}
             >
-              <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Lv</span>
-              <span className="text-[32px] font-black text-white leading-none">{level}</span>
+              <span className="text-[9px] font-black text-white/50 tracking-widest">{currentGrade.code}</span>
+              <span className="text-[10px] font-black text-white mt-0.5">Lv.{currentGrade.level}</span>
             </div>
             <div className="flex-1">
               <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest mb-0.5">현재 등급</p>
-              <h2 className="text-[20px] font-black text-white leading-tight">{nickname} {RANK_NAMES[Math.min(level, RANK_NAMES.length - 1)]}</h2>
+              <h2 className="text-[22px] font-black text-white leading-tight">{currentGrade.name}</h2>
               <p className="text-white/60 text-[12px] mt-0.5">
-                다음 레벨까지 <span className="font-bold text-white/80">{(nextXp - xpTotal).toLocaleString()} XP</span>
+                {nextGrade
+                  ? <>다음 <span className="text-white/80 font-bold">{nextGrade.name}</span>까지 <span className="font-bold text-white/80">{(nextXp - xpTotal).toLocaleString()} XP</span></>
+                  : <span className="text-white/80 font-bold">최고 등급 달성! 🎉</span>
+                }
               </p>
             </div>
           </div>
@@ -379,17 +374,40 @@ export function Rewards() {
           <div>
             <div className="flex justify-between mb-1.5">
               <span className="text-[12px] font-bold text-white/70">{xpDisplay.toLocaleString()} XP</span>
-              <span className="text-[12px] text-white/40">{nextXp.toLocaleString()} XP</span>
+              <span className="text-[12px] text-white/40">{nextGrade ? `${nextXp.toLocaleString()} XP` : "MAX"}</span>
             </div>
             <div className="w-full h-3 rounded-full bg-white/20 overflow-hidden">
               <div style={{
-                width: mounted ? `${Math.min((xpTotal / nextXp) * 100, 100)}%` : "0%",
+                width: mounted ? `${nextGrade ? Math.min(((xpTotal - currentGrade.minXp) / (nextXp - currentGrade.minXp)) * 100, 100) : 100}%` : "0%",
                 height: "100%", borderRadius: 999,
                 background: "linear-gradient(90deg, rgba(255,255,255,0.95), rgba(255,255,255,0.65))",
                 boxShadow: "0 0 12px rgba(255,255,255,0.5)",
                 transition: "width 1.4s cubic-bezier(0.4,0,0.2,1) 0.35s",
               }} />
             </div>
+          </div>
+
+          {/* 전체 등급 로드맵 미니 */}
+          <div className="mt-4 flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {GRADES.map(g => (
+              <div
+                key={g.level}
+                className="shrink-0 flex flex-col items-center gap-0.5"
+                style={{ opacity: g.level <= currentGrade.level ? 1 : 0.35 }}
+              >
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center"
+                  style={{
+                    background: g.level <= currentGrade.level ? g.color : "rgba(255,255,255,0.12)",
+                    boxShadow: g.level === currentGrade.level ? `0 0 8px ${g.glow}` : "none",
+                    border: g.level === currentGrade.level ? "1.5px solid rgba(255,255,255,0.8)" : "none",
+                  }}
+                >
+                  <span className="text-[6px] font-black text-white">{g.level}</span>
+                </div>
+                <span className="text-[5.5px] font-bold text-white/50 leading-none">{g.code}</span>
+              </div>
+            ))}
           </div>
         </div>
 

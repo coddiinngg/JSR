@@ -71,6 +71,24 @@ CREATE TABLE IF NOT EXISTS group_members (
   UNIQUE (group_id, user_id)
 );
 
+-- 알림
+CREATE TABLE IF NOT EXISTS notifications (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  type        TEXT NOT NULL CHECK (type IN ('goal', 'badge', 'group', 'rank', 'streak')),
+  title       TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  emoji       TEXT,
+  actionable  BOOLEAN DEFAULT FALSE,
+  action_done BOOLEAN DEFAULT FALSE,
+  read_at     TIMESTAMPTZ,
+  related_id  TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS notifications_user_created
+  ON notifications (user_id, created_at DESC);
+
 -- 건너뛰기 기록
 CREATE TABLE IF NOT EXISTS snooze_records (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -84,12 +102,17 @@ CREATE TABLE IF NOT EXISTS snooze_records (
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
 
+ALTER TABLE notifications   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE goals          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE verifications  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE groups         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE snooze_records ENABLE ROW LEVEL SECURITY;
+
+-- Notifications: 자신의 알림만 조회/수정, 서버(service role)만 INSERT
+CREATE POLICY "notifications_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "notifications_update" ON notifications FOR UPDATE USING (auth.uid() = user_id);
 
 -- Profiles: 자신의 프로필만 접근
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.uid() = id);

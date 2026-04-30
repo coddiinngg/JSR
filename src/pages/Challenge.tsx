@@ -36,7 +36,7 @@ function CatTag({ category }: { category: string }) {
 
 export function Challenge() {
   const navigate = useNavigate();
-  const { groups, joinGroup, leaveGroup } = useApp();
+  const { groups, joinGroup, leaveGroup, setSelectedGroupId } = useApp();
   const { guardAction } = useGuestGuard();
   const [activeCat, setActiveCat] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -349,7 +349,7 @@ export function Challenge() {
                 취소
               </button>
               <button
-                onClick={() => { joinGroup(joinTarget.id); setJoinTarget(null); }}
+                onClick={() => { joinGroup(joinTarget.id); setSelectedGroupId(joinTarget.id); setJoinTarget(null); navigate("/"); }}
                 className="flex-[2] py-3.5 rounded-2xl text-white text-[14px] font-bold active:opacity-90 transition-opacity"
                 style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: "0 6px 16px -4px rgba(255,51,85,0.45)" }}
               >

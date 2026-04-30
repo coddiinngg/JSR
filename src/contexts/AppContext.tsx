@@ -6,6 +6,7 @@ import type {
   Goal as DbGoal,
   Verification as DbVerification,
   SnoozeRecord,
+  NotificationRecord,
 } from "../types/database";
 
 /* ── 그룹 타입 ── */
@@ -37,6 +38,48 @@ const DEFAULT_GROUPS: Group[] = [
   { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4,  cover: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&fit=crop" },
 ];
 
+/* ── 알림 타입 ── */
+export type NotifType = "goal" | "badge" | "group" | "rank" | "streak";
+
+export interface AppNotification {
+  id: string;
+  type: NotifType;
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+  emoji?: string;
+  actionable: boolean;
+  actionDone: boolean;
+}
+
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "방금 전";
+  if (min < 60) return `${min}분 전`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}시간 전`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "어제";
+  if (d < 7) return `${d}일 전`;
+  return new Date(iso).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+}
+
+function mapDbNotif(row: NotificationRecord): AppNotification {
+  return {
+    id: row.id,
+    type: row.type as NotifType,
+    title: row.title,
+    body: row.body,
+    time: formatRelativeTime(row.created_at),
+    read: row.read_at !== null,
+    emoji: row.emoji ?? undefined,
+    actionable: row.actionable,
+    actionDone: row.action_done,
+  };
+}
+
 /* ── 카테고리 메타 ── */
 export const CATEGORY_META: Record<string, { color: string; colorRgb: string; label: string }> = {
   exercise: { color: "#FF3355", colorRgb: "255,51,85",  label: "운동" },
@@ -61,13 +104,6 @@ export interface Goal {
   completedToday: boolean;
   skippedToday: boolean;
 }
-
-/* ── 목표 추가 마법사 드래프트 ── */
-export interface GoalDraft {
-  category: string;
-  frequency: string;
-}
-
 
 function dateKey(value: Date | string) {
   const date = typeof value === "string" ? new Date(value) : value;
@@ -138,9 +174,6 @@ interface AppContextType {
   useRecoveryTicket: () => boolean;
   // Goals
   goals: Goal[];
-  goalDraft: GoalDraft;
-  setGoalDraft: (patch: Partial<GoalDraft>) => void;
-  addGoal: (name: string, notifyTime: string) => void;
   completeGoalToday: (id: string) => void;
   skipGoalToday: (id: string) => void;
   verifyingGoalId: string | null;
@@ -161,6 +194,13 @@ interface AppContextType {
   leaveGroup: (id: string) => void;
   selectedGroupId: string;
   setSelectedGroupId: (id: string) => void;
+  // Notifications
+  notifications: AppNotification[];
+  notificationsLoading: boolean;
+  markNotifRead: (id: string) => Promise<void>;
+  markAllNotifsRead: () => Promise<void>;
+  handleNotifAction: (id: string) => Promise<void>;
+  reloadNotifications: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -186,7 +226,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [nickname, setNickname] = useState("이름");
   const [recoveryTickets, setRecoveryTickets] = useState(2);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [goalDraft, setGoalDraftState] = useState<GoalDraft>({ category: "exercise", frequency: "daily" });
   const [verifyingGoalId, setVerifyingGoalId] = useState<string | null>(null);
   const [verifyType, setVerifyType] = useState<VerifyTypeKey | null>(null);
   const [verificationImageUrl, setVerificationImageUrl] = useState<string | null>(null);
@@ -194,6 +233,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [verificationHistory, setVerificationHistory] = useState<DbVerification[]>([]);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
   const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const verificationImageUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -267,6 +308,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    void reloadNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   function useRecoveryTicket() {
     if (recoveryTickets <= 0) return false;
     setRecoveryTickets(current => {
@@ -284,59 +330,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return nextValue;
     });
     return true;
-  }
-
-  function setGoalDraft(patch: Partial<GoalDraft>) {
-    setGoalDraftState(prev => ({ ...prev, ...patch }));
-  }
-
-  function addGoal(name: string, notifyTime: string) {
-    const meta = CATEGORY_META[goalDraft.category] ?? CATEGORY_META.etc;
-    const newGoal: Goal = {
-      id: Date.now().toString(),
-      title: name,
-      color: meta.color,
-      colorRgb: meta.colorRgb,
-      category: goalDraft.category,
-      frequency: goalDraft.frequency,
-      notifyTime,
-      streak: 0,
-      progress: 0,
-      completedToday: false,
-      skippedToday: false,
-    };
-    const optimisticId = user ? `pending-${Date.now()}` : `${Date.now()}`;
-    setGoals(prev => [...prev, { ...newGoal, id: optimisticId }]);
-
-    if (user) {
-      void supabase
-        .from("goals")
-        .insert({
-          user_id: user.id,
-          title: name,
-          category: goalDraft.category,
-          frequency: goalDraft.frequency === "weekly" ? "weekly" : "daily",
-          reminder_time: notifyTime,
-          status: "active" as const,
-        })
-        .select("*")
-        .single()
-        .then(({ data, error }) => {
-          if (error || !data) {
-            console.error("Failed to create goal", error);
-            setGoals(prev => prev.filter(goal => goal.id !== optimisticId));
-            return;
-          }
-
-          setGoals(prev => prev.map(goal =>
-            goal.id === optimisticId
-              ? mapDbGoalToAppGoal(data, [], [])
-              : goal
-          ));
-        });
-    }
-
-    setGoalDraftState({ category: "exercise", frequency: "daily" });
   }
 
   function completeGoalToday(id: string) {
@@ -438,6 +431,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void refreshProfile();
   }
 
+  async function reloadNotifications() {
+    if (!user) { setNotifications([]); return; }
+    setNotificationsLoading(true);
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setNotifications((data ?? []).map(mapDbNotif));
+    setNotificationsLoading(false);
+  }
+
+  async function markNotifRead(id: string) {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", id);
+  }
+
+  async function markAllNotifsRead() {
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    if (!unreadIds.length) return;
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .in("id", unreadIds);
+  }
+
+  async function handleNotifAction(id: string) {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true, actionDone: true } : n));
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString(), action_done: true })
+      .eq("id", id);
+  }
+
   function joinGroup(id: string) {
     setGroups(prev => prev.map(g => g.id === id ? { ...g, joined: true } : g));
   }
@@ -451,11 +483,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       theme, setTheme,
       nickname, setNickname,
       recoveryTickets, useRecoveryTicket,
-      goals, goalDraft, setGoalDraft, addGoal, completeGoalToday, skipGoalToday,
+      goals, completeGoalToday, skipGoalToday,
       verifyingGoalId, setVerifyingGoalId,
       verifyType, setVerifyType,
       verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshGoals,
       groups, joinGroup, leaveGroup, selectedGroupId, setSelectedGroupId,
+      notifications, notificationsLoading, markNotifRead, markAllNotifsRead, handleNotifAction, reloadNotifications,
     }}>
       {children}
     </AppContext.Provider>
