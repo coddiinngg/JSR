@@ -166,6 +166,24 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** Gemini API 단건 호출 */
+async function callGemini(geminiKey: string, key: VerifyTypeKey, image: string): Promise<Response> {
+  return fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inlineData: { mimeType: "image/jpeg", data: image } },
+          { text: buildPrompt(key) },
+        ]}],
+        generationConfig: { maxOutputTokens: 300, temperature: 0, responseMimeType: "application/json" },
+      }),
+    },
+  );
+}
+
 /** Storage 업로드를 최대 2회 시도하고, 성공 시 public URL을 반환합니다. */
 async function uploadWithRetry(
   serviceClient: ReturnType<typeof createClient>,
@@ -264,12 +282,6 @@ serve(async (req) => {
     }
   }
 
-  /* ── 시도 기록 (Gemini 호출 전에 기록해 과금 추적) ── */
-  await serviceClient.from("verify_attempts").insert({
-    user_id: user.id,
-    goal_id: goalId ?? null,
-  });
-
   /* ── 중복 인증 방지: KST 기준 오늘 이미 완료한 인증이 있으면 차단 ── */
   if (goalId) {
     const { data: existing } = await serviceClient
@@ -287,31 +299,34 @@ serve(async (req) => {
     }
   }
 
-  /* ── Gemini API 호출 ── */
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: "image/jpeg", data: image } },
-            { text: buildPrompt(key) },
-          ],
-        }],
-        generationConfig: { maxOutputTokens: 300, temperature: 0, responseMimeType: "application/json" },
-      }),
-    },
-  );
+  /* ── Gemini API 호출 (429 시 3초 후 1회 재시도) ── */
+  let geminiRes = await callGemini(geminiKey, key, image);
+
+  if (!geminiRes.ok && geminiRes.status === 429) {
+    // 일시적 RPM 초과일 수 있으므로 3초 대기 후 재시도
+    await new Promise(r => setTimeout(r, 3000));
+    geminiRes = await callGemini(geminiKey, key, image);
+  }
 
   if (!geminiRes.ok) {
     const errBody = await geminiRes.json().catch(() => null) as { error?: { code?: number; message?: string } } | null;
-    if (errBody?.error?.code === 429) {
-      return jsonResponse({ passed: false, score: 0, failedChecks: [], reason: "API 사용량이 초과됐습니다. 잠시 후 다시 시도해주세요." });
+    if (geminiRes.status === 429) {
+      // 재시도 후에도 429 → 내부 시도 횟수 소모 없이 503 반환
+      return jsonResponse(
+        { error: "AI 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해주세요." },
+        503,
+      );
     }
+    // 다른 Gemini 오류 → 시도 기록 후 502 반환
+    await serviceClient.from("verify_attempts").insert({ user_id: user.id, goal_id: goalId ?? null });
     return jsonResponse({ error: `Gemini 오류: ${errBody?.error?.message ?? geminiRes.status}` }, 502);
   }
+
+  /* ── 시도 기록 (Gemini 호출 성공 이후에 기록 — 외부 API 장애 시 소모 방지) ── */
+  await serviceClient.from("verify_attempts").insert({
+    user_id: user.id,
+    goal_id: goalId ?? null,
+  });
 
   const geminiData = await geminiRes.json() as {
     candidates?: { content: { parts: { text: string }[] }; finishReason?: string }[];

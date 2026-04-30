@@ -94,6 +94,11 @@ export async function verifyPhotoWithAI(
       throw new Error(err?.error ?? "오늘 인증 시도 횟수를 초과했습니다. 내일 다시 시도해주세요.");
     }
 
+    if (response.status === 503) {
+      const err = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(err?.error ?? "AI 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해주세요.");
+    }
+
     if (!response.ok) {
       const err = await response.json().catch(() => null) as { error?: string } | null;
       throw new Error(err?.error ?? `서버 오류 (${response.status})`);

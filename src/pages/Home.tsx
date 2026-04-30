@@ -89,6 +89,9 @@ const GROUP_CHATS: Record<string, ChatMsg[]> = {
 
 const SLIDE_COUNT = 3;
 
+// 컴포넌트 외부 — 리마운트 시에도 유지되어 중복 애니메이션 방지
+let lastAnimatedGroupId: string | null = null;
+
 interface FeedItem {
   id: string;
   user: string;
@@ -159,6 +162,7 @@ export function Home() {
   const longPressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnFlashTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animFrameRef    = useRef<number | null>(null);
+  const isAnimatingRef  = useRef(false);
   const rateDisplayRef  = useRef<HTMLSpanElement>(null);
   const notifModeRef    = useRef(false);
   notifModeRef.current  = notifMode;
@@ -178,25 +182,47 @@ export function Home() {
     };
   }, []);
 
-  // notifMode 진입 시 퍼센트 카운트업 — DOM 직접 조작으로 re-render 없이 60fps
+  // 앱 시작·그룹 변경 시 퍼센트 카운트업 — DOM 직접 조작으로 re-render 없이 60fps
   const groupRate = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.rate ?? 0;
   useEffect(() => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     const el = rateDisplayRef.current;
     if (!el) return;
-    if (!notifMode) { el.textContent = String(groupRate); return; }
-    el.textContent = "0";
+    if (groupRate === 0) { el.textContent = "0"; return; }
+    // 같은 그룹으로 재진입(홈 탭 재방문)이면 애니메이션 생략
+    if (lastAnimatedGroupId === selectedGroupId) {
+      el.textContent = String(groupRate);
+      return;
+    }
+    lastAnimatedGroupId = selectedGroupId;
+    isAnimatingRef.current = true;
+    el.textContent = "1";
     const start = performance.now();
-    const duration = 600;
+    const duration = 800;
     function step(now: number) {
       const t = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = String(Math.round(eased * groupRate));
-      if (t < 1) animFrameRef.current = requestAnimationFrame(step);
+      if (el) el.textContent = String(Math.max(1, Math.round(eased * groupRate)));
+      if (t < 1) {
+        animFrameRef.current = requestAnimationFrame(step);
+      } else {
+        isAnimatingRef.current = false;
+      }
     }
     animFrameRef.current = requestAnimationFrame(step);
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, [notifMode, groupRate]);
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      isAnimatingRef.current = false;
+    };
+  // groupRate는 selectedGroupId에 종속되므로 별도 dep 불필요
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroupId]);
+
+  // groupRate가 변경됐을 때 애니메이션 미실행 중이면 DOM 동기화
+  useEffect(() => {
+    const el = rateDisplayRef.current;
+    if (el && !isAnimatingRef.current) el.textContent = String(groupRate);
+  }, [groupRate]);
 
   // 그룹이 바뀌면 채팅 초기화
   useEffect(() => {
