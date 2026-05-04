@@ -355,6 +355,10 @@ serve(async (req) => {
     }).select("id").single();
 
     if (insertError) {
+      // unique_violation (23505) = KST 기준 오늘 이미 인증 완료
+      if (insertError.code === "23505") {
+        return jsonResponse({ error: "오늘 이미 인증을 완료했어요. 내일 다시 도전해보세요!" }, 409);
+      }
       console.error("Verification insert failed:", insertError);
       return jsonResponse({ error: "DB 저장 실패. 다시 시도해주세요." }, 500);
     }
