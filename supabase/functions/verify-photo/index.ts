@@ -30,26 +30,65 @@ const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
   step_walk: {
     label: "걷기 인증",
     desc: "만보기 화면을 캡처해서 인증해요",
-    checklist: ["걸음 수 숫자 가독성", "오늘 날짜 표시 확인", "5,000보 이상 달성 여부", "공식 앱 화면 여부"],
-    rejectReasons: ["걸음 수 숫자가 보이지 않음", "날짜를 확인할 수 없음", "5,000보 미만", "캡처가 아닌 재촬영 의심"],
+    checklist: [
+      "걸음 수 숫자 각 자릿수를 직접 읽을 수 있음 (예: 5,234 처럼 선명하게 보임)",
+      "오늘 날짜 표시 확인",
+      "읽힌 숫자가 5,000 이상",
+      "공식 앱 화면 여부 (스크린샷)",
+    ],
+    rejectReasons: [
+      "걸음 수 숫자가 흐리거나 가려져 자릿수를 직접 읽을 수 없음",
+      "날짜를 확인할 수 없음",
+      "읽힌 걸음 수가 5,000 미만",
+      "캡처가 아닌 재촬영 의심",
+    ],
   },
   run_scenery: {
     label: "러닝 풍경",
     desc: "러닝하면서 찍은 최애 풍경을 공유해요",
-    checklist: ["야외 환경 확인", "러닝 흔적(앱·복장) 확인", "자연광 또는 충분한 밝기", "실내가 아닌 외부 공간"],
-    rejectReasons: ["실내에서 찍은 사진", "러닝 흔적이 전혀 없음", "너무 어두워서 장소 불명", "이전에 올린 사진과 동일"],
+    checklist: [
+      "러닝 증거 직접 확인 (달리기 앱 화면·러닝복·운동화·GPS 기록 중 최소 하나)",
+      "야외 환경 확인 (실내 불가)",
+      "자연광 또는 충분한 밝기",
+      "인증자가 현장에서 직접 찍은 사진",
+    ],
+    rejectReasons: [
+      "러닝 증거(앱·복장·장비)가 사진에서 전혀 확인되지 않음",
+      "실내에서 찍은 사진",
+      "너무 어두워서 장소 불명",
+      "인터넷 풍경 사진 재사용 의심",
+    ],
   },
   quote_photo: {
     label: "인상 문장",
     desc: "오늘 곱씹게 되는 문장을 사진으로 남겨요",
-    checklist: ["텍스트 선명도 (블러 없음)", "문장 전체 가독성", "출처(책·노트) 확인", "한국어·영어 텍스트 인식"],
-    rejectReasons: ["글자가 흐릿하거나 초점 없음", "문장이 잘려서 내용 파악 불가", "빛 반사로 텍스트 안 보임", "텍스트가 아닌 다른 콘텐츠"],
+    checklist: [
+      "텍스트를 한 글자씩 직접 읽을 수 있음 (블러·반사·초점 이상 없음)",
+      "문장 의미를 파악할 수 있을 만큼 충분한 내용이 보임",
+      "출처(책·노트·화면 등)를 확인할 수 있음",
+    ],
+    rejectReasons: [
+      "글자가 흐릿하거나 초점이 맞지 않아 내용을 읽을 수 없음",
+      "빛 반사·가림으로 텍스트 확인 불가",
+      "의미 있는 문장이 없음 (단순 숫자·기호·제목만 있음)",
+      "텍스트가 아닌 다른 콘텐츠 (사람·풍경만 있음)",
+    ],
   },
   book_cover: {
     label: "책 표지",
     desc: "지금 읽고 있는 책 표지를 찍어요",
-    checklist: ["책 제목 가독성", "저자명 확인", "표지 전체 노출 여부", "실물 책 또는 전자책 화면"],
-    rejectReasons: ["제목 또는 저자가 잘림", "너무 멀리서 찍어 글자 안 보임", "조명 부족으로 표지 불분명", "이미 오늘 인증한 동일 표지"],
+    checklist: [
+      "책 제목을 글자 단위로 직접 읽을 수 있음",
+      "저자명을 글자 단위로 직접 읽을 수 있음",
+      "표지 전체 또는 충분한 부분이 노출됨",
+      "실물 책 또는 전자책 화면",
+    ],
+    rejectReasons: [
+      "책 제목을 읽을 수 없음 (흐림·가림·잘림)",
+      "저자명을 읽을 수 없음",
+      "책이 아닌 다른 오브젝트",
+      "조명 부족으로 표지 불분명",
+    ],
   },
   celeb_pose: {
     label: "포즈 인증",
@@ -60,8 +99,65 @@ const VERIFY_TYPES: Record<VerifyTypeKey, VerifyTypeData> = {
   location_photo: {
     label: "장소 인증",
     desc: "목표한 장소에서 사진을 찍어요",
-    checklist: ["장소 특징(간판·건물) 확인", "실외 또는 특정 공간 여부", "낮 시간대 또는 충분한 밝기", "GPS 위치 일치 여부"],
-    rejectReasons: ["장소를 특정할 수 없음", "너무 어두워서 배경 불명", "이전 사진 재사용 의심", "실내 일반 공간 (무의미한 장소)"],
+    checklist: [
+      "장소를 특정할 수 있는 고유한 특징(간판·건물명·랜드마크)이 사진에 보임",
+      "간판 또는 건물명 텍스트를 글자 단위로 직접 읽을 수 있음",
+      "실외 또는 특정 공간임을 확인할 수 있음",
+      "충분한 밝기로 배경 확인 가능",
+    ],
+    rejectReasons: [
+      "장소를 특정할 수 있는 고유한 특징이 없음",
+      "간판·건물명이 흐리거나 가려져 읽을 수 없음",
+      "어두워서 배경 확인 불가",
+      "일반 실내 공간 (무의미한 배경)",
+    ],
+  },
+};
+
+/** 타입별 최우선 규칙 + AI에게 요구하는 추가 JSON 필드 */
+const TYPE_RULES: Partial<Record<VerifyTypeKey, { rule: string; extraFields: string }>> = {
+  step_walk: {
+    rule: `
+⚠️ [step_walk 최우선 규칙 — 다른 모든 판단보다 앞섭니다]
+1. 사진에서 걸음 수를 나타내는 숫자를 자릿수 단위로 직접 읽으세요.
+2. 숫자가 흐릿하거나, 가려지거나, 추측이 필요한 상황이면 즉시 passed=false 입니다.
+3. 직접 읽은 숫자가 5,000 미만이면 즉시 passed=false 입니다.
+4. stepsRead 필드에 읽은 숫자(정수) 또는 null을 반드시 기재하세요. null이면 서버에서 자동 거절합니다.`,
+    extraFields: `  "stepsRead": 읽힌 걸음 수 정수 또는 null,\n`,
+  },
+  quote_photo: {
+    rule: `
+⚠️ [quote_photo 최우선 규칙 — 다른 모든 판단보다 앞섭니다]
+1. 사진에서 텍스트를 한 글자씩 직접 읽어 내용을 확인하세요.
+2. 읽을 수 없는 글자가 있어 의미 파악이 어려우면 즉시 passed=false 입니다.
+3. textRead 필드에 읽은 핵심 문장(최대 60자)을 직접 인용하세요. 읽을 수 없으면 null. null이면 서버에서 자동 거절합니다.`,
+    extraFields: `  "textRead": 읽은 핵심 문장(최대 60자) 또는 null,\n`,
+  },
+  book_cover: {
+    rule: `
+⚠️ [book_cover 최우선 규칙 — 다른 모든 판단보다 앞섭니다]
+1. 사진에서 책 제목과 저자명을 글자 단위로 직접 읽으세요.
+2. 제목 또는 저자명을 읽을 수 없으면 즉시 passed=false 입니다.
+3. titleRead에 읽은 제목, authorRead에 읽은 저자명을 직접 인용하세요.
+   두 필드 중 하나라도 null이면 서버에서 자동 거절합니다.`,
+    extraFields: `  "titleRead": 읽은 책 제목 또는 null,\n  "authorRead": 읽은 저자명 또는 null,\n`,
+  },
+  run_scenery: {
+    rule: `
+⚠️ [run_scenery 최우선 규칙 — 다른 모든 판단보다 앞섭니다]
+1. 사진에서 러닝 증거(달리기 앱 화면, 러닝복, 운동화, GPS 기록 화면 등)를 직접 찾으세요.
+2. 러닝 증거가 전혀 없으면 즉시 passed=false 입니다. 야외 풍경만으로는 부족합니다.
+3. runEvidenceRead 필드에 발견한 러닝 증거를 구체적으로 기술하세요 (예: "오른쪽 하단에 Nike Run Club 앱 화면"). 없으면 null. null이면 서버에서 자동 거절합니다.`,
+    extraFields: `  "runEvidenceRead": 발견한 러닝 증거 설명 또는 null,\n`,
+  },
+  location_photo: {
+    rule: `
+⚠️ [location_photo 최우선 규칙 — 다른 모든 판단보다 앞섭니다]
+1. 사진에서 장소를 특정할 수 있는 고유한 특징(간판, 건물명, 랜드마크)을 직접 찾으세요.
+2. 텍스트로 된 간판·건물명이 있으면 글자 단위로 직접 읽어야 합니다.
+3. 장소를 특정할 증거가 없거나 텍스트를 읽을 수 없으면 즉시 passed=false 입니다.
+4. landmarkRead 필드에 읽은 간판·건물명 또는 특정 가능한 장소 특징을 기재하세요. 없으면 null. null이면 서버에서 자동 거절합니다.`,
+    extraFields: `  "landmarkRead": 읽은 간판·건물명 또는 장소 특징 또는 null,\n`,
   },
 };
 
@@ -90,12 +186,14 @@ function todayLabel(): string {
 function buildPrompt(key: VerifyTypeKey): string {
   const vt = VERIFY_TYPES[key];
   const today = todayLabel();
+  const typeRule = TYPE_RULES[key];
+
   const dateNote = key === "step_walk"
     ? `\n⚠️ [날짜 필수] 사진에 표시된 날짜가 오늘(${today})과 일치해야 합니다. 날짜가 다르거나 보이지 않으면 자동 거절합니다.`
     : "";
 
   return `당신은 챌린지 앱의 엄격한 사진 인증 AI입니다.
-오늘 날짜: ${today}${dateNote}
+오늘 날짜: ${today}${dateNote}${typeRule?.rule ?? ""}
 
 인증 유형: ${vt.label}
 목적: ${vt.desc}
@@ -119,7 +217,7 @@ ${vt.rejectReasons.map(r => `• ${r}`).join("\n")}
 
 JSON만 응답하세요 (마크다운, 설명 없이):
 {
-  "passed": true 또는 false,
+${typeRule?.extraFields ?? ""}  "passed": true 또는 false,
   "score": 0~100 정수,
   "failedChecks": [],
   "reason": "한국어 1~2문장"
@@ -133,16 +231,65 @@ interface VerifyResult {
   reason: string;
 }
 
+/** 타입별 서버사이드 이중 검증: AI가 통과시켜도 서버에서 재확인 */
+const SERVER_VALIDATORS: Partial<Record<VerifyTypeKey, (obj: Record<string, unknown>) => string | null>> = {
+  step_walk: (obj) => {
+    const steps = typeof obj.stepsRead === "number" ? Math.round(obj.stepsRead) : null;
+    console.log(`[verify-photo] step_walk stepsRead=${obj.stepsRead}, parsed=${steps}`);
+    if (steps === null) return "걸음 수 숫자를 사진에서 직접 읽을 수 없어 인증이 거절됐습니다.";
+    if (steps < 5000) return `읽힌 걸음 수(${steps.toLocaleString()}보)가 5,000보 미만입니다.`;
+    return null;
+  },
+  quote_photo: (obj) => {
+    const text = typeof obj.textRead === "string" ? obj.textRead.trim() : null;
+    console.log(`[verify-photo] quote_photo textRead=${JSON.stringify(text)}`);
+    if (!text || text.length < 5) return "텍스트를 사진에서 직접 읽을 수 없어 인증이 거절됐습니다.";
+    return null;
+  },
+  book_cover: (obj) => {
+    const title = typeof obj.titleRead === "string" ? obj.titleRead.trim() : null;
+    const author = typeof obj.authorRead === "string" ? obj.authorRead.trim() : null;
+    console.log(`[verify-photo] book_cover titleRead=${JSON.stringify(title)}, authorRead=${JSON.stringify(author)}`);
+    if (!title) return "책 제목을 사진에서 직접 읽을 수 없어 인증이 거절됐습니다.";
+    if (!author) return "저자명을 사진에서 직접 읽을 수 없어 인증이 거절됐습니다.";
+    return null;
+  },
+  run_scenery: (obj) => {
+    const evidence = typeof obj.runEvidenceRead === "string" ? obj.runEvidenceRead.trim() : null;
+    console.log(`[verify-photo] run_scenery runEvidenceRead=${JSON.stringify(evidence)}`);
+    if (!evidence || evidence.length < 5) return "러닝 증거(앱·복장·장비 등)를 사진에서 확인할 수 없어 인증이 거절됐습니다.";
+    return null;
+  },
+  location_photo: (obj) => {
+    const landmark = typeof obj.landmarkRead === "string" ? obj.landmarkRead.trim() : null;
+    console.log(`[verify-photo] location_photo landmarkRead=${JSON.stringify(landmark)}`);
+    if (!landmark || landmark.length < 2) return "장소를 특정할 수 있는 고유한 특징(간판·건물명)을 확인할 수 없어 인증이 거절됐습니다.";
+    return null;
+  },
+};
+
 function parseResult(raw: unknown, key: VerifyTypeKey): VerifyResult {
   if (typeof raw !== "object" || raw === null) {
     return { passed: false, score: 0, failedChecks: [], reason: "AI 응답 형식 오류" };
   }
   const obj = raw as Record<string, unknown>;
-  const passed = obj.passed === true;
+  let passed = obj.passed === true;
   const score = typeof obj.score === "number"
     ? Math.max(0, Math.min(100, Math.round(obj.score))) : 0;
-  const reason = typeof obj.reason === "string" && obj.reason.trim()
+  let reason = typeof obj.reason === "string" && obj.reason.trim()
     ? obj.reason.trim() : "판정 이유 없음";
+
+  // 서버사이드 이중 검증: AI가 passed=true 를 반환해도 서버에서 재확인
+  if (passed) {
+    const validate = SERVER_VALIDATORS[key];
+    if (validate) {
+      const rejectReason = validate(obj);
+      if (rejectReason) {
+        passed = false;
+        reason = rejectReason;
+      }
+    }
+  }
 
   const checklist = VERIFY_TYPES[key].checklist;
   let failedChecks: string[] = [];
