@@ -28,12 +28,16 @@
 | 알림 설정 저장 | [x] | `notification_settings` |
 | 챌린지 건의/응원/댓글/알림받기 | [x] | `challenge_suggestions` 계열 테이블 |
 | 친구 초대 코드/공유/초대 기록 | [x] | `friend_invites`, `invite_events`, `referrals` |
+| 친구 추천/검색 | [x] | `search_public_profiles` RPC |
+| 온보딩 닉네임 저장 | [x] | `profiles.username` |
+| 유저 프로필 공개 조회 | [x] | `get_public_profile` RPC |
 | 그룹 생성 페이지 | [x] 삭제 | 런칭 범위 제외 |
 | 소셜 로그인 버튼 | [~] 배치만 유지 | provider 연결 미완 |
 | 활동 사진 리액션/좋아요 | [x] | `activity_reactions` |
-| 실제 활동 피드 | [~] 부분 연결 | 그룹 상세/전체 피드 DB 우선, 일부 홈/상세 fallback mock 잔존 |
+| 실제 활동 피드 | [x] | 홈/그룹 상세 DB 기반 표시, 데이터 없을 때 빈 상태 표시 |
 | 그룹 랭킹/홈 순위 | [x] | `get_group_leaderboard` RPC |
-| 그룹 채팅 | [ ] | 현재 mock |
+| 그룹 채팅 | [x] | `group_messages`, `group_message_reactions` |
+| 그룹 채팅 실시간 반영 | [x] | Supabase Realtime `group_messages` INSERT |
 
 ## 완료된 주요 작업
 
@@ -99,10 +103,42 @@
 - [x] 그룹별 리더보드 RPC 추가
 - [x] 홈 순위 슬라이드를 DB 리더보드 우선 로드로 연결
 - [x] 그룹 상세 순위 탭을 DB 리더보드 우선 로드로 연결
-- [x] DB 데이터가 없을 때 기존 mock 랭킹 fallback 유지
+- [x] DB 데이터가 없을 때 mock 랭킹 fallback 제거, 빈 상태 표시
 - [x] 마이그레이션 적용
   - `20260504001000_challenge_lifecycle.sql`
   - `20260504002000_group_leaderboard_rpc.sql`
+
+### 7차
+
+- [x] 그룹 채팅 메시지 테이블 추가
+- [x] 그룹 채팅 리액션 테이블 추가
+- [x] 같은 그룹 멤버만 채팅 읽기/쓰기 가능한 RLS 추가
+- [x] 홈 채팅 슬라이드를 `group_messages` 우선 로드로 연결
+- [x] 채팅 메시지 전송을 DB insert로 연결
+- [x] 채팅 메시지 리액션을 `group_message_reactions` upsert/delete로 연결
+- [x] DB 데이터가 없을 때 mock 채팅 fallback 제거, 빈 상태 표시
+- [x] 마이그레이션 적용
+  - `20260505001000_group_messages.sql`
+
+### 8차
+
+- [x] 온보딩 닉네임을 `profiles.username`에 저장
+- [x] 공개 프로필 조회 RPC 추가
+- [x] 유저 프로필 페이지를 `get_public_profile` 기반으로 전환
+- [x] 친구 검색 RPC 추가
+- [x] 친구 초대 추천/검색을 `profiles` 검색 기반으로 전환
+- [x] 마이그레이션 적용
+  - `20260505002000_public_profile_rpc.sql`
+
+### 9차
+
+- [x] `group_messages` Realtime publication 추가
+- [x] `group_message_reactions` Realtime publication 추가
+- [x] 홈 채팅 슬라이드에서 그룹별 메시지 INSERT 구독
+- [x] 새 메시지 수신 시 채팅 목록 자동 append
+- [x] 구독 cleanup 처리
+- [x] 마이그레이션 적용
+  - `20260505003000_group_messages_realtime.sql`
 
 ## 완료된 주요 작업 (계속)
 
@@ -133,17 +169,16 @@
 
 ### P1 — 홈/그룹 상세 mock 제거
 
-- [ ] 그룹 상세 활동 피드 fallback mock 제거 여부 결정
-- [ ] 홈 활동/피드 fallback mock 제거 여부 결정
-- [ ] `verifications` / `activity_posts` / `profiles` 기반으로 최신 활동 표시
-- [ ] 실제 이미지가 없을 때 fallback UI 정리
+- [x] 그룹 상세 활동 피드 fallback mock 제거
+- [x] 홈 활동/피드 fallback mock 제거
+- [x] `verifications` / `activity_posts` / `profiles` 기반으로 최신 활동 표시
+- [x] 실제 이미지가 없을 때 빈 상태 UI 정리
 
-### P2 — 그룹 채팅
+### P2 — 채팅 UX 보강
 
-- [ ] `group_messages` 테이블 추가
-- [ ] 같은 그룹 멤버만 읽기/쓰기 가능한 RLS 추가
-- [ ] 홈 채팅 슬라이드 DB 연결
-- [ ] Supabase Realtime 구독
+- [x] 온라인 멤버 수 mock 제거, 참여 수 표시로 변경
+- [ ] 메시지 실패/재전송 UI 정리
+- [ ] 다른 사용자의 리액션 실시간 반영 여부 결정
 
 ### P3 — 소셜 로그인 실제 연결
 
@@ -152,11 +187,11 @@
 - [ ] Apple OAuth 연결 여부 결정
 - [ ] 소셜 로그인 후 프로필 생성/추천코드 동작 확인
 
-### P4 — 온보딩/프로필 보강
+### P4 — 프로필/친구 UX 보강
 
-- [ ] 온보딩 닉네임을 `profiles.username`에 저장
-- [ ] `/user/:seed`를 실제 `profiles.id` 기반 라우팅으로 정리
-- [ ] 친구 추천 목록을 실제 유저 검색/추천으로 전환
+- [x] mock fallback에서 열리는 `/user/:seed` 제거
+- [x] 친구 추천 기본값 제거, 실제 프로필 검색만 표시
+- [ ] 초대 완료 후 토스트/상태 문구 정리
 
 ### P5 — 모바일 런칭 점검
 
@@ -188,3 +223,7 @@ supabase migration list
 - `20260504000000_activity_posts_reactions.sql`
 - `20260504001000_challenge_lifecycle.sql`
 - `20260504002000_group_leaderboard_rpc.sql`
+- `20260505000000_verifications_storage.sql`
+- `20260505001000_group_messages.sql`
+- `20260505002000_public_profile_rpc.sql`
+- `20260505003000_group_messages_realtime.sql`

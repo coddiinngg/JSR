@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ChevronLeft, Flame, Trophy } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import type { Profile } from "../types/database";
+import type { PublicProfileRecord } from "../types/database";
 
 interface UserStats {
   streak: number;
@@ -43,7 +43,7 @@ export function UserProfile() {
   const { seed: userId = "" } = useParams<{ seed: string }>();
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<PublicProfileRecord | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [groups, setGroups] = useState<UserGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,12 +62,12 @@ export function UserProfile() {
     setLoading(true);
     try {
       const [{ data: profileData }, { data: verifications }, { data: memberships }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", id).single(),
+        supabase.rpc("get_public_profile", { p_user_id: id }),
         supabase.from("verifications").select("verified_at, status").eq("user_id", id),
         supabase.from("group_members").select("group_id, groups(id, name)").eq("user_id", id).limit(3),
       ]);
 
-      if (profileData) setProfile(profileData);
+      setProfile(profileData?.[0] ?? null);
 
       if (verifications) {
         const completed = verifications.filter(v => v.status === "completed");

@@ -365,6 +365,43 @@ export interface Database {
         Update: Pick<Database['public']['Tables']['activity_reactions']['Insert'], 'emoji'>;
         Relationships: [];
       };
+      group_messages: {
+        Row: {
+          id: string;
+          group_id: string;
+          user_id: string;
+          body: string;
+          author_name: string | null;
+          author_avatar_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          user_id: string;
+          body: string;
+          author_name?: string | null;
+          author_avatar_url?: string | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      group_message_reactions: {
+        Row: {
+          message_id: string;
+          user_id: string;
+          emoji: '❤️' | '😂' | '🔥' | '👍' | '😮' | '🎉';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          message_id: string;
+          user_id: string;
+          emoji: '❤️' | '😂' | '🔥' | '👍' | '😮' | '🎉';
+        };
+        Update: Pick<Database['public']['Tables']['group_message_reactions']['Insert'], 'emoji'>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -383,6 +420,29 @@ export interface Database {
           rate: number;
           streak: number;
           is_me: boolean;
+        }[];
+      };
+      get_public_profile: {
+        Args: {
+          p_user_id: string;
+        };
+        Returns: {
+          id: string;
+          username: string | null;
+          avatar_url: string | null;
+          streak_count: number;
+          xp_total: number;
+        }[];
+      };
+      search_public_profiles: {
+        Args: {
+          p_query: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          username: string | null;
+          avatar_url: string | null;
         }[];
       };
     };
@@ -405,4 +465,8 @@ export type FriendInviteRecord = Database['public']['Tables']['friend_invites'][
 export type InviteEventRecord = Database['public']['Tables']['invite_events']['Row'];
 export type ActivityPostRecord = Database['public']['Tables']['activity_posts']['Row'];
 export type ActivityReactionRecord = Database['public']['Tables']['activity_reactions']['Row'];
+export type GroupMessageRecord = Database['public']['Tables']['group_messages']['Row'];
+export type GroupMessageReactionRecord = Database['public']['Tables']['group_message_reactions']['Row'];
 export type GroupLeaderboardRecord = Database['public']['Functions']['get_group_leaderboard']['Returns'][number];
+export type PublicProfileRecord = Database['public']['Functions']['get_public_profile']['Returns'][number];
+export type PublicProfileSearchRecord = Database['public']['Functions']['search_public_profiles']['Returns'][number];

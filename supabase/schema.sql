@@ -207,6 +207,31 @@ CREATE TABLE IF NOT EXISTS activity_reactions (
 CREATE INDEX IF NOT EXISTS activity_reactions_post
   ON activity_reactions (activity_post_id);
 
+CREATE TABLE IF NOT EXISTS group_messages (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id          UUID REFERENCES groups(id) ON DELETE CASCADE NOT NULL,
+  user_id           UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  body              TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 500),
+  author_name       TEXT,
+  author_avatar_url TEXT,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS group_messages_group_created
+  ON group_messages (group_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS group_message_reactions (
+  message_id UUID REFERENCES group_messages(id) ON DELETE CASCADE NOT NULL,
+  user_id    UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  emoji      TEXT NOT NULL CHECK (emoji IN ('❤️', '😂', '🔥', '👍', '😮', '🎉')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (message_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS group_message_reactions_message
+  ON group_message_reactions (message_id);
+
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
@@ -222,6 +247,8 @@ ALTER TABLE friend_invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invite_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_message_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE verifications  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE groups         ENABLE ROW LEVEL SECURITY;
@@ -275,6 +302,36 @@ CREATE POLICY "activity_reactions_select" ON activity_reactions FOR SELECT USING
 CREATE POLICY "activity_reactions_insert_own" ON activity_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "activity_reactions_update_own" ON activity_reactions FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "activity_reactions_delete_own" ON activity_reactions FOR DELETE USING (auth.uid() = user_id);
+
+-- Group chat: 같은 그룹 멤버만 메시지 조회/작성, 본인 리액션만 변경
+CREATE POLICY "group_messages_select_member" ON group_messages FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM group_members
+    WHERE group_members.group_id = group_messages.group_id
+      AND group_members.user_id = auth.uid()
+  )
+);
+CREATE POLICY "group_messages_insert_member" ON group_messages FOR INSERT WITH CHECK (
+  auth.uid() = user_id
+  AND EXISTS (
+    SELECT 1 FROM group_members
+    WHERE group_members.group_id = group_messages.group_id
+      AND group_members.user_id = auth.uid()
+  )
+);
+
+CREATE POLICY "group_message_reactions_select_member" ON group_message_reactions FOR SELECT USING (
+  EXISTS (
+    SELECT 1
+    FROM group_messages gm
+    JOIN group_members member ON member.group_id = gm.group_id
+    WHERE gm.id = group_message_reactions.message_id
+      AND member.user_id = auth.uid()
+  )
+);
+CREATE POLICY "group_message_reactions_insert_own" ON group_message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "group_message_reactions_update_own" ON group_message_reactions FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "group_message_reactions_delete_own" ON group_message_reactions FOR DELETE USING (auth.uid() = user_id);
 
 -- Profiles: 자신의 프로필만 접근
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (auth.uid() = id);
@@ -448,6 +505,24 @@ CREATE OR REPLACE TRIGGER activity_reactions_updated_at
   BEFORE UPDATE ON activity_reactions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+CREATE OR REPLACE TRIGGER group_message_reactions_updated_at
+  BEFORE UPDATE ON group_message_reactions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE group_messages;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE group_message_reactions;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 -- ============================================================
 -- 보안 패치: 하루 중복 인증 방지 (DB 레벨, KST 기준)
 -- ============================================================
@@ -559,6 +634,49 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION get_group_leaderboard(UUID, INT) TO anon, authenticated;
+
+CREATE OR REPLACE FUNCTION get_public_profile(p_user_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  streak_count INT,
+  xp_total INT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p.id, p.username, p.avatar_url, p.streak_count, p.xp_total
+  FROM profiles p
+  WHERE p.id = p_user_id;
+$$;
+
+CREATE OR REPLACE FUNCTION search_public_profiles(p_query TEXT, p_limit INT DEFAULT 10)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p.id, p.username, p.avatar_url
+  FROM profiles p
+  WHERE auth.uid() IS NOT NULL
+    AND p.id <> auth.uid()
+    AND p.username IS NOT NULL
+    AND char_length(trim(COALESCE(p_query, ''))) >= 2
+    AND p.username ILIKE '%' || trim(p_query) || '%'
+  ORDER BY p.username ASC
+  LIMIT GREATEST(1, LEAST(COALESCE(p_limit, 10), 30));
+$$;
+
+GRANT EXECUTE ON FUNCTION get_public_profile(UUID) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION search_public_profiles(TEXT, INT) TO authenticated;
 
 -- ============================================================
 -- STORAGE BUCKET (Supabase 대시보드 > Storage에서 설정)

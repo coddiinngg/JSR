@@ -7,44 +7,13 @@ import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 import { useGuestGuard } from "../contexts/GuestGuardContext";
 import { formatActivityTime, loadActivityFeed, type ActivityFeedItem } from "../lib/activity";
 import { loadGroupLeaderboard, type LeaderboardItem } from "../lib/leaderboard";
+import { formatChatTime, loadGroupMessages, type GroupChatMessage, type MessageEmoji } from "../lib/chat";
+import { supabase } from "../lib/supabase";
+import type { GroupMessageRecord } from "../types/database";
 import { getBenefitGrade } from "../lib/challengeUtils";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 const rateColor = (r: number) => r >= 80 ? "#10B981" : r >= 50 ? "#F59E0B" : "#FF3355";
-
-
-const GROUP_RANKERS: Record<string, { rank: number; name: string; streak: number; rate: number; seed: string; isMe: boolean }[]> = {
-  "1": [
-    { rank: 1, name: "sm", streak: 12, rate: 92, seed: "sm",     isMe: false },
-    { rank: 2, name: "ms", streak:  8, rate: 84, seed: "ms",     isMe: false },
-    { rank: 3, name: "나", streak:  5, rate: 75, seed: "MyUser", isMe: true  },
-  ],
-  "2": [
-    { rank: 1, name: "sm", streak: 15, rate: 96, seed: "sm",     isMe: false },
-    { rank: 2, name: "나", streak:  3, rate: 50, seed: "MyUser", isMe: true  },
-    { rank: 3, name: "ms", streak:  1, rate: 40, seed: "ms",     isMe: false },
-  ],
-  "3": [
-    { rank: 1, name: "ms", streak: 10, rate: 90, seed: "ms",     isMe: false },
-    { rank: 2, name: "나", streak:  7, rate: 75, seed: "MyUser", isMe: true  },
-    { rank: 3, name: "sm", streak:  4, rate: 60, seed: "sm",     isMe: false },
-  ],
-  "4": [
-    { rank: 1, name: "sm", streak:  8, rate: 88, seed: "sm",     isMe: false },
-    { rank: 2, name: "나", streak:  4, rate: 60, seed: "MyUser", isMe: true  },
-    { rank: 3, name: "ms", streak:  2, rate: 45, seed: "ms",     isMe: false },
-  ],
-  "5": [
-    { rank: 1, name: "ms", streak: 18, rate: 97, seed: "ms",     isMe: false },
-    { rank: 2, name: "sm", streak: 10, rate: 85, seed: "sm",     isMe: false },
-    { rank: 3, name: "나", streak:  1, rate: 40, seed: "MyUser", isMe: true  },
-  ],
-  "6": [
-    { rank: 1, name: "sm", streak:  9, rate: 88, seed: "sm",     isMe: false },
-    { rank: 2, name: "나", streak:  6, rate: 55, seed: "MyUser", isMe: true  },
-    { rank: 3, name: "ms", streak:  3, rate: 42, seed: "ms",     isMe: false },
-  ],
-};
 
 interface ChatMsg {
   id: string; sender: string; text: string;
@@ -52,44 +21,10 @@ interface ChatMsg {
   type?: "achievement";
   achieverName?: string;
   streak?: number;
+  dbMessage?: GroupChatMessage;
 }
 
-const EMOJI_REACTIONS = ["❤️", "😂", "🔥", "👍", "😮", "🎉"];
-
-const GROUP_CHATS: Record<string, ChatMsg[]> = {
-  "1": [
-    { id: "1",  sender: "sm",     text: "오늘 아침 산책 인증 완료! 👟",        seed: "sm",     time: "07:32" },
-    { id: "1a", sender: "system", text: "", seed: "", time: "07:40", type: "achievement", achieverName: "sm", streak: 12 },
-    { id: "2",  sender: "ms",     text: "저도 오늘 8,000보 넘겼어요 😄",        seed: "ms",     time: "08:10" },
-    { id: "3",  sender: "나",     text: "오늘도 같이 열심히 걸어봐요!",          seed: "MyUser", time: "09:00", isMe: true },
-  ],
-  "2": [
-    { id: "1",  sender: "sm",     text: "새벽 5km 완주! 풍경 진짜 예뻤어요 🌅", seed: "sm",     time: "06:20" },
-    { id: "1a", sender: "system", text: "", seed: "", time: "06:30", type: "achievement", achieverName: "sm", streak: 15 },
-    { id: "2",  sender: "나",     text: "멋진 풍경이네요! 저도 따라갈게요",       seed: "MyUser", time: "08:00", isMe: true },
-    { id: "3",  sender: "ms",     text: "오늘 같이 달릴 분? 저녁 7시요!",        seed: "ms",     time: "09:30" },
-  ],
-  "3": [
-    { id: "1",  sender: "ms",     text: "오늘 책 표지 인증 완료 📚 추천 너무 좋아요!", seed: "ms",     time: "08:15" },
-    { id: "2",  sender: "나",     text: "좋은 책 추천해주세요~ 다 읽었어요 😊",        seed: "MyUser", time: "10:00", isMe: true },
-    { id: "3",  sender: "sm",     text: "저는 이번 주 목표 달성 🎉",                   seed: "sm",     time: "10:42" },
-  ],
-  "4": [
-    { id: "1",  sender: "sm",     text: "오늘 필사한 문장 올렸어요 ✍️",         seed: "sm",     time: "09:00" },
-    { id: "2",  sender: "나",     text: "저도 오늘 인상 깊은 문장 찾았어요!",    seed: "MyUser", time: "10:10", isMe: true },
-    { id: "3",  sender: "ms",     text: "같이 꾸준히 해봐요 화이팅 💪",         seed: "ms",     time: "11:00" },
-  ],
-  "5": [
-    { id: "1",  sender: "ms",     text: "오늘 포즈 도전했어요 ㅎㅎ 쑥스럽지만 재밌어요 📸", seed: "ms",     time: "10:05" },
-    { id: "2",  sender: "sm",     text: "진짜 웃겨요 ㅋㅋㅋ 저도 곧 올릴게요",               seed: "sm",     time: "10:30" },
-    { id: "3",  sender: "나",     text: "같이 도전! 오늘 포즈 재밌었어요 😄",                seed: "MyUser", time: "11:20", isMe: true },
-  ],
-  "6": [
-    { id: "1",  sender: "sm",     text: "오늘 북촌 한옥마을 다녀왔어요 📍 강추!", seed: "sm",     time: "13:00" },
-    { id: "2",  sender: "나",     text: "저도 오늘 카페거리 인증했어요~",          seed: "MyUser", time: "14:00", isMe: true },
-    { id: "3",  sender: "ms",     text: "다음에 같이 탐험 가요!! 🗺️",            seed: "ms",     time: "14:20" },
-  ],
-};
+const EMOJI_REACTIONS: MessageEmoji[] = ["❤️", "😂", "🔥", "👍", "😮", "🎉"];
 
 const SLIDE_COUNT = 3;
 
@@ -111,45 +46,6 @@ interface FeedItem {
   myReaction?: string | null;
 }
 
-const FEED_ITEMS: FeedItem[] = [
-  {
-    id: "1", user: "sm", seed: "sm", time: "방금 전",
-    caption: "오늘도 8,200보 달성! 연속 12일째 🔥",
-    groupTitle: "매일 5,000보 걷기", verifyEmoji: "👟", aspect: "tall",
-    img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&fit=crop",
-  },
-  {
-    id: "2", user: "ms", seed: "ms", time: "5분 전",
-    caption: "이번 주 독서 인증 완료 📚",
-    groupTitle: "일일 독서 클럽", verifyEmoji: "📚", aspect: "square",
-    img: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&fit=crop",
-  },
-  {
-    id: "3", user: "sm", seed: "sm", time: "11분 전",
-    caption: "새벽 한강 러닝 완주! 오늘 풍경 미쳤다 🌅",
-    groupTitle: "러닝 크루", verifyEmoji: "🏃", aspect: "square",
-    img: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&fit=crop",
-  },
-  {
-    id: "4", user: "ms", seed: "ms", time: "19분 전",
-    caption: "'작은 습관이 큰 변화를 만든다' 오늘의 문장 ✍️",
-    groupTitle: "필사 챌린지", verifyEmoji: "✍️", aspect: "tall",
-    img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&fit=crop",
-  },
-  {
-    id: "5", user: "sm", seed: "sm", time: "25분 전",
-    caption: "오늘의 포즈 도전 완료 ㅎㅎ 쑥스럽지만 재밌어요 📸",
-    groupTitle: "포즈 챌린지", verifyEmoji: "📸", aspect: "square",
-    img: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=400&fit=crop",
-  },
-  {
-    id: "6", user: "ms", seed: "ms", time: "34분 전",
-    caption: "오늘 광화문 광장 방문 인증! 역시 멋있다 📍",
-    groupTitle: "장소 탐험대", verifyEmoji: "📍", aspect: "tall",
-    img: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400&fit=crop",
-  },
-];
-
 export function Home() {
   const navigate = useNavigate();
   const { nickname, beginVerification, groups, selectedGroupId, setSelectedGroupId, notifications } = useApp();
@@ -162,7 +58,7 @@ export function Home() {
   const [btnFlash, setBtnFlash]               = useState(false);
   const [notifMode, setNotifMode]             = useState(false);
   const { guardAction } = useGuestGuard();
-  const [reactions, setReactions]           = useState<Record<string, string>>({});
+  const [reactions, setReactions]           = useState<Record<string, MessageEmoji>>({});
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>([]);
@@ -249,11 +145,83 @@ export function Home() {
     if (el && !isAnimatingRef.current) el.textContent = String(groupRate);
   }, [groupRate]);
 
-  // 그룹이 바뀌면 채팅 초기화
+  const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
+  const isChallengeEnded = !!(
+    selectedGroup?.challengeEnd &&
+    new Date(selectedGroup.challengeEnd) < new Date()
+  );
+
   useEffect(() => {
-    setChats(GROUP_CHATS[selectedGroupId] ?? GROUP_CHATS["1"]);
     setChatInput("");
-  }, [selectedGroupId]);
+    setReactions({});
+    let cancelled = false;
+    const selectedDbId = selectedGroup?.dbId ?? null;
+
+    function mapDbMessage(message: GroupMessageRecord, myReaction: MessageEmoji | null = null): ChatMsg {
+      return {
+        id: message.id,
+        sender: message.author_name ?? "챌리 유저",
+        text: message.body,
+        seed: message.user_id,
+        time: formatChatTime(message.created_at),
+        isMe: message.user_id === user?.id,
+        dbMessage: { ...message, myReaction },
+      };
+    }
+
+    async function loadChat() {
+      if (!selectedDbId || !user) {
+        setChats([]);
+        return;
+      }
+
+      try {
+        const messages = await loadGroupMessages({ groupId: selectedDbId, userId: user.id, limit: 50 });
+        if (cancelled) return;
+        if (!messages.length) {
+          setChats([]);
+          return;
+        }
+        setChats(messages.map(message => mapDbMessage(message, message.myReaction)));
+        setReactions(Object.fromEntries(
+          messages
+            .filter(message => message.myReaction)
+            .map(message => [message.id, message.myReaction as MessageEmoji])
+        ));
+      } catch (error) {
+        console.error("Failed to load group messages", error);
+        if (!cancelled) setChats([]);
+      }
+    }
+
+    void loadChat();
+
+    const channel = selectedDbId && user
+      ? supabase
+        .channel(`group-messages:${selectedDbId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "group_messages", filter: `group_id=eq.${selectedDbId}` },
+          (payload) => {
+            const message = payload.new as GroupMessageRecord;
+            setChats(prev => {
+              if (prev.some(item => item.id === message.id)) return prev;
+              return [...prev, mapDbMessage(message)];
+            });
+            setTimeout(() => {
+              const el = chatScrollRef.current;
+              if (el) el.scrollTop = el.scrollHeight;
+            }, 50);
+          }
+        )
+        .subscribe()
+      : null;
+
+    return () => {
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [selectedGroup?.dbId, selectedGroupId, user?.id]);
 
   // 참여 중인 그룹 목록이 바뀌면 selectedGroupId 유효성 확인
   useEffect(() => {
@@ -262,11 +230,6 @@ export function Home() {
     }
   }, [myGroups.length, selectedGroupId]);
 
-  const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
-  const isChallengeEnded = !!(
-    selectedGroup?.challengeEnd &&
-    new Date(selectedGroup.challengeEnd) < new Date()
-  );
   const rankers       = leaderboardRows.length
     ? leaderboardRows.map(row => ({
       rank: row.rank,
@@ -276,7 +239,7 @@ export function Home() {
       seed: row.userId,
       isMe: row.isMe,
     }))
-    : (GROUP_RANKERS[selectedGroupId] ?? GROUP_RANKERS["1"]);
+    : [];
 
   useEffect(() => {
     let cancelled = false;
@@ -297,11 +260,6 @@ export function Home() {
     return () => { cancelled = true; };
   }, [selectedGroup?.dbId, user?.id]);
 
-  function parseMinutes(time: string): number {
-    if (time === "방금 전") return 0;
-    const m = time.match(/^(\d+)분/);
-    return m ? parseInt(m[1]) : 999;
-  }
   const dbFeedItems: FeedItem[] = activityFeed.map((post, index) => {
     const vt = VERIFY_TYPES[(post.verify_type as VerifyTypeKey) ?? "step_walk"] ?? VERIFY_TYPES.step_walk;
     return {
@@ -319,7 +277,7 @@ export function Home() {
       myReaction: post.myReaction,
     };
   });
-  const recentFeed  = (dbFeedItems.length ? dbFeedItems : FEED_ITEMS).filter(item => parseMinutes(item.time) <= 30 || dbFeedItems.length > 0);
+  const recentFeed  = dbFeedItems;
 
   /* ── 스와이프: 수평/수직 판별 ── */
   function touchBegin(x: number, y: number) {
@@ -361,7 +319,14 @@ export function Home() {
   function cancelLongPress() {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   }
-  function addReaction(msgId: string, emoji: string) {
+  function addReaction(msgId: string, emoji: MessageEmoji) {
+    const msg = chats.find(item => item.id === msgId);
+    if (!msg?.dbMessage || !user) {
+      setEmojiPickerFor(null);
+      return;
+    }
+
+    const prev = reactions[msgId] ?? null;
     setReactions(prev => {
       const next = { ...prev };
       if (next[msgId] === emoji) delete next[msgId]; // 같은 이모지 탭 → 제거
@@ -369,6 +334,22 @@ export function Home() {
       return next;
     });
     setEmojiPickerFor(null);
+
+    const nextEmoji = prev === emoji ? null : emoji;
+    const mutation = nextEmoji
+      ? supabase.from("group_message_reactions").upsert({ message_id: msgId, user_id: user.id, emoji: nextEmoji })
+      : supabase.from("group_message_reactions").delete().eq("message_id", msgId).eq("user_id", user.id);
+
+    void mutation.then(({ error }) => {
+      if (!error) return;
+      console.error("Failed to save message reaction", error);
+      setReactions(current => {
+        const next = { ...current };
+        if (prev) next[msgId] = prev;
+        else delete next[msgId];
+        return next;
+      });
+    });
   }
 
   function selectGroup(id: string) {
@@ -380,17 +361,47 @@ export function Home() {
     btnFlashTimer.current = setTimeout(() => setBtnFlash(false), 600);
   }
 
-  function sendChat() {
+  async function sendChat() {
     const text = chatInput.trim();
     if (!text) return;
+    if (!selectedGroup?.dbId || !user) return;
     const now = new Date();
     const hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0");
-    setChats(p => [...p, { id: Date.now().toString(), sender: "나", text, seed: "MyUser", time: `${hh}:${mm}`, isMe: true }]);
+    const tempId = `local-${Date.now()}`;
+    setChats(p => [...p, { id: tempId, sender: nickname, text, seed: user.id, time: `${hh}:${mm}`, isMe: true }]);
     setChatInput("");
     setTimeout(() => {
       const el = chatScrollRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     }, 50);
+
+    const { data, error } = await supabase
+      .from("group_messages")
+      .insert({
+        group_id: selectedGroup.dbId,
+        user_id: user.id,
+        body: text,
+        author_name: nickname,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Failed to send group message", error);
+      setChats(prev => prev.filter(msg => msg.id !== tempId));
+      setChatInput(text);
+      return;
+    }
+
+    setChats(prev => prev.map(msg => msg.id === tempId ? {
+      id: data.id,
+      sender: data.author_name ?? nickname,
+      text: data.body,
+      seed: data.user_id,
+      time: formatChatTime(data.created_at),
+      isMe: true,
+      dbMessage: { ...data, myReaction: null },
+    } : msg));
   }
 
   const slideTx = (i: number) => `translate3d(${(i - slideIdx) * 100}%, 0, 0)`;
@@ -727,6 +738,13 @@ export function Home() {
                 <p className="text-slate-900 font-black text-[16px] leading-tight truncate">{selectedGroup?.title ?? ""}</p>
               </div>
 
+              {rankers.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
+                  <span className="text-4xl">🏆</span>
+                  <p className="text-slate-700 font-black text-[15px]">아직 순위가 없어요</p>
+                  <p className="text-slate-400 text-[12px]">그룹 멤버가 인증하면 순위가 표시돼요</p>
+                </div>
+              ) : (<>
               {/* 포디엄 top 3 — 2위·1위·3위 순 */}
               {(() => {
                 const top3 = rankers.slice(0, 3);
@@ -801,6 +819,7 @@ export function Home() {
                 );
               })()}
               </>)}
+              </>)}
             </div>
 
             {/* ─── 슬라이드 3: 그룹 채팅 ─── */}
@@ -822,7 +841,7 @@ export function Home() {
                   <p className="text-slate-900 font-black text-[19px]">{selectedGroup?.title ?? ""}</p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span className="text-slate-400 text-[11px]">5명 온라인</span>
+                    <span className="text-slate-400 text-[11px]">{selectedGroup?.members ?? 0}명 참여</span>
                   </div>
                 </div>
               </div>
@@ -831,6 +850,13 @@ export function Home() {
                 className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
                 onScroll={() => setEmojiPickerFor(null)}
                 onClick={() => emojiPickerFor && setEmojiPickerFor(null)}>
+                {chats.length === 0 && (
+                  <div className="h-full min-h-[220px] flex flex-col items-center justify-center gap-2 text-center">
+                    <span className="text-4xl">💬</span>
+                    <p className="text-slate-700 font-black text-[15px]">아직 메시지가 없어요</p>
+                    <p className="text-slate-400 text-[12px]">첫 메시지를 남겨 그룹 대화를 시작해보세요</p>
+                  </div>
+                )}
                 {chats.map((msg) => {
                   if (msg.type === "achievement") {
                     return (
@@ -849,12 +875,12 @@ export function Home() {
                       {!msg.isMe && (
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
                           className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mb-5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
-                          onClick={() => navigate(`/user/${msg.seed}`)} />
+                          onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)} />
                       )}
                       <div className={`flex flex-col gap-0.5 max-w-[68%] ${msg.isMe ? "items-end" : "items-start"}`}>
                         {!msg.isMe && (
                           <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
-                            onClick={() => navigate(`/user/${msg.seed}`)}>
+                            onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)}>
                             {msg.sender}
                           </span>
                         )}
@@ -1013,20 +1039,28 @@ export function Home() {
           </div>
 
           {/* 벤토 비대칭 그리드 */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* 왼쪽 컬럼 */}
-            <div className="flex flex-col gap-2.5">
-              {recentFeed.filter((_, i) => i % 2 === 0).map((item) => (
-                <FeedCard key={item.id} item={item} />
-              ))}
+          {recentFeed.length === 0 ? (
+            <div className="min-h-[180px] rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center justify-center gap-2 text-center px-6">
+              <span className="text-4xl">📸</span>
+              <p className="text-slate-700 font-black text-[15px]">아직 인증 피드가 없어요</p>
+              <p className="text-slate-400 text-[12px]">그룹 인증이 완료되면 여기에 표시돼요</p>
             </div>
-            {/* 오른쪽 컬럼 — 위로 오프셋 */}
-            <div className="flex flex-col gap-2.5 mt-6">
-              {recentFeed.filter((_, i) => i % 2 === 1).map((item) => (
-                <FeedCard key={item.id} item={item} />
-              ))}
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* 왼쪽 컬럼 */}
+              <div className="flex flex-col gap-2.5">
+                {recentFeed.filter((_, i) => i % 2 === 0).map((item) => (
+                  <FeedCard key={item.id} item={item} />
+                ))}
+              </div>
+              {/* 오른쪽 컬럼 — 위로 오프셋 */}
+              <div className="flex flex-col gap-2.5 mt-6">
+                {recentFeed.filter((_, i) => i % 2 === 1).map((item) => (
+                  <FeedCard key={item.id} item={item} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
       </div>

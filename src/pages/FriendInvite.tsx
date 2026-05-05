@@ -5,24 +5,16 @@ import { cn } from "../lib/utils";
 import { copyText, shareOrCopy } from "../lib/share";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
+import type { PublicProfileSearchRecord } from "../types/database";
 
 interface Friend {
-  id: number;
+  id: string;
   name: string;
   handle: string;
   seed: string;
   mutual: number;
   invited: boolean;
 }
-
-const SUGGESTED: Friend[] = [
-  { id: 1, name: "박민혁",  handle: "@minhyuk_p", seed: "Aneka",  mutual: 3, invited: false },
-  { id: 2, name: "김소연",  handle: "@soyeon_k",  seed: "Luna",   mutual: 5, invited: false },
-  { id: 3, name: "이지호",  handle: "@jiho_lee",  seed: "Alex",   mutual: 1, invited: false },
-  { id: 4, name: "최민준",  handle: "@minjun_c",  seed: "Leo",    mutual: 2, invited: false },
-  { id: 5, name: "정하은",  handle: "@haeun_j",   seed: "Mia",    mutual: 4, invited: false },
-  { id: 6, name: "유서진",  handle: "@seojin_y",  seed: "Ava",    mutual: 0, invited: false },
-];
 
 const APP_URL = "https://chally.app";
 
@@ -50,7 +42,8 @@ export function FriendInvite() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [search, setSearch] = useState("");
-  const [friends, setFriends] = useState(SUGGESTED);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [invitedKeys, setInvitedKeys] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [loadingInvites, setLoadingInvites] = useState(true);
@@ -81,14 +74,51 @@ export function FriendInvite() {
       if (loadError) {
         setError(loadError.message);
       } else {
-        const invitedKeys = new Set((data ?? []).map(row => row.target_key));
-        setFriends(SUGGESTED.map(friend => ({ ...friend, invited: invitedKeys.has(String(friend.id)) })));
+        const keys = new Set((data ?? []).map(row => row.target_key));
+        setInvitedKeys(keys);
+        setFriends(prev => prev.map(friend => ({ ...friend, invited: keys.has(friend.id) })));
       }
       setLoadingInvites(false);
     }
     void loadInvites();
     return () => { cancelled = true; };
   }, [user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function searchProfiles() {
+      const query = search.trim();
+      if (!user || query.length < 2) {
+        setFriends([]);
+        return;
+      }
+
+      const { data, error: searchError } = await supabase.rpc("search_public_profiles", {
+        p_query: query,
+        p_limit: 12,
+      });
+
+      if (cancelled) return;
+      if (searchError) {
+        setError(searchError.message);
+        return;
+      }
+
+      const results = ((data ?? []) as PublicProfileSearchRecord[]).map(row => ({
+        id: row.id,
+        name: row.username ?? "챌리 유저",
+        handle: `@${row.username ?? row.id.slice(0, 8)}`,
+        seed: row.id,
+        mutual: 0,
+        invited: invitedKeys.has(row.id),
+      }));
+
+      setFriends(results);
+    }
+
+    void searchProfiles();
+    return () => { cancelled = true; };
+  }, [search, user?.id, invitedKeys]);
 
   const filtered = friends.filter(f =>
     f.name.includes(search) || f.handle.includes(search)
@@ -107,7 +137,7 @@ export function FriendInvite() {
     });
   }
 
-  async function invite(id: number) {
+  async function invite(id: string) {
     const friend = friends.find(f => f.id === id);
     if (!friend) return;
     if (!user) {
@@ -119,11 +149,12 @@ export function FriendInvite() {
       return;
     }
     setFriends(prev => prev.map(f => f.id === id ? { ...f, invited: true } : f));
+    setInvitedKeys(prev => new Set(prev).add(id));
     const { error: saveError } = await supabase
       .from("friend_invites")
       .insert({
         invited_by: user.id,
-        target_key: String(friend.id),
+        target_key: friend.id,
         target_name: friend.name,
         target_handle: friend.handle,
         invite_code: inviteCode,
@@ -131,9 +162,14 @@ export function FriendInvite() {
     if (saveError) {
       setError(saveError.message);
       setFriends(prev => prev.map(f => f.id === id ? { ...f, invited: false } : f));
+      setInvitedKeys(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       return;
     }
-    await recordInviteEvent("suggested_friend_invite", String(friend.id));
+    await recordInviteEvent("suggested_friend_invite", friend.id);
     await shareInvite();
   }
 
@@ -301,7 +337,7 @@ export function FriendInvite() {
           }}
         >
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1 mb-2">
-            추천 친구 {SUGGESTED.length}명
+            친구 검색 {search.trim().length >= 2 ? `${filtered.length}명` : ""}
           </p>
           <div className="flex items-center gap-2 bg-white rounded-2xl border border-slate-200 px-4 py-3 mb-3 focus-within:border-[#FF3355] transition-colors">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -362,7 +398,9 @@ export function FriendInvite() {
               <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-3">
                 <Users className="w-6 h-6 text-slate-300" />
               </div>
-              <p className="text-slate-400 font-medium text-[14px]">검색 결과가 없어요</p>
+              <p className="text-slate-400 font-medium text-[14px]">
+                {search.trim().length < 2 ? "이름이나 @핸들을 2글자 이상 입력하세요" : "검색 결과가 없어요"}
+              </p>
             </div>
           )}
         </div>

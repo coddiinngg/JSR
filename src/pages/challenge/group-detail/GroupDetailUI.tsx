@@ -20,159 +20,6 @@ type ActivityItem = {
   myReaction?: string | null;
 };
 
-const GROUPS_DETAIL: Record<string, {
-  rule: string;
-  leaderboard: { rank: number; name: string; seed: string; avatarUrl?: string | null; userId?: string; streak: number; rate: number; isMe?: boolean }[];
-  activity: ActivityItem[];
-}> = {
-  "1": {
-    rule: "매일 5,000보 이상 만보기 스크린샷 인증",
-    leaderboard: [
-      { rank: 1,  name: "김지수",     seed: "Felix", streak: 24, rate: 98 },
-      { rank: 2,  name: "박민혁",     seed: "Aneka", streak: 18, rate: 92 },
-      { rank: 3,  name: "이성민",     seed: "Jude",  streak: 15, rate: 87 },
-      { rank: 4,  name: "나 (홍길동)", seed: "Kim",   streak: 8,  rate: 75, isMe: true },
-      { rank: 5,  name: "최다은",     seed: "Dawn",  streak: 6,  rate: 68 },
-      { rank: 6,  name: "유나연",     seed: "Luna",  streak: 5,  rate: 60 },
-      { rank: 7,  name: "서준혁",     seed: "Alex",  streak: 3,  rate: 48 },
-      { rank: 8,  name: "강민지",     seed: "Mina",  streak: 2,  rate: 35 },
-      { rank: 9,  name: "강태양",     seed: "Bear",  streak: 1,  rate: 25 },
-      { rank: 10, name: "오지현",     seed: "Lily",  streak: 0,  rate: 18 },
-    ],
-    activity: [
-      { name: "김지수", seed: "Felix", time: "방금",    msg: "오늘 13,200보 달성! 연속 24일째 🔥", type: "verify",  grad: ["#FF3355","#FF6680"] },
-      { name: "박민혁", seed: "Aneka", time: "1시간 전", msg: "18일 연속 달성 🔥",                  type: "streak",  grad: ["#FB923C","#F59E0B"] },
-      { name: "이성민", seed: "Jude",  time: "3시간 전", msg: "점심시간 공원 한 바퀴 완료 ✅",       type: "verify",  grad: ["#34d399","#10B981"] },
-      { name: "최다은", seed: "Dawn",  time: "5시간 전", msg: "오늘도 화이팅! 다 같이 걸어요 💪",   type: "comment", grad: ["#A78BFA","#7C3AED"] },
-    ],
-  },
-  "2": {
-    rule: "러닝 중 찍은 풍경 사진 인증",
-    leaderboard: [
-      { rank: 1, name: "강민준", seed: "Leo",  streak: 30, rate: 95 },
-      { rank: 2, name: "오서연", seed: "Mia",  streak: 22, rate: 90 },
-      { rank: 3, name: "유하늘", seed: "Zoe",  streak: 19, rate: 85 },
-      { rank: 4, name: "임태현", seed: "Tom",  streak: 14, rate: 78 },
-      { rank: 5, name: "박준서", seed: "Evan", streak: 0,  rate: 18 },
-    ],
-    activity: [
-      { name: "강민준", seed: "Leo", time: "방금",    msg: "새벽 한강 러닝 완주! 오늘 풍경 미쳤다 🌅", type: "verify",  grad: ["#34d399","#0EA5E9"] },
-      { name: "오서연", seed: "Mia", time: "2시간 전", msg: "퇴근 후 공원 러닝 완료 🏃",               type: "verify",  grad: ["#FF3355","#FF6680"] },
-      { name: "유하늘", seed: "Zoe", time: "4시간 전", msg: "오늘 같이 달릴 분? 저녁 7시요!",          type: "comment", grad: ["#38BDF8","#0EA5E9"] },
-      { name: "임태현", seed: "Tom", time: "어제",     msg: "14일 연속 달성 🏅",                        type: "streak",  grad: ["#FB923C","#F59E0B"] },
-    ],
-  },
-  "3": {
-    rule: "매일 읽는 책 표지 사진 인증",
-    leaderboard: [
-      { rank: 1, name: "한소희",     seed: "Ava",  streak: 8, rate: 100 },
-      { rank: 2, name: "이준혁",     seed: "Dan",  streak: 6, rate: 87  },
-      { rank: 3, name: "나 (홍길동)", seed: "Kim",  streak: 5, rate: 75, isMe: true },
-      { rank: 4, name: "정우성",     seed: "Owen", streak: 0, rate: 12  },
-    ],
-    activity: [
-      { name: "한소희", seed: "Ava", time: "방금",    msg: "이번 주 독서 완료! 정말 좋은 책이에요 📚", type: "verify",  grad: ["#FB923C","#F97316"] },
-      { name: "이준혁", seed: "Dan", time: "1시간 전", msg: "절반 읽었어요, 오늘 다 끝낼게요",           type: "comment", grad: ["#A78BFA","#7C3AED"] },
-      { name: "한소희", seed: "Ava", time: "어제",     msg: "8주 연속 완독 달성 🏅",                    type: "streak",  grad: ["#FB923C","#F59E0B"] },
-      { name: "정우성", seed: "Owen",time: "어제",     msg: "오늘 시작했어요! 다들 화이팅 📖",           type: "verify",  grad: ["#34d399","#10B981"] },
-    ],
-  },
-  "4": {
-    rule: "오늘의 인상 깊은 문장 사진 인증",
-    leaderboard: [
-      { rank: 1, name: "송민재", seed: "Finn",  streak: 18, rate: 95 },
-      { rank: 2, name: "이수진", seed: "Sue",   streak: 12, rate: 87 },
-      { rank: 3, name: "조현우", seed: "Hugh",  streak: 7,  rate: 70 },
-      { rank: 4, name: "박서은", seed: "Sera",  streak: 2,  rate: 40 },
-    ],
-    activity: [
-      { name: "송민재", seed: "Finn", time: "방금",    msg: "'작은 습관이 큰 변화를 만든다' 오늘의 문장 ✍️", type: "verify",  grad: ["#A78BFA","#7C3AED"] },
-      { name: "이수진", seed: "Sue",  time: "2시간 전", msg: "손글씨 필사 완료! 마음이 차분해져요",          type: "verify",  grad: ["#38BDF8","#0284C7"] },
-      { name: "조현우", seed: "Hugh", time: "어제",     msg: "같이 꾸준히 해봐요 💪",                       type: "comment", grad: ["#FB923C","#F59E0B"] },
-      { name: "박서은", seed: "Sera", time: "어제",     msg: "7일 연속 달성! 🎉",                           type: "streak",  grad: ["#34d399","#10B981"] },
-    ],
-  },
-  "5": {
-    rule: "오늘의 지정 포즈로 셀카 인증",
-    leaderboard: [
-      { rank: 1, name: "윤서아", seed: "Eva",   streak: 28, rate: 97 },
-      { rank: 2, name: "김태양", seed: "Ray",   streak: 21, rate: 91 },
-      { rank: 3, name: "이하은", seed: "Hazel", streak: 17, rate: 85 },
-      { rank: 4, name: "박준수", seed: "Jake",  streak: 9,  rate: 72 },
-      { rank: 5, name: "최유리", seed: "Ruby",  streak: 4,  rate: 50 },
-    ],
-    activity: [
-      { name: "윤서아", seed: "Eva",   time: "방금",    msg: "오늘 포즈 도전 완료! 쑥스럽지만 재밌어요 📸", type: "verify",  grad: ["#FF3355","#FF6680"] },
-      { name: "김태양", seed: "Ray",   time: "1시간 전", msg: "21일 연속 달성! 이젠 익숙해졌어요 😄",       type: "streak",  grad: ["#FB923C","#F59E0B"] },
-      { name: "이하은", seed: "Hazel", time: "3시간 전", msg: "오늘 포즈 제일 어렵다 ㅋㅋ 그래도 성공!",    type: "verify",  grad: ["#A78BFA","#7C3AED"] },
-      { name: "박준수", seed: "Jake",  time: "어제",     msg: "친구 같이 찍었어요~ 2배 재밌어요!",           type: "comment", grad: ["#38BDF8","#0EA5E9"] },
-    ],
-  },
-  "6": {
-    rule: "목표 장소 방문 인증 사진",
-    leaderboard: [
-      { rank: 1, name: "정서윤", seed: "Ella",  streak: 20, rate: 94 },
-      { rank: 2, name: "최민준", seed: "Ace",   streak: 13, rate: 85 },
-      { rank: 3, name: "임지수", seed: "Grace", streak: 8,  rate: 72 },
-      { rank: 4, name: "박하늘", seed: "Sky",   streak: 3,  rate: 45 },
-    ],
-    activity: [
-      { name: "정서윤", seed: "Ella",  time: "방금",    msg: "오늘 북촌 한옥마을 방문 인증! 강추 📍",       type: "verify",  grad: ["#38BDF8","#0284C7"] },
-      { name: "최민준", seed: "Ace",   time: "2시간 전", msg: "성수동 카페거리 탐험 완료 ☕",               type: "verify",  grad: ["#34d399","#10B981"] },
-      { name: "임지수", seed: "Grace", time: "어제",     msg: "다음에 같이 탐험 가요!! 🗺️",               type: "comment", grad: ["#A78BFA","#7C3AED"] },
-      { name: "박하늘", seed: "Sky",   time: "어제",     msg: "8일 연속 달성 🎉",                          type: "streak",  grad: ["#FB923C","#F59E0B"] },
-    ],
-  },
-};
-
-const HERO_IMAGES: Record<string, string> = {
-  "1": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&fit=crop&q=80",
-  "2": "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&fit=crop&q=80",
-  "3": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&fit=crop&q=80",
-  "4": "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&fit=crop&q=80",
-  "5": "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&fit=crop&q=80",
-  "6": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&fit=crop&q=80",
-};
-
-const ACTIVITY_IMGS: Record<string, string[]> = {
-  "1": [
-    "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1486218119243-13301ac3f579?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=400&fit=crop&q=80",
-  ],
-  "2": [
-    "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1539701938214-0d9736e1c16b?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1594882645126-14020914d58d?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&fit=crop&q=80",
-  ],
-  "3": [
-    "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=400&fit=crop&q=80",
-  ],
-  "4": [
-    "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1471107340929-a87cd0f5b5f3?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1506784365847-bbad939e9335?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1500989145603-8e7ef71d639e?w=400&fit=crop&q=80",
-  ],
-  "5": [
-    "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&fit=crop&q=80",
-  ],
-  "6": [
-    "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&fit=crop&q=80",
-    "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&fit=crop&q=80",
-  ],
-};
-
 const INVITE_BASE = "https://chally.app/join/GROUP-";
 const PG = "linear-gradient(115deg,#FF3355,#FF6680)";
 const PS = "0 8px 24px -4px rgba(255,51,85,0.4)";
@@ -188,7 +35,6 @@ export function GroupDetailUI() {
   const { state: locState } = useLocation() as { state: { tab?: "leaderboard" | "activity" | "gallery"; skipAnimation?: boolean; fromActivityPhoto?: boolean } | null };
 
   const group  = groups.find(g => g.id === groupId) ?? groups[0];
-  const detail = GROUPS_DETAIL[groupId] ?? GROUPS_DETAIL["1"];
   const [activityPosts, setActivityPosts] = useState<ActivityFeedItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>([]);
@@ -290,13 +136,12 @@ export function GroupDetailUI() {
     streak: row.streak,
     rate: row.rate,
     isMe: row.isMe,
-  })) : detail.leaderboard;
+  })) : [];
   const top3     = leaderboard.slice(0, 3);
   const restList = leaderboard.slice(3);
   const top3Seeds = top3.map(r => r.seed);
   const vt       = VERIFY_TYPES[(group?.verifyType as VerifyTypeKey) ?? "step_walk"];
-  const heroImg  = HERO_IMAGES[groupId] ?? HERO_IMAGES["1"];
-  const actImgs  = ACTIVITY_IMGS[groupId] ?? ACTIVITY_IMGS["1"];
+  const heroImg  = group?.cover ?? "";
   const myRank   = leaderboard.find(r => r.isMe);
 
   useEffect(() => {
@@ -353,21 +198,15 @@ export function GroupDetailUI() {
     reactionCount: post.reactionCount,
     myReaction: post.myReaction,
   }));
-  const activityItems = dbActivity.length ? dbActivity : detail.activity;
+  const activityItems = dbActivity;
 
-  // 갤러리 아이템: actImgs × 3 반복 + 멤버 순환 매핑
   const galleryItems = activityPosts.filter(post => post.photo_url).map(post => ({
     url: post.photo_url ?? "",
     name: post.author_name ?? "챌리 유저",
     seed: post.user_id,
     time: formatActivityTime(post.created_at),
   }));
-  const fallbackGalleryItems = Array.from({ length: 12 }, (_, i) => {
-    const member = leaderboard[i % leaderboard.length];
-    const dayAgo = i === 0 ? "방금" : i < 3 ? `${i}시간 전` : `${Math.floor(i / 2)}일 전`;
-    return { url: actImgs[i % actImgs.length], name: member.name, seed: member.seed, time: dayAgo };
-  });
-  const visibleGalleryItems = galleryItems.length ? galleryItems : fallbackGalleryItems;
+  const visibleGalleryItems = galleryItems;
   const myPhotos = verificationHistory.filter(v => v.photo_url && v.status === "completed");
 
   // 포디엄 순서: 2위(좌) - 1위(중앙) - 3위(우)
@@ -443,7 +282,11 @@ export function GroupDetailUI() {
 
         {/* ── 히어로 ── */}
         <section className="relative w-full overflow-hidden" style={{ aspectRatio: "1/1" }}>
-          <img src={heroImg} alt={group.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          {heroImg ? (
+            <img src={heroImg} alt={group.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-[#FF3355]" />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
 
           <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-4 pb-2 z-10">
@@ -762,8 +605,9 @@ export function GroupDetailUI() {
               ) : null}
 
               {/* 포디엄 + 리스트 통합 카드 */}
-              <div className="rounded-2xl overflow-hidden"
-                style={{ boxShadow: "0 8px 32px rgba(255,51,85,0.15)" }}>
+              {leaderboard.length > 0 ? (
+                <div className="rounded-2xl overflow-hidden"
+                  style={{ boxShadow: "0 8px 32px rgba(255,51,85,0.15)" }}>
 
                 {/* 포디엄 영역 */}
                 <div style={{ background: "white", borderBottom: "1px solid rgba(255,51,85,0.1)" }}>
@@ -849,6 +693,15 @@ export function GroupDetailUI() {
                   </div>
                 )}
               </div>
+              ) : (
+                <div className="bg-white rounded-2xl px-5 py-8 text-center border border-black/[0.04]">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FFE8EC] flex items-center justify-center mx-auto mb-3">
+                    <Crown className="w-5 h-5 text-[#FF3355]" />
+                  </div>
+                  <p className="text-[14px] font-black text-slate-900">아직 순위가 없어요</p>
+                  <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">그룹 멤버가 인증하면 순위가 표시돼요.</p>
+                </div>
+              )}
             </div>
 
           ) : tab === "activity" ? (
@@ -858,7 +711,7 @@ export function GroupDetailUI() {
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="flex flex-col gap-2.5">
                     {activityItems.filter((_, i) => i % 2 === 0).map((item, i) => {
-                      const imgSrc = item.photoUrl ?? (item.type === "verify" ? (actImgs[i * 2] ?? actImgs[0]) : undefined);
+                      const imgSrc = item.photoUrl ?? undefined;
                       return (
                         <ActivityCard key={item.id ?? i} item={item} imgSrc={imgSrc}
                           aspect={i === 0 ? "tall" : "square"} mounted={mounted} delay={i * 80} groupId={groupId} />
@@ -867,7 +720,7 @@ export function GroupDetailUI() {
                   </div>
                   <div className="flex flex-col gap-2.5 mt-6">
                     {activityItems.filter((_, i) => i % 2 === 1).map((item, i) => {
-                      const imgSrc = item.photoUrl ?? (item.type === "verify" ? (actImgs[i * 2 + 1] ?? actImgs[1]) : undefined);
+                      const imgSrc = item.photoUrl ?? undefined;
                       return (
                         <ActivityCard key={item.id ?? i} item={item} imgSrc={imgSrc}
                           aspect={i === 0 ? "square" : "tall"} mounted={mounted} delay={i * 80 + 40} groupId={groupId} />
@@ -901,21 +754,30 @@ export function GroupDetailUI() {
                 <span className="text-[11px] text-slate-400">{group.members}명 참여 중</span>
               </div>
 
-              {/* 3열 그리드 */}
-              <div className="grid grid-cols-3 gap-1">
-                {visibleGalleryItems.map((item, i) => (
-                  <button key={i} onClick={() => setLightbox(item)}
-                    className="relative aspect-square rounded-xl overflow-hidden active:opacity-80 transition-opacity"
-                    style={{ opacity: mounted ? 1 : 0, transition: `opacity 0.35s ease ${i * 30}ms` }}>
-                    <img src={item.url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    {/* 바텀 그라데이션 + 아바타 */}
-                    <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
-                      style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`} alt=""
-                      className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded-full bg-white border border-white/60" />
-                  </button>
-                ))}
-              </div>
+              {visibleGalleryItems.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1">
+                  {visibleGalleryItems.map((item, i) => (
+                    <button key={i} onClick={() => setLightbox(item)}
+                      className="relative aspect-square rounded-xl overflow-hidden active:opacity-80 transition-opacity"
+                      style={{ opacity: mounted ? 1 : 0, transition: `opacity 0.35s ease ${i * 30}ms` }}>
+                      <img src={item.url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      {/* 바텀 그라데이션 + 아바타 */}
+                      <div className="absolute inset-x-0 bottom-0 h-10 pointer-events-none"
+                        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55), transparent)" }} />
+                      <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`} alt=""
+                        className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded-full bg-white border border-white/60" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl px-5 py-8 text-center border border-black/[0.04]">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FFE8EC] flex items-center justify-center mx-auto mb-3">
+                    <Camera className="w-5 h-5 text-[#FF3355]" />
+                  </div>
+                  <p className="text-[14px] font-black text-slate-900">아직 인증 사진이 없어요</p>
+                  <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">사진 인증이 완료되면 갤러리에 표시돼요.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

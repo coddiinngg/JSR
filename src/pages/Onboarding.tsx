@@ -6,6 +6,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
 
 /* 카드에 spring-in + float 콤보 animation 문자열 생성 */
 function cardAnim(delay: number, floatName = "ob-float-a") {
@@ -658,7 +659,7 @@ const TOTAL = 7;
 export function Onboarding() {
   const navigate = useNavigate();
   const { setNickname, joinGroup } = useApp();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [current, setCurrent] = useState(0);
   const [on, setOn] = useState(false);
   const [nicknameInput, setNicknameInput] = useState("");
@@ -685,8 +686,18 @@ export function Onboarding() {
       prev.includes(id) ? prev.filter(c => c !== id) : prev.length < 2 ? [...prev, id] : prev
     );
 
-  const handleStart = () => {
-    if (nicknameInput.trim()) setNickname(nicknameInput.trim());
+  const handleStart = async () => {
+    const nextNickname = nicknameInput.trim();
+    if (nextNickname) {
+      setNickname(nextNickname);
+      if (user?.id) {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ username: nextNickname })
+          .eq("id", user.id);
+        if (!error) void refreshProfile();
+      }
+    }
     selectedChallenges.forEach(id => joinGroup(id));
     if (user?.id) localStorage.setItem(`ob_done_${user.id}`, "1");
     navigate("/");

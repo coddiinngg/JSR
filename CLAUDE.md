@@ -118,6 +118,8 @@ supabase/
 | `group_members` | 그룹 멤버 (admin/member role) |
 | `activity_posts` | 인증 성공으로 생성되는 그룹 활동글 |
 | `activity_reactions` | 활동글 유저별 이모지 리액션 |
+| `group_messages` | 그룹 채팅 메시지 |
+| `group_message_reactions` | 그룹 채팅 메시지 유저별 이모지 리액션 |
 | `notifications` | 알림 (type: badge/group/rank/streak) |
 | `notification_settings` | 알림 설정 |
 | `challenge_suggestions` | 챌린지 건의 |
@@ -136,6 +138,8 @@ supabase/
 - `group_members`: 현재 앱에서는 자신의 가입 기록만 조회 가능
 - `activity_posts`: 공개 조회, 본인이 가입한 그룹에는 본인 활동글 insert 가능
 - `activity_reactions`: 공개 조회, 본인 리액션만 insert/update/delete
+- `group_messages`: 같은 그룹 멤버만 조회/작성
+- `group_message_reactions`: 같은 그룹 멤버만 조회, 본인 리액션만 변경
 - `challenge_suggestions`: 공개 조회, 로그인 유저 작성/응원/댓글/구독
 - `notifications`: INSERT는 service role만 (Edge Function)
 
@@ -147,6 +151,8 @@ supabase/
 
 ### RPC
 - `get_group_leaderboard(group_id, limit)`: 그룹 멤버와 그룹별 인증 기록 기준 리더보드 반환
+- `get_public_profile(user_id)`: 공개 프로필 페이지용 제한된 프로필 조회
+- `search_public_profiles(query, limit)`: 친구 초대 검색용 공개 프로필 검색
 
 ### Storage 버킷
 - `verifications` (공개): 인증 사진 저장 (`{userId}/{timestamp}.jpg`)
@@ -188,12 +194,14 @@ supabase secrets set GEMINI_API_KEY=<key>
 상세 내용은 **[TODO.md](./TODO.md)** 참조.
 
 요약:
-- **그룹 상세 활동 피드**: `activity_posts` 우선 로드, 데이터 없을 때 fallback mock 잔존
-- **홈 피드**: `activity_posts` 우선 로드, 데이터 없을 때 fallback mock 잔존
-- **홈/그룹 상세 랭킹**: `get_group_leaderboard` 우선 로드, 데이터 없을 때 fallback mock 잔존
-- **홈 채팅**: 표시 데이터 mock 잔존
-- **그룹 채팅**: Supabase Realtime 미연동
+- **그룹 상세 활동 피드**: `activity_posts` 기반 표시, 데이터 없을 때 빈 상태 표시
+- **홈 피드**: `activity_posts` 기반 표시, 데이터 없을 때 빈 상태 표시
+- **홈/그룹 상세 랭킹**: `get_group_leaderboard` 기반 표시, 데이터 없을 때 빈 상태 표시
+- **홈 채팅**: `group_messages` 기반 표시, 데이터 없을 때 빈 상태 표시
+- **그룹 채팅**: 메시지 저장/조회/INSERT 실시간 반영 연결 완료
+- **채팅 UX**: 정적 온라인 수 제거, 그룹 참여 수 표시
 - **소셜 로그인**: 버튼 배치만 유지, provider 실제 연결 미완
+- **친구 추천 기본값**: fallback 추천 제거, `search_public_profiles` 검색 결과만 표시
 
 ## 최근 적용된 주요 마이그레이션
 
@@ -209,3 +217,7 @@ supabase secrets set GEMINI_API_KEY=<key>
 | `20260504000000_activity_posts_reactions.sql` | 활동글/리액션 및 그룹별 인증 저장 |
 | `20260504001000_challenge_lifecycle.sql` | 그룹 모집/진행 기간 컬럼 |
 | `20260504002000_group_leaderboard_rpc.sql` | 그룹 리더보드 RPC |
+| `20260505000000_verifications_storage.sql` | 인증 사진 Storage 정책 |
+| `20260505001000_group_messages.sql` | 그룹 채팅/채팅 리액션 |
+| `20260505002000_public_profile_rpc.sql` | 공개 프로필 조회/검색 RPC |
+| `20260505003000_group_messages_realtime.sql` | 그룹 채팅 Realtime publication |
