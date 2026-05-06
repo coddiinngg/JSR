@@ -233,7 +233,7 @@ export function Stats() {
 
       {/* 헤더 */}
       <header
-        className="shrink-0 flex items-center justify-between px-5 pt-4 pb-4 bg-white border-b border-black/[0.05]"
+        className="shrink-0 flex items-center justify-between px-5 pt-3 pb-3 bg-white border-b border-black/[0.05]"
         style={{ animation: "st-fade 0.4s ease both" }}
       >
         <div>

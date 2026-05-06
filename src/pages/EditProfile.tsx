@@ -93,7 +93,7 @@ export function EditProfile() {
   return (
     <div className="flex flex-col h-full bg-[#F5F6FA] overflow-hidden">
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-4 bg-white border-b border-slate-100">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-10 pb-3 bg-white border-b border-slate-100">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"

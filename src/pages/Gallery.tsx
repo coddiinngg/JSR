@@ -348,7 +348,7 @@ export function Gallery() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 border-b border-slate-100 dark:border-white/[0.06]"
+        className="shrink-0 flex items-center justify-between px-4 pt-10 pb-2 border-b border-slate-100 dark:border-white/[0.06]"
         style={{ animation: "gl-down 0.4s ease both" }}
       >
         <button
@@ -564,7 +564,7 @@ export function Gallery() {
           onTouchEnd={onTouchEnd}
         >
           <div
-            className="shrink-0 flex items-center justify-between px-5 pt-12 pb-4 z-10"
+            className="shrink-0 flex items-center justify-between px-5 pt-10 pb-3 z-10"
             style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)" }}
           >
             <div>

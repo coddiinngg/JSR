@@ -5,8 +5,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
+import type { Group } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
+import { VERIFY_TYPES } from "../lib/verifyTypes";
 
 /* 카드에 spring-in + float 콤보 animation 문자열 생성 */
 function cardAnim(delay: number, floatName = "ob-float-a") {
@@ -537,17 +539,8 @@ function Slide5({ on, selected, toggle }: {
 }
 
 /* ─── 슬라이드 6: 챌린지 선택 ──────────────────── */
-const OB_CHALLENGES = [
-  { id: "1", title: "매일 5,000보 걷기",  emoji: "👟", members: 38, img: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=400&fit=crop&q=80" },
-  { id: "2", title: "러닝 크루",       emoji: "🏃", members: 24, img: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&fit=crop&q=80" },
-  { id: "3", title: "일일 독서 클럽",  emoji: "📚", members: 15, img: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400&fit=crop&q=80" },
-  { id: "4", title: "필사 챌린지",     emoji: "✍️", members: 11, img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&fit=crop&q=80" },
-  { id: "5", title: "포즈 챌린지",     emoji: "📸", members: 42, img: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=400&fit=crop&q=80" },
-  { id: "6", title: "장소 탐험대",     emoji: "📍", members: 19, img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&fit=crop&q=80" },
-];
-
-function Slide6({ on, selected, toggle }: {
-  on: boolean; selected: string[]; toggle: (id: string) => void;
+function Slide6({ on, selected, toggle, groups }: {
+  on: boolean; selected: string[]; toggle: (id: string) => void; groups: Group[];
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -579,9 +572,10 @@ function Slide6({ on, selected, toggle }: {
         style={{ animation: on ? "ob-fade 0.5s ease 320ms both" : "none" }}
       >
         <div className="flex flex-col gap-2.5 pb-4">
-          {OB_CHALLENGES.map((ch, i) => {
+          {groups.map((ch, i) => {
             const isOn = selected.includes(ch.id);
             const maxed = selected.length >= 2 && !isOn;
+            const emoji = VERIFY_TYPES[ch.verifyType]?.emoji ?? "🎯";
             return (
               <button
                 key={ch.id}
@@ -594,20 +588,23 @@ function Slide6({ on, selected, toggle }: {
                   animation: on ? `ob-spring 0.5s cubic-bezier(0.34,1.56,0.64,1) ${140 + i * 50}ms both` : "none",
                 }}
               >
-                {/* 배경 이미지 */}
                 <div className="relative h-[72px]">
-                  <img
-                    src={ch.img}
-                    alt={ch.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
+                  {ch.cover ? (
+                    <img
+                      src={ch.cover}
+                      alt={ch.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[#1A1A2E]" />
+                  )}
                   <div
                     className="absolute inset-0"
                     style={{ background: "linear-gradient(to right,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.25) 100%)" }}
                   />
                   <div className="absolute inset-0 flex items-center px-4 gap-3">
-                    <span className="text-[22px] leading-none shrink-0">{ch.emoji}</span>
+                    <span className="text-[22px] leading-none shrink-0">{emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-black text-[15px] leading-tight">{ch.title}</p>
                       <p className="text-white/50 text-[11px] mt-0.5">{ch.members}명 참여 중</p>
@@ -671,7 +668,7 @@ const TOTAL = 7;
 /* ─── 메인 ─────────────────────────────────────── */
 export function Onboarding() {
   const navigate = useNavigate();
-  const { setNickname, joinGroup } = useApp();
+  const { setNickname, joinGroup, groups } = useApp();
   const { user, refreshProfile } = useAuth();
   const [current, setCurrent] = useState(0);
   const [on, setOn] = useState(false);
@@ -745,7 +742,7 @@ export function Onboarding() {
         {current === 3 && <Slide3 on={on} />}
         {current === 4 && <Slide4 on={on} value={nicknameInput} onChange={setNicknameInput} />}
         {current === 5 && <Slide5 on={on} selected={selectedCats} toggle={toggleCat} />}
-        {current === 6 && <Slide6 on={on} selected={selectedChallenges} toggle={toggleChallenge} />}
+        {current === 6 && <Slide6 on={on} selected={selectedChallenges} toggle={toggleChallenge} groups={groups} />}
       </div>
 
       {/* 하단 CTA */}

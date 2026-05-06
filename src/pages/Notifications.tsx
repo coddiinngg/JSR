@@ -47,7 +47,7 @@ export function Notifications() {
       <style>{`@keyframes nf-in { from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);} }`}</style>
 
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-12 pb-4 bg-white border-b border-black/[0.05]">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-10 pb-3 bg-white border-b border-black/[0.05]">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"

@@ -155,7 +155,7 @@ export function WeeklyReport() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center px-4 pt-12 pb-4 bg-white border-b border-black/[0.05]"
+        className="shrink-0 flex items-center px-4 pt-10 pb-3 bg-white border-b border-black/[0.05]"
         style={{ animation: "wr-in 0.4s ease both" }}
       >
         <button

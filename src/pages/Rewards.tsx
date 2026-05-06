@@ -309,7 +309,7 @@ export function Rewards() {
       `}</style>
 
       {/* ── 헤더 ── */}
-      <header className="shrink-0 flex items-center gap-3 px-4 pt-5 pb-4 bg-white border-b border-black/[0.05]" style={anim(0)}>
+      <header className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-3 bg-white border-b border-black/[0.05]" style={anim(0)}>
         <button onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors shrink-0">
           <ArrowLeft className="w-5 h-5 text-slate-700" />

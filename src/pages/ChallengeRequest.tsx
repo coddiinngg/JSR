@@ -26,53 +26,6 @@ interface Suggestion {
   notifyOn?: boolean;
 }
 
-const SUGGESTIONS: Suggestion[] = [
-  {
-    id: "1", title: "매일 스트레칭 10분 챌린지",
-    desc: "아침마다 간단한 스트레칭으로 하루를 시작하는 챌린지예요.",
-    status: "투표중", category: "운동/건강", duration: "7일",
-    votes: 128, comments: 14, agreeRate: 67, daysAgo: "3일 전",
-    verifyMethod: "스트레칭 완료 사진 또는 영상", progress: 128,
-    commentList: [
-      { id: "seed-1", name: "김", text: "정말 좋은 아이디어에요! 저도 꼭 해보고 싶어요." },
-      { id: "seed-2", name: "이", text: "스트레칭은 부상 예방에도 좋으니 꼭 만들어 주세요!" },
-    ],
-  },
-  {
-    id: "2", title: "하루 한 줄 독서 기록",
-    desc: "읽은 책의 한 줄 감상을 매일 기록하는 챌린지입니다. 꾸준한 독서 습관 형성에 도움이 돼요.",
-    status: "개발확정", category: "독서/공부", duration: "30일",
-    votes: 243, comments: 31, agreeRate: 89, daysAgo: "1주 전",
-    verifyMethod: "책 페이지 + 한 줄 감상 사진", progress: 200,
-    operatorComment: "많은 분들의 응원 덕분에 개발을 시작하게 됐어요. 최대한 빠르게 만들어 드릴게요!",
-    commentList: [
-      { id: "seed-3", name: "박", text: "와 드디어 확정됐군요. 빨리 출시됐으면 좋겠어요!" },
-      { id: "seed-4", name: "최", text: "기다리고 있을게요, 기대됩니다!" },
-    ],
-  },
-  {
-    id: "3", title: "물 2L 마시기 챌린지",
-    desc: "하루 권장 수분 섭취를 습관으로 만드는 챌린지예요.",
-    status: "검토중", category: "식습관", duration: "21일",
-    votes: 57, comments: 6, agreeRate: 72, daysAgo: "5일 전", progress: 57,
-    commentList: [{ id: "seed-5", name: "정", text: "물 마시는 습관 정말 중요한데 좋아요!" }],
-  },
-  {
-    id: "4", title: "매일 감사 일기 쓰기",
-    desc: "하루 세 가지 감사한 점을 적어 긍정적인 마음을 기르는 챌린지예요.",
-    status: "투표중", category: "마음챙김", duration: "21일",
-    votes: 94, comments: 11, agreeRate: 81, daysAgo: "2일 전",
-    isMine: true, progress: 94,
-    commentList: [{ id: "seed-6", name: "한", text: "저도 요즘 감사 일기 써요. 진짜 좋아요 💛" }],
-  },
-  {
-    id: "5", title: "주 3회 홈트 루틴",
-    desc: "집에서 할 수 있는 간단한 홈트레이닝을 꾸준히 하는 챌린지예요.",
-    status: "투표중", category: "운동/건강", duration: "30일",
-    votes: 76, comments: 8, agreeRate: 74, daysAgo: "6일 전",
-    progress: 76, commentList: [],
-  },
-];
 
 const CAT_EMOJI: Record<string, string> = {
   "운동/건강": "💪", "독서/공부": "📖", "생산성": "⚡", "마음챙김": "🧘", "식습관": "🥗", "기타": "✨",
@@ -969,7 +922,7 @@ export function ChallengeRequest() {
 
     if (error) {
       setLoadError(error.message);
-      setSuggestions(SUGGESTIONS);
+      setSuggestions([]);
       setLoading(false);
       return;
     }
@@ -1100,7 +1053,7 @@ export function ChallengeRequest() {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <header className="shrink-0 bg-white px-4 pt-4 pb-3 flex items-center justify-between border-b border-slate-100">
+      <header className="shrink-0 bg-white px-4 pt-3 pb-2.5 flex items-center justify-between border-b border-slate-100">
         <button
           onClick={handleBack}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"

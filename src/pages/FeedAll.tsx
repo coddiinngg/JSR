@@ -90,7 +90,7 @@ export function FeedAll() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#090B10]">
       {/* 헤더 */}
-      <header className="shrink-0 bg-white dark:bg-[#090B10] px-4 pt-4 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+      <header className="shrink-0 bg-white dark:bg-[#090B10] px-4 pt-3 pb-2.5 border-b border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
