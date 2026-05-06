@@ -1,6 +1,9 @@
 import { supabase } from "./supabase";
 import type { ActivityPostRecord, ActivityReactionRecord } from "../types/database";
 
+/* 전역 반응 캐시 — ActivityPhoto에서 업데이트하면 피드/갤러리에 즉시 반영 */
+export const reactionCache = new Map<string, { count: number; myReaction: string | null }>();
+
 export type ActivityEmoji = ActivityReactionRecord["emoji"];
 
 export interface ActivityFeedItem extends ActivityPostRecord {

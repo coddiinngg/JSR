@@ -5,7 +5,7 @@ import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 import { useGuestGuard } from "../contexts/GuestGuardContext";
-import { formatActivityTime, loadActivityFeed, type ActivityFeedItem } from "../lib/activity";
+import { formatActivityTime, loadActivityFeed, reactionCache, type ActivityFeedItem } from "../lib/activity";
 import { loadGroupLeaderboard, type LeaderboardItem } from "../lib/leaderboard";
 import { formatChatTime, loadGroupMessages, type GroupChatMessage, type MessageEmoji } from "../lib/chat";
 import { supabase } from "../lib/supabase";
@@ -30,6 +30,8 @@ const SLIDE_COUNT = 3;
 
 // 컴포넌트 외부 — 리마운트 시에도 유지되어 중복 애니메이션 방지
 let lastAnimatedGroupId: string | null = null;
+// 피드 캐시 — 뒤로가기 시 깜박임 방지
+let feedCache: ActivityFeedItem[] | null = null;
 
 interface FeedItem {
   id: string;
@@ -44,11 +46,12 @@ interface FeedItem {
   aspect: "tall" | "square";
   reactionCount?: number;
   myReaction?: string | null;
+  avatarUrl?: string | null;
 }
 
 export function Home() {
   const navigate = useNavigate();
-  const { nickname, beginVerification, groups, selectedGroupId, setSelectedGroupId, notifications } = useApp();
+  const { nickname, beginVerification, groups, groupsLoading, selectedGroupId, setSelectedGroupId, notifications } = useApp();
   const { user } = useAuth();
   const myGroups = groups.filter(g => g.joined);
   const [slideIdx, setSlideIdx]               = useState(0);
@@ -60,11 +63,14 @@ export function Home() {
   const { guardAction } = useGuestGuard();
   const [reactions, setReactions]           = useState<Record<string, MessageEmoji>>({});
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
-  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
+  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>(feedCache ?? []);
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>([]);
+  const [chatAtBottom, setChatAtBottom]     = useState(true);
+  const [lastReadMsgId, setLastReadMsgId]   = useState<string | null>(null);
 
   const chatEndRef      = useRef<HTMLDivElement>(null);
   const chatScrollRef   = useRef<HTMLDivElement>(null);
+  const lastReadSetRef  = useRef(false);
   const longPressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnFlashTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animFrameRef    = useRef<number | null>(null);
@@ -92,8 +98,8 @@ export function Home() {
     let cancelled = false;
     async function loadHomeFeed() {
       try {
-        const posts = await loadActivityFeed({ userId: user?.id ?? null, limit: 12 });
-        if (!cancelled) setActivityFeed(posts);
+        const posts = await loadActivityFeed({ userId: user?.id ?? null, limit: 8 });
+        if (!cancelled) { setActivityFeed(posts); feedCache = posts; }
       } catch (error) {
         console.error("Failed to load home activity feed", error);
         if (!cancelled) setActivityFeed([]);
@@ -275,6 +281,7 @@ export function Home() {
       aspect: index % 3 === 0 ? "tall" : "square",
       reactionCount: post.reactionCount,
       myReaction: post.myReaction,
+      avatarUrl: post.author_avatar_url,
     };
   });
   const recentFeed  = dbFeedItems;
@@ -404,6 +411,16 @@ export function Home() {
     } : msg));
   }
 
+  /* 채팅 탭 진입 시 읽음 마커 설정 */
+  useEffect(() => {
+    if (slideIdx === 2 && chats.length > 0 && !lastReadSetRef.current) {
+      lastReadSetRef.current = true;
+      setLastReadMsgId(chats[chats.length - 1].id);
+      setTimeout(() => setChatAtBottom(true), 50);
+    }
+    if (slideIdx !== 2) lastReadSetRef.current = false;
+  }, [slideIdx, chats.length]);
+
   const slideTx = (i: number) => `translate3d(${(i - slideIdx) * 100}%, 0, 0)`;
   const trans = "transform 0.42s cubic-bezier(0.4, 0, 0.2, 1)";
   const recentNotifs = notifications.slice(0, 5);
@@ -481,7 +498,17 @@ export function Home() {
             <div className="absolute inset-0 overflow-hidden"
               style={{ transform: slideTx(0), transition: trans, willChange: "transform" }}>
 
-              {myGroups.length === 0 ? (
+              {groupsLoading && myGroups.length === 0 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900">
+                  <div className="flex gap-1.5">
+                    {[0,1,2].map(i => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-white/40"
+                        style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                    ))}
+                  </div>
+                  <p className="text-white/50 text-[13px] font-semibold">그룹 정보를 불러오는 중...</p>
+                </div>
+              ) : myGroups.length === 0 ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-50">
                   <span className="text-4xl">🏃</span>
                   <p className="text-slate-700 font-black text-[16px]">참여 중인 그룹이 없어요</p>
@@ -846,9 +873,14 @@ export function Home() {
                 </div>
               </div>
 
+              <div className="flex-1 relative overflow-hidden">
               <div ref={chatScrollRef}
-                className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
-                onScroll={() => setEmojiPickerFor(null)}
+                className="h-full overflow-y-auto overscroll-contain px-4 py-3 space-y-3 bg-slate-50"
+                onScroll={e => {
+                  setEmojiPickerFor(null);
+                  const el = e.currentTarget;
+                  setChatAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+                }}
                 onClick={() => emojiPickerFor && setEmojiPickerFor(null)}>
                 {chats.length === 0 && (
                   <div className="h-full min-h-[220px] flex flex-col items-center justify-center gap-2 text-center">
@@ -857,89 +889,109 @@ export function Home() {
                     <p className="text-slate-400 text-[12px]">첫 메시지를 남겨 그룹 대화를 시작해보세요</p>
                   </div>
                 )}
-                {chats.map((msg) => {
-                  if (msg.type === "achievement") {
+                {chats.map((msg, idx) => {
+                  const isReadMarker = lastReadMsgId && idx > 0 && chats[idx - 1].id === lastReadMsgId && !msg.isMe;
+                    const isPickerOpen = emojiPickerFor === msg.id;
                     return (
-                      <div key={msg.id} className="flex justify-center my-1">
-                        <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
-                          style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,115,22,0.12))", border: "1px solid rgba(251,191,36,0.3)" }}>
-                          <Flame className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
-                          <span className="text-amber-700 text-[11px] font-bold">{msg.achieverName} · {msg.streak}일 연속 달성! 🎉</span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  const isPickerOpen = emojiPickerFor === msg.id;
-                  return (
-                    <div key={msg.id} className={`flex gap-2 items-end ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
-                      {!msg.isMe && (
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
-                          className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mb-5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
-                          onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)} />
-                      )}
-                      <div className={`flex flex-col gap-0.5 max-w-[68%] ${msg.isMe ? "items-end" : "items-start"}`}>
-                        {!msg.isMe && (
-                          <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
-                            onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)}>
-                            {msg.sender}
-                          </span>
+                      <React.Fragment key={msg.id}>
+                        {isReadMarker && (
+                          <div className="flex items-center gap-2 my-1">
+                            <div className="flex-1 h-px bg-slate-200" />
+                            <span className="text-[10px] text-slate-400 font-semibold shrink-0 px-1">여기까지 읽음</span>
+                            <div className="flex-1 h-px bg-slate-200" />
+                          </div>
                         )}
-                        {/* 이모지 피커 */}
-                        {isPickerOpen && (
-                          <div className={`flex gap-1 mb-1 ${msg.isMe ? "justify-end" : "justify-start"}`}
-                            onTouchStart={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-                            <div className="flex gap-1 bg-white rounded-2xl px-2 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-slate-100"
-                              style={{ animation: "picker-in 0.15s ease both" }}>
-                              {EMOJI_REACTIONS.map(emoji => (
-                                <button key={emoji}
-                                  className="w-8 h-8 flex items-center justify-center text-[17px] rounded-xl active:bg-slate-100 transition-colors"
+                        {msg.type === "achievement" ? (
+                          <div className="flex justify-center my-1">
+                            <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+                              style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,115,22,0.12))", border: "1px solid rgba(251,191,36,0.3)" }}>
+                              <Flame className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
+                              <span className="text-amber-700 text-[11px] font-bold">{msg.achieverName} · {msg.streak}일 연속 달성! 🎉</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`flex gap-2 items-end ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
+                            {!msg.isMe && (
+                              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.seed}`} alt={msg.sender}
+                                className="w-7 h-7 rounded-full bg-slate-200 shrink-0 mb-5 cursor-pointer active:opacity-70 transition-opacity" draggable={false}
+                                onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)} />
+                            )}
+                            <div className={`flex flex-col gap-0.5 max-w-[68%] ${msg.isMe ? "items-end" : "items-start"}`}>
+                              {!msg.isMe && (
+                                <span className="text-slate-400 text-[10px] font-semibold px-1 cursor-pointer active:text-slate-600 transition-colors"
+                                  onClick={() => navigate(`/user/${msg.dbMessage?.user_id ?? msg.seed}`)}>
+                                  {msg.sender}
+                                </span>
+                              )}
+                              <div className={`flex items-center gap-1.5 ${msg.isMe ? "flex-row-reverse" : "flex-row"} relative`}>
+                                <div className="px-3 py-2 text-[13px] leading-snug select-none"
+                                  style={{ background: msg.isMe ? "#FF3355" : "white",
+                                    color: msg.isMe ? "white" : "#1e293b",
+                                    borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                                    boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}
+                                  onTouchStart={() => startLongPress(msg.id)}
+                                  onTouchEnd={cancelLongPress}
+                                  onTouchMove={cancelLongPress}>
+                                  {msg.text}
+                                </div>
+                                {!msg.isMe && <button
+                                  className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                                  style={{ background: isPickerOpen ? "rgba(255,51,85,0.12)" : "rgba(0,0,0,0.06)" }}
                                   onTouchStart={e => e.stopPropagation()}
-                                  onClick={() => addReaction(msg.id, emoji)}>
-                                  {emoji}
+                                  onMouseDown={e => e.stopPropagation()}
+                                  onClick={e => { e.stopPropagation(); setEmojiPickerFor(isPickerOpen ? null : msg.id); }}>
+                                  <SmilePlus className="w-3.5 h-3.5" style={{ color: isPickerOpen ? "#FF3355" : "#94a3b8" }} />
+                                </button>}
+                              </div>
+                              {isPickerOpen && (
+                                <div
+                                  className={`absolute ${msg.isMe ? "right-0" : "left-0"} bottom-full mb-1 z-50`}
+                                  onTouchStart={e => e.stopPropagation()}
+                                  onClick={e => e.stopPropagation()}
+                                >
+                                  <div className="flex gap-1 bg-white rounded-2xl px-2 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-slate-100"
+                                    style={{ animation: "picker-in 0.15s ease both" }}>
+                                    {EMOJI_REACTIONS.map(emoji => (
+                                      <button key={emoji}
+                                        className="w-8 h-8 flex items-center justify-center text-[17px] rounded-xl active:bg-slate-100 transition-colors"
+                                        onTouchStart={e => e.stopPropagation()}
+                                        onClick={() => addReaction(msg.id, emoji)}>
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {reactions[msg.id] && (
+                                <button
+                                  className="mt-0.5 px-2 py-0.5 rounded-full text-[14px] active:scale-90 transition-transform"
+                                  style={{ background: "white", border: "1.5px solid rgba(255,51,85,0.25)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
+                                  onTouchStart={e => e.stopPropagation()}
+                                  onClick={e => { e.stopPropagation(); addReaction(msg.id, reactions[msg.id]); }}>
+                                  {reactions[msg.id]}
                                 </button>
-                              ))}
+                              )}
+                              <span className="text-slate-400 text-[10px] px-1">{msg.time}</span>
                             </div>
                           </div>
                         )}
-                        {/* 말풍선 + 반응 버튼 */}
-                        <div className={`flex items-center gap-1.5 ${msg.isMe ? "flex-row-reverse" : "flex-row"}`}>
-                          <div className="px-3 py-2 text-[13px] leading-snug select-none"
-                            style={{ background: msg.isMe ? "#FF3355" : "white",
-                              color: msg.isMe ? "white" : "#1e293b",
-                              borderRadius: msg.isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                              boxShadow: msg.isMe ? "none" : "0 1px 4px rgba(0,0,0,0.07)" }}
-                            onTouchStart={() => startLongPress(msg.id)}
-                            onTouchEnd={cancelLongPress}
-                            onTouchMove={cancelLongPress}>
-                            {msg.text}
-                          </div>
-                          {/* 반응 추가 버튼 — 상대방 메시지에만 */}
-                          {!msg.isMe && <button
-                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-                            style={{ background: isPickerOpen ? "rgba(255,51,85,0.12)" : "rgba(0,0,0,0.06)" }}
-                            onTouchStart={e => e.stopPropagation()}
-                            onMouseDown={e => e.stopPropagation()}
-                            onClick={e => { e.stopPropagation(); setEmojiPickerFor(isPickerOpen ? null : msg.id); }}>
-                            <SmilePlus className="w-3.5 h-3.5" style={{ color: isPickerOpen ? "#FF3355" : "#94a3b8" }} />
-                          </button>}
-                        </div>
-                        {/* 이모지 반응 — 하나만 */}
-                        {reactions[msg.id] && (
-                          <button
-                            className={`mt-0.5 px-2 py-0.5 rounded-full text-[14px] active:scale-90 transition-transform`}
-                            style={{ background: "white", border: "1.5px solid rgba(255,51,85,0.25)", boxShadow: "0 1px 4px rgba(0,0,0,0.07)" }}
-                            onTouchStart={e => e.stopPropagation()}
-                            onClick={e => { e.stopPropagation(); addReaction(msg.id, reactions[msg.id]); }}>
-                            {reactions[msg.id]}
-                          </button>
-                        )}
-                        <span className="text-slate-400 text-[10px] px-1">{msg.time}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </React.Fragment>
+                    );
+                  })}
                 <div ref={chatEndRef} />
               </div>
+
+              {/* 스크롤 아래로 버튼 */}
+              {!chatAtBottom && (
+                <button
+                  className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-white shadow-lg border border-slate-100 flex items-center justify-center active:scale-90 transition-transform z-20"
+                  onTouchStart={e => e.stopPropagation()}
+                  onClick={() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  <ArrowRight className="w-4 h-4 text-slate-500 rotate-90" />
+                </button>
+              )}
+              </div>{/* relative wrapper 닫기 */}
 
               <div className="shrink-0 px-3 py-3 flex items-center gap-2 bg-white"
                 style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
@@ -1030,12 +1082,15 @@ export function Home() {
               <h3 className="text-[17px] font-black text-slate-900">실시간 인증 피드</h3>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <button
-              onClick={() => navigate("/feed")}
-              className="text-[12px] font-bold text-slate-400 active:text-slate-600 transition-colors"
-            >
-              전체보기
-            </button>
+            {recentFeed.length > 0 && (
+              <button
+                onClick={() => navigate("/feed")}
+                className="flex items-center gap-1 text-[12px] font-bold text-[#FF3355] active:text-[#CC0030] transition-colors"
+              >
+                전체보기
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* 벤토 비대칭 그리드 */}
@@ -1073,18 +1128,21 @@ function FeedCard({ item }: { item: FeedItem; key?: React.Key }) {
   const navigate = useNavigate();
 
   function goToPhoto() {
+    const cached = item.postId ? reactionCache.get(item.postId) : null;
     navigate("/challenge/group/feed/activity", {
       state: {
         imgSrc: item.img,
         postId: item.postId,
+        userId: item.seed,
         grad: ["#FF3355", "#FF6680"] as [string, string],
         name: item.user,
         seed: item.seed,
         time: item.time,
         msg: item.caption,
         type: "verify",
-        reactionCount: item.reactionCount,
-        myReaction: item.myReaction,
+        reactionCount: cached?.count ?? item.reactionCount,
+        myReaction: cached?.myReaction ?? item.myReaction,
+        avatarUrl: item.avatarUrl,
       },
     });
   }
@@ -1123,9 +1181,9 @@ function FeedCard({ item }: { item: FeedItem; key?: React.Key }) {
             onClick={e => { e.stopPropagation(); navigate(`/user/${item.seed}`); }}
           >
             <img
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`}
+              src={item.avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`}
               alt={item.user}
-              className="w-5 h-5 rounded-full bg-white/20 shrink-0"
+              className="w-5 h-5 rounded-full bg-white/20 shrink-0 object-cover"
             />
             <span className="text-white text-[11px] font-black truncate">{item.user}</span>
           </button>

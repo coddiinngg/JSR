@@ -406,23 +406,43 @@ function Slide4({ on, value, onChange }: { on: boolean; value: string; onChange:
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 flex flex-col items-center justify-center px-8 pt-2 pb-2 relative z-10">
-        {/* 아바타 */}
+      {/* 타이틀 — 위에 */}
+      <div className="px-6 pt-6 pb-3 z-10">
         <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-[0_16px_40px_rgba(255,51,85,0.4)]"
-          style={{
-            background: "linear-gradient(135deg,#FF3355,#CC0030)",
-            animation: on ? "ob-spring 0.6s cubic-bezier(0.34,1.56,0.64,1) 80ms both" : "none",
-          }}
+          className="inline-flex items-center gap-1.5 bg-[#FF3355]/15 border border-[#FF3355]/25 rounded-full px-3 py-1 mb-3"
+          style={{ animation: on ? "ob-fade 0.5s ease 100ms both" : "none" }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-[#FF9DB2]" style={{ animation: "ob-orb 2s ease-in-out infinite" }} />
+          <span className="text-[#FF9DB2] text-xs font-semibold tracking-wide">프로필 설정</span>
+        </div>
+        <h1
+          className="text-[28px] leading-tight font-extrabold tracking-tight break-keep"
+          style={{ animation: on ? "ob-word 0.5s cubic-bezier(0.34,1.2,0.64,1) 180ms both" : "none" }}
+        >
+          <span className="text-white">어떻게</span><br />
+          <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>불러드릴까요?</span>
+        </h1>
+        <p
+          className="text-white/40 text-[13px] mt-1.5 break-keep"
+          style={{ animation: on ? "ob-fade 0.5s ease 280ms both" : "none" }}
+        >
+          챌리에서 사용할 닉네임을 입력해주세요.
+        </p>
+      </div>
+
+      {/* 아바타 + 입력 */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-8 pb-4 relative z-10"
+        style={{ animation: on ? "ob-fade 0.5s ease 320ms both" : "none" }}
+      >
+        <div
+          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-8 shadow-[0_16px_40px_rgba(255,51,85,0.4)]"
+          style={{ background: "linear-gradient(135deg,#FF3355,#CC0030)" }}
         >
           <User className="w-10 h-10 text-white" strokeWidth={1.8} />
         </div>
 
-        {/* 입력 */}
-        <div
-          className="w-full"
-          style={{ animation: on ? "ob-fade 0.5s ease 220ms both" : "none" }}
-        >
+        <div className="w-full">
           <input
             ref={inputRef}
             type="text"
@@ -430,19 +450,12 @@ function Slide4({ on, value, onChange }: { on: boolean; value: string; onChange:
             onChange={e => onChange(e.target.value)}
             placeholder="닉네임을 입력하세요"
             maxLength={12}
-            className="w-full text-center text-white text-[20px] font-bold bg-transparent outline-none placeholder:text-white/25 border-b-2 pb-2"
+            className="w-full text-center text-white text-[22px] font-bold bg-transparent outline-none placeholder:text-white/25 border-b-2 pb-2"
             style={{ borderColor: value ? "#FF3355" : "rgba(255,255,255,0.15)" }}
           />
           <p className="text-center text-white/30 text-[11px] mt-2">최대 12자</p>
         </div>
       </div>
-
-      <TextBlock on={on} tag="프로필 설정" tagColor="text-[#FF9DB2]" tagBg="bg-[#FF3355]/15 border-[#FF3355]/25" noDot>
-        <span className="text-white">어떻게</span>
-        <br />
-        <span className="bg-clip-text text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#FF3355,#FF99B2)" }}>불러드릴까요?</span>
-      </TextBlock>
-      <SubText on={on}>챌리에서 사용할 닉네임을 입력해주세요.</SubText>
     </div>
   );
 }

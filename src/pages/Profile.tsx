@@ -192,9 +192,9 @@ export function Profile() {
 
       <div className="px-4 py-5 space-y-4">
 
-        {/* 복구권 카드 */}
+        {/* 참가권 카드 */}
         <div
-          className="rounded-3xl p-5 relative overflow-hidden flex items-center justify-between bg-white border border-black/[0.04] shadow-[0_4px_20px_rgba(255,51,85,0.08)]"
+          className="rounded-3xl p-5 relative overflow-hidden flex items-center justify-between bg-white dark:bg-[#12161E] border border-black/[0.04] dark:border-white/[0.07] shadow-[0_4px_20px_rgba(255,51,85,0.08)]"
           style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(14px)",
@@ -202,14 +202,14 @@ export function Profile() {
           }}
         >
           <div className="relative z-10">
-            <p className="text-[11px] text-slate-400 mb-1">보유한 복구권</p>
+            <p className="text-[11px] text-slate-400 mb-1">보유한 참가권</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-[36px] font-black text-slate-900 leading-none tabular-nums">{recoveryTickets}</span>
+              <span className="text-[36px] font-black text-slate-900 dark:text-white leading-none tabular-nums">{recoveryTickets}</span>
               <span className="text-[14px] text-slate-400 ml-1 font-semibold">개</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1.5">실패 시 사용 가능</p>
+            <p className="text-[11px] text-slate-400 mt-1.5">그룹 참가 시 사용</p>
           </div>
-          <div className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center bg-[#FFE8EC] border border-[#FFD6DC]">
+          <div className="relative z-10 w-14 h-14 rounded-2xl flex items-center justify-center bg-[#FFE8EC] dark:bg-[#3A1620] border border-[#FFD6DC] dark:border-[#FF3355]/30">
             <Ticket className="w-7 h-7 text-[#FF3355]" />
           </div>
         </div>

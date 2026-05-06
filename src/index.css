@@ -30,8 +30,11 @@ html, body {
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  background: #0b0d12;
+  background: #ffffff;
   overscroll-behavior: none;
+}
+html.dark body {
+  background: #090B10;
 }
 
 /* ── 다크모드 CSS 변수 (인라인 스타일에서 참조) ── */

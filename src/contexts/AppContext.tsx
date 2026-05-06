@@ -172,6 +172,7 @@ interface AppContextType {
   refreshVerifications: () => Promise<void>;
   // Groups
   groups: Group[];
+  groupsLoading: boolean;
   joinGroup: (id: string) => void;
   leaveGroup: (id: string) => void;
   selectedGroupId: string;
@@ -222,6 +223,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [verificationImageFile, setVerificationImageFile] = useState<File | null>(null);
   const [verificationHistory, setVerificationHistory] = useState<DbVerification[]>([]);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
+  const [groupsLoading, setGroupsLoading] = useState(true);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -412,6 +414,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadGroups() {
+      setGroupsLoading(true);
       const { data: dbGroups, error: groupsError } = await supabase
         .from("groups")
         .select("*")
@@ -422,6 +425,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (groupsError || !dbGroups?.length) {
         if (groupsError) console.error("Failed to load groups", groupsError);
         setGroups(DEFAULT_GROUPS);
+        setGroupsLoading(false);
         return;
       }
 
@@ -443,6 +447,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       setGroups(dbGroups.map(row => mapDbGroup(row, joinedDbIds)));
+      setGroupsLoading(false);
     }
 
     void loadGroups();
@@ -506,7 +511,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       recoveryTickets, useRecoveryTicket,
       verifyType, setVerifyType,
       verificationGroupId, verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshVerifications,
-      groups, joinGroup, leaveGroup, selectedGroupId, setSelectedGroupId,
+      groups, groupsLoading, joinGroup, leaveGroup, selectedGroupId, setSelectedGroupId,
       notifications, notificationsLoading, markNotifRead, markAllNotifsRead, handleNotifAction, reloadNotifications,
     }}>
       {children}

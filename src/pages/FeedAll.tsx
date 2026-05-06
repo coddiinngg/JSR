@@ -3,18 +3,23 @@ import { ArrowLeft, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
-import { formatActivityTime, loadActivityFeed, type ActivityFeedItem } from "../lib/activity";
+import { formatActivityTime, loadActivityFeed, reactionCache, type ActivityFeedItem } from "../lib/activity";
 
-function FeedCard({ item, index }: { item: ActivityFeedItem; index: number }) {
+let feedCache: ActivityFeedItem[] | null = null;
+
+function FeedCard({ item, index, onClick }: { item: ActivityFeedItem; index: number; onClick: () => void }) {
   const vt = VERIFY_TYPES[(item.verify_type as VerifyTypeKey) ?? "step_walk"] ?? VERIFY_TYPES.step_walk;
   const aspect = index % 3 === 0 ? "aspect-[3/4]" : "aspect-square";
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm active:scale-[0.97] transition-transform cursor-pointer border border-black/[0.04]">
+    <div
+      className="bg-white dark:bg-[#12161E] rounded-2xl overflow-hidden shadow-sm active:scale-[0.97] transition-transform cursor-pointer border border-black/[0.04] dark:border-white/[0.07]"
+      onClick={onClick}
+    >
       <div className={`relative ${aspect}`}>
         {item.photo_url ? (
           <img src={item.photo_url} alt={item.message} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#FF3355] to-[#FF6680]" />
+          <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${vt.bgGrad[0]}, ${vt.bgGrad[1]})` }} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
         <div className="absolute top-2.5 left-2.5 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
@@ -26,7 +31,7 @@ function FeedCard({ item, index }: { item: ActivityFeedItem; index: number }) {
         <div className="absolute bottom-0 left-0 right-0 p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <img src={item.author_avatar_url ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.user_id}`} alt={item.author_name ?? ""}
-              className="w-5 h-5 rounded-full bg-white/20 shrink-0" />
+              className="w-5 h-5 rounded-full bg-white/20 shrink-0 object-cover" />
             <span className="text-white text-[11px] font-black truncate">{item.author_name ?? "챌리 유저"}</span>
           </div>
           <p className="text-white/75 text-[11px] leading-snug line-clamp-2">{item.message}</p>
@@ -39,15 +44,16 @@ function FeedCard({ item, index }: { item: ActivityFeedItem; index: number }) {
 export function FeedAll() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [items, setItems] = useState<ActivityFeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<ActivityFeedItem[]>(feedCache ?? []);
+  const [loading, setLoading] = useState(!feedCache);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true);
+      if (!feedCache) setLoading(true);
       try {
-        const posts = await loadActivityFeed({ userId: user?.id ?? null, limit: 60 });
+        const posts = await loadActivityFeed({ userId: user?.id ?? null, limit: 100 });
+        feedCache = posts;
         if (!cancelled) setItems(posts);
       } catch (error) {
         console.error("Failed to load feed", error);
@@ -60,24 +66,44 @@ export function FeedAll() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  function openPhoto(item: ActivityFeedItem) {
+    const vt = VERIFY_TYPES[(item.verify_type as VerifyTypeKey) ?? "step_walk"] ?? VERIFY_TYPES.step_walk;
+    const cached = reactionCache.get(item.id);
+    navigate("/challenge/group/feed/activity", {
+      state: {
+        postId: item.id,
+        userId: item.user_id,
+        imgSrc: item.photo_url,
+        grad: vt.bgGrad as [string, string],
+        name: item.author_name ?? "챌리 유저",
+        seed: item.user_id,
+        time: formatActivityTime(item.created_at),
+        msg: item.message,
+        type: item.verify_type,
+        reactionCount: cached?.count ?? item.reactionCount,
+        myReaction: cached?.myReaction ?? item.myReaction,
+        avatarUrl: item.author_avatar_url,
+      },
+    });
+  }
+
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-[#090B10]">
       {/* 헤더 */}
-      <header className="shrink-0 bg-white px-4 pt-4 pb-3"
-        style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+      <header className="shrink-0 bg-white dark:bg-[#090B10] px-4 pt-4 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors shrink-0"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/[0.07] active:bg-slate-200 dark:active:bg-white/[0.12] transition-colors shrink-0"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           </button>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg flex items-center justify-center"
               style={{ background: "linear-gradient(135deg,#FF3355,#CC0030)" }}>
               <Zap className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <h1 className="text-[18px] font-black text-slate-900">실시간 인증 피드</h1>
+            <h1 className="text-[18px] font-black text-slate-900 dark:text-white">실시간 인증 피드</h1>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </div>
         </div>
@@ -89,20 +115,24 @@ export function FeedAll() {
           {/* 왼쪽 컬럼 */}
           <div className="flex flex-col gap-2.5">
             {items.filter((_, i) => i % 2 === 0).map((item, i) => (
-              <React.Fragment key={item.id}><FeedCard item={item} index={i * 2} /></React.Fragment>
+              <React.Fragment key={item.id}>
+                <FeedCard item={item} index={i * 2} onClick={() => openPhoto(item)} />
+              </React.Fragment>
             ))}
           </div>
           {/* 오른쪽 컬럼 — 위로 오프셋 */}
           <div className="flex flex-col gap-2.5 mt-6">
             {items.filter((_, i) => i % 2 === 1).map((item, i) => (
-              <React.Fragment key={item.id}><FeedCard item={item} index={i * 2 + 1} /></React.Fragment>
+              <React.Fragment key={item.id}>
+                <FeedCard item={item} index={i * 2 + 1} onClick={() => openPhoto(item)} />
+              </React.Fragment>
             ))}
           </div>
         </div>
         {!loading && items.length === 0 && (
           <div className="py-20 text-center">
-            <p className="text-[14px] font-black text-slate-500">아직 인증 피드가 없어요</p>
-            <p className="text-[12px] text-slate-400 mt-1">첫 그룹 인증을 완료하면 여기에 표시돼요.</p>
+            <p className="text-[14px] font-black text-slate-500 dark:text-slate-400">아직 인증 피드가 없어요</p>
+            <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-1">첫 그룹 인증을 완료하면 여기에 표시돼요.</p>
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
-import type { ActivityEmoji } from "../../lib/activity";
+import { reactionCache, type ActivityEmoji } from "../../lib/activity";
 
 interface ActivityPhotoState {
   postId?: string;
@@ -17,6 +17,7 @@ interface ActivityPhotoState {
   type: string;
   reactionCount?: number;
   myReaction?: string | null;
+  avatarUrl?: string | null;
 }
 
 const REACTIONS: ActivityEmoji[] = ["❤️", "🔥", "👍", "😮", "🎉"];
@@ -35,50 +36,45 @@ export function ActivityPhoto() {
     return null;
   }
 
-  const { postId, userId, imgSrc, grad, name, seed, time, msg } = state;
+  const { postId, userId, imgSrc, grad, name, seed, time, msg, avatarUrl } = state;
 
   async function handleReact(emoji: ActivityEmoji) {
-    if (!postId) {
-      setShowPicker(false);
-      return;
-    }
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+    if (!postId) { setShowPicker(false); return; }
+    if (!user) { navigate("/login"); return; }
 
     const prevLiked = liked;
     const prevCount = likeCount;
 
     if (liked === emoji) {
+      const nextCount = Math.max(0, likeCount - 1);
       setLiked(null);
-      setLikeCount(c => Math.max(0, c - 1));
+      setLikeCount(nextCount);
+      reactionCache.set(postId, { count: nextCount, myReaction: null });
       const { error } = await supabase
         .from("activity_reactions")
         .delete()
         .eq("activity_post_id", postId)
         .eq("user_id", user.id);
-      if (error) {
-        setLiked(prevLiked);
-        setLikeCount(prevCount);
-      }
+      if (error) { setLiked(prevLiked); setLikeCount(prevCount); reactionCache.set(postId, { count: prevCount, myReaction: prevLiked }); }
     } else {
-      if (!liked) setLikeCount(c => c + 1);
+      const nextCount = liked ? likeCount : likeCount + 1;
       setLiked(emoji);
+      setLikeCount(nextCount);
+      reactionCache.set(postId, { count: nextCount, myReaction: emoji });
       const { error } = await supabase
         .from("activity_reactions")
         .upsert({ activity_post_id: postId, user_id: user.id, emoji });
-      if (error) {
-        setLiked(prevLiked);
-        setLikeCount(prevCount);
-      }
+      if (error) { setLiked(prevLiked); setLikeCount(prevCount); reactionCache.set(postId, { count: prevCount, myReaction: prevLiked }); }
     }
     setShowPicker(false);
   }
 
   return (
-    <div className="flex flex-col h-full bg-black overflow-hidden relative">
-      {/* 배경 이미지 또는 그라데이션 */}
+    <div
+      className="flex flex-col h-full bg-black overflow-hidden relative"
+      onClick={() => showPicker && setShowPicker(false)}
+    >
+      {/* 배경 이미지 또는 그라데이션 — 오버레이 없음 */}
       <div className="absolute inset-0">
         {imgSrc ? (
           <img
@@ -94,12 +90,15 @@ export function ActivityPhoto() {
             style={{ background: `linear-gradient(135deg, ${grad[0]}, ${grad[1]})` }}
           />
         )}
-        {/* 상단 페이드 */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/80" />
+        {/* 하단 텍스트 가독성용 약한 그라데이션만 */}
+        <div
+          className="absolute bottom-0 left-0 right-0"
+          style={{ height: 220, background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}
+        />
       </div>
 
-      {/* 상단 네비 */}
-      <div className="relative z-10 flex items-center px-4 pt-5 pb-2 shrink-0">
+      {/* 상단 뒤로가기 */}
+      <div className="relative z-10 flex items-center px-4 pt-12 pb-2 shrink-0">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm active:bg-black/50 transition-colors"
@@ -108,35 +107,32 @@ export function ActivityPhoto() {
         </button>
       </div>
 
-      {/* 하단 정보 영역 */}
-      <div className="relative z-10 mt-auto shrink-0 px-5 pb-10">
-        {/* 유저 정보 */}
-        <button
-          className="flex items-center gap-2.5 mb-3 active:opacity-70 transition-opacity"
-          onClick={() => navigate(`/user/${userId ?? seed}`)}
-        >
-          <img
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`}
-            alt={name}
-            className="w-10 h-10 rounded-full border-2 border-white/40 bg-white/10 shrink-0"
-            draggable={false}
-          />
-          <div className="text-left">
-            <p className="text-white font-black text-[15px] leading-tight">{name}</p>
-            <p className="text-white/50 text-[12px]">{time}</p>
-          </div>
-        </button>
+      {/* 하단 정보 */}
+      <div className="relative z-10 mt-auto shrink-0 px-5 pb-10 pt-6">
+        {/* 유저 정보 + 이모지 버튼 (같은 행, 좌우 배치) */}
+        <div className="flex items-end justify-between mb-2.5">
+          {/* 유저 정보 */}
+          <button
+            className="flex items-center gap-2.5 active:opacity-70 transition-opacity"
+            onClick={() => navigate(`/user/${userId ?? seed}`)}
+          >
+            <img
+              src={avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`}
+              alt={name}
+              className="w-10 h-10 rounded-full border-2 border-white/40 bg-white/10 shrink-0"
+              draggable={false}
+            />
+            <div className="text-left">
+              <p className="text-white font-black text-[15px] leading-tight">{name}</p>
+              <p className="text-white/55 text-[12px]">{time}</p>
+            </div>
+          </button>
 
-        {/* 메시지 */}
-        <p className="text-white text-[15px] leading-relaxed font-medium mb-5">{msg}</p>
-
-        {/* 반응 영역 */}
-        <div className="flex items-center gap-3">
-          {/* 반응 피커 토글 버튼 */}
-          <div className="relative">
+          {/* 이모지 버튼 — 맨 오른쪽 */}
+          <div className="relative" onClick={e => e.stopPropagation()}>
             {showPicker && (
               <div
-                className="absolute bottom-full mb-2 left-0 flex gap-1 bg-white/15 backdrop-blur-md rounded-2xl px-2 py-1.5 border border-white/20"
+                className="absolute bottom-full right-0 mb-2 flex gap-1 bg-black/65 backdrop-blur-md rounded-2xl px-2 py-1.5 border border-white/15"
                 style={{ animation: "ap-up 0.15s ease both" }}
               >
                 {REACTIONS.map(emoji => (
@@ -155,23 +151,19 @@ export function ActivityPhoto() {
               onClick={() => setShowPicker(v => !v)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all active:scale-95"
               style={{
-                background: liked ? "rgba(255,51,85,0.4)" : "rgba(255,255,255,0.15)",
+                background: liked ? "rgba(255,51,85,0.5)" : "rgba(255,255,255,0.15)",
                 backdropFilter: "blur(8px)",
-                border: liked ? "1px solid rgba(255,51,85,0.5)" : "1px solid rgba(255,255,255,0.2)",
+                border: liked ? "1px solid rgba(255,51,85,0.6)" : "1px solid rgba(255,255,255,0.2)",
               }}
             >
               <span className="text-[20px] leading-none">{liked ?? "👍"}</span>
               <span className="text-white font-black text-[14px] tabular-nums">{likeCount}</span>
             </button>
           </div>
-
-          {/* 현재 선택된 반응 표시 (있을 때) */}
-          {liked && (
-            <p className="text-white/60 text-[12px] font-medium">
-              내가 반응했어요
-            </p>
-          )}
         </div>
+
+        {/* 메시지 */}
+        <p className="text-white/90 text-[14px] leading-relaxed font-medium">{msg}</p>
       </div>
 
       <style>{`

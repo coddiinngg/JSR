@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, X, ChevronRight, CheckCircle2, ImageIcon } from "lucide-react";
+import { ChevronLeft, X, ChevronRight, CheckCircle2, ImageIcon, Share2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useApp } from "../contexts/AppContext";
+import { shareOrCopy } from "../lib/share";
 
 type ViewMode = "grid" | "month" | "year";
 
@@ -93,6 +94,10 @@ export function Gallery() {
   const [panX, setPanX]               = useState(0);
   const [panY, setPanY]               = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [shareState, setShareState]   = useState<"idle"|"shared"|"copied">("idle");
+
+  // 처음 열 때만 scale 애니메이션 적용 (탐색 시 제외)
+  const lightboxJustOpenedRef = useRef(false);
 
   const touch = useRef({
     startX: 0, startY: 0,
@@ -196,22 +201,34 @@ export function Gallery() {
   const gap = cols >= 4 ? 1 : cols === 3 ? 2 : 3;
 
   function openLightbox(idx: number) {
+    lightboxJustOpenedRef.current = true;
     setLightbox(idx); setScale(1); setPanX(0); setPanY(0); setSwipeOffset(0);
+    // 애니메이션 완료 후 플래그 리셋
+    setTimeout(() => { lightboxJustOpenedRef.current = false; }, 400);
   }
   function closeLightbox() {
     setLightbox(null); setScale(1); setPanX(0); setPanY(0);
   }
   function goNext() {
     if (lightbox === null || lightbox >= filtered.length - 1) return;
+    lightboxJustOpenedRef.current = false;
     setIsAnimating(true);
     setSwipeOffset(-window.innerWidth);
     setTimeout(() => { setLightbox(l => (l ?? 0) + 1); setSwipeOffset(0); setScale(1); setPanX(0); setPanY(0); setIsAnimating(false); }, 280);
   }
   function goPrev() {
     if (lightbox === null || lightbox <= 0) return;
+    lightboxJustOpenedRef.current = false;
     setIsAnimating(true);
     setSwipeOffset(window.innerWidth);
     setTimeout(() => { setLightbox(l => (l ?? 0) - 1); setSwipeOffset(0); setScale(1); setPanX(0); setPanY(0); setIsAnimating(false); }, 280);
+  }
+
+  async function shareCurrentPhoto() {
+    if (!item?.photoUrl) return;
+    const status = await shareOrCopy({ title: "챌리 인증 사진", text: "챌린지 인증 사진을 공유해요!", url: item.photoUrl });
+    setShareState(status);
+    setTimeout(() => setShareState("idle"), 1800);
   }
 
   function onTouchStart(e: React.TouchEvent) {
@@ -285,7 +302,7 @@ export function Gallery() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0A0A0A] overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0A0A0A] overflow-hidden">
       <style>{`
         @keyframes gl-down { from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);} }
         @keyframes gl-cell { from{opacity:0;transform:scale(0.88);}to{opacity:1;transform:scale(1);} }
@@ -297,21 +314,21 @@ export function Gallery() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 border-b border-white/[0.06]"
+        className="shrink-0 flex items-center justify-between px-4 pt-12 pb-3 border-b border-slate-100 dark:border-white/[0.06]"
         style={{ animation: "gl-down 0.4s ease both" }}
       >
         <button
           onClick={() => navigate(-1)}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 active:bg-white/20 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 active:bg-slate-200 dark:active:bg-white/20 transition-colors"
         >
-          <ChevronLeft className="w-5 h-5 text-white" />
+          <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-white" />
         </button>
 
         <div className="text-center">
-          <h1 className="text-[16px] font-black text-white transition-all duration-300">
+          <h1 className="text-[16px] font-black text-slate-900 dark:text-white transition-all duration-300">
             {VIEW_LABELS[viewMode]}
           </h1>
-          <p className="text-[11px] text-white/30 mt-0.5">{filtered.length}장</p>
+          <p className="text-[11px] text-slate-400 dark:text-white/30 mt-0.5">{filtered.length}장</p>
         </div>
 
         <div className="w-10 flex items-center justify-end gap-1">
@@ -343,7 +360,7 @@ export function Gallery() {
               onClick={() => setFilter(f)}
               className={cn(
                 "px-3.5 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap shrink-0 transition-all duration-200",
-                filter === f ? "bg-[#FF3355] text-white shadow-[0_4px_12px_rgba(255,51,85,0.4)]" : "bg-white/10 text-white/50"
+                filter === f ? "bg-[#FF3355] text-white shadow-[0_4px_12px_rgba(255,51,85,0.4)]" : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-white/50"
               )}
             >
               {f}
@@ -359,12 +376,12 @@ export function Gallery() {
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-4 px-8"
             style={{ animation: "gl-view 0.4s ease both" }}>
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.06] flex items-center justify-center">
-              <ImageIcon className="w-7 h-7 text-white/25" strokeWidth={1.5} />
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center">
+              <ImageIcon className="w-7 h-7 text-slate-300 dark:text-white/25" strokeWidth={1.5} />
             </div>
             <div className="text-center">
-              <p className="text-white/50 font-bold text-[15px]">아직 인증 사진이 없어요</p>
-              <p className="text-white/25 text-[13px] mt-1 leading-relaxed">
+              <p className="text-slate-500 dark:text-white/50 font-bold text-[15px]">아직 인증 사진이 없어요</p>
+              <p className="text-slate-400 dark:text-white/25 text-[13px] mt-1 leading-relaxed">
                 챌린지에 참여하고 첫 인증을 남겨보세요
               </p>
             </div>
@@ -381,9 +398,9 @@ export function Gallery() {
                 transition: `opacity 0.5s ease ${gi * 80}ms, transform 0.5s ease ${gi * 80}ms`,
               }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[12px] font-bold text-white/40">{label} · {dateStr}</span>
-                  <div className="flex-1 h-px bg-white/[0.07]" />
-                  <span className="text-[11px] text-white/20">{items.length}</span>
+                  <span className="text-[12px] font-bold text-slate-400 dark:text-white/40">{label} · {dateStr}</span>
+                  <div className="flex-1 h-px bg-slate-100 dark:bg-white/[0.07]" />
+                  <span className="text-[11px] text-slate-300 dark:text-white/20">{items.length}</span>
                 </div>
                 <div className="grid" style={{
                   gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -423,10 +440,10 @@ export function Gallery() {
                 transition: `opacity 0.45s ease ${mi * 60}ms, transform 0.45s ease ${mi * 60}ms`,
               }}>
                 <div className="flex items-baseline gap-2 mb-2.5">
-                  <span className="text-[26px] font-black text-white leading-none">{month}월</span>
-                  <span className="text-[13px] text-white/40">{year}년</span>
+                  <span className="text-[26px] font-black text-slate-900 dark:text-white leading-none">{month}월</span>
+                  <span className="text-[13px] text-slate-400 dark:text-white/40">{year}년</span>
                   <div className="flex-1" />
-                  <span className="text-[12px] text-white/30 font-semibold">{items.length}장</span>
+                  <span className="text-[12px] text-slate-400 dark:text-white/30 font-semibold">{items.length}장</span>
                 </div>
                 <div className="grid grid-cols-7 gap-0.5 rounded-xl overflow-hidden">
                   {items.map((photo, ii) => {
@@ -461,8 +478,8 @@ export function Gallery() {
                 transition: `opacity 0.5s ease ${yi * 80}ms, transform 0.5s ease ${yi * 80}ms`,
               }}>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-[32px] font-black text-white leading-none">{year}</span>
-                  <span className="text-[13px] text-white/40">총 {items.length}장</span>
+                  <span className="text-[32px] font-black text-slate-900 dark:text-white leading-none">{year}</span>
+                  <span className="text-[13px] text-slate-400 dark:text-white/40">총 {items.length}장</span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {months.map(({ month, items: mItems }, mi) => (
@@ -552,7 +569,7 @@ export function Gallery() {
                   transform: `scale(${scale}) translate(${panX / scale}px, ${panY / scale}px)`,
                   transition: scale === 1 && !swiping ? "transform 0.3s cubic-bezier(0.34,1.2,0.64,1)" : "none",
                   boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
-                  animation: "gl-lb 0.35s cubic-bezier(0.34,1.2,0.64,1) both",
+                  ...(lightboxJustOpenedRef.current ? { animation: "gl-lb 0.35s cubic-bezier(0.34,1.2,0.64,1) both" } : {}),
                 }}
               >
                 <PhotoCard grad={item.grad} label={item.label} photoUrl={item.photoUrl} size="lg" />
@@ -617,6 +634,19 @@ export function Gallery() {
             <p className="text-center text-white/30 text-[12px] font-semibold">
               {lightbox + 1} / {filtered.length}
             </p>
+            {/* 공유 버튼 */}
+            <div className="flex justify-center mt-3">
+              <button
+                onClick={shareCurrentPhoto}
+                className="flex items-center gap-2 px-5 py-2 rounded-2xl active:scale-95 transition-all"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(8px)" }}
+              >
+                <Share2 className="w-4 h-4 text-white/70" />
+                <span className="text-white/70 text-[13px] font-semibold">
+                  {shareState === "copied" ? "링크 복사됨" : shareState === "shared" ? "공유 완료" : "공유하기"}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       )}
