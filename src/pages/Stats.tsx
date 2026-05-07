@@ -121,7 +121,7 @@ function CalendarHeatmap({
 }
 
 export function Stats() {
-  const { verificationHistory, groups } = useApp();
+  const { verificationHistory, verificationLoading, groups } = useApp();
   const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
   const [calOffset, setCalOffset] = useState(0);
@@ -223,6 +223,20 @@ export function Stats() {
     transform: mounted ? "translateY(0)" : "translateY(16px)",
     transition: `opacity 0.5s ease ${delay}ms, transform 0.5s cubic-bezier(0.4,0,0.2,1) ${delay}ms`,
   });
+
+  if (verificationLoading) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center gap-3 bg-[#F8F8FA]">
+        <div className="flex gap-1.5">
+          {[0,1,2].map(i => (
+            <div key={i} className="w-2 h-2 rounded-full bg-slate-300"
+              style={{ animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+          ))}
+        </div>
+        <p className="text-slate-400 text-[13px] font-semibold">통계 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F8F8FA]">

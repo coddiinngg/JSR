@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -30,6 +30,8 @@ export function ActivityPhoto() {
   const [liked, setLiked]           = useState<ActivityEmoji | null>((state?.myReaction as ActivityEmoji | null | undefined) ?? null);
   const [likeCount, setLikeCount]   = useState(state?.reactionCount ?? 0);
   const [showPicker, setShowPicker] = useState(false);
+  const [noPostToast, setNoPostToast] = useState(false);
+  const noPostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!state) {
     navigate(-1);
@@ -39,7 +41,13 @@ export function ActivityPhoto() {
   const { postId, userId, imgSrc, grad, name, seed, time, msg, avatarUrl } = state;
 
   async function handleReact(emoji: ActivityEmoji) {
-    if (!postId) { setShowPicker(false); return; }
+    if (!postId) {
+      setShowPicker(false);
+      setNoPostToast(true);
+      if (noPostTimerRef.current) clearTimeout(noPostTimerRef.current);
+      noPostTimerRef.current = setTimeout(() => setNoPostToast(false), 2500);
+      return;
+    }
     if (!user) { navigate("/login"); return; }
 
     const prevLiked = liked;
@@ -165,6 +173,13 @@ export function ActivityPhoto() {
         {/* 메시지 */}
         <p className="text-white/90 text-[14px] leading-relaxed font-medium">{msg}</p>
       </div>
+
+      {noPostToast && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-2xl text-white text-[13px] font-semibold pointer-events-none whitespace-nowrap z-50"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", animation: "ap-up 0.2s ease both" }}>
+          리액션을 남길 수 없는 게시물이에요
+        </div>
+      )}
 
       <style>{`
         @keyframes ap-up { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }

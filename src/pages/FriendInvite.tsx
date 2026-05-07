@@ -187,9 +187,19 @@ export function FriendInvite() {
     setTimeout(() => setShared(false), 2000);
   }
 
-  function inviteBySms() {
+  async function inviteBySms() {
     void recordInviteEvent("sms_share");
-    window.location.href = `sms:?&body=${encodeURIComponent(`${inviteText}\n${inviteUrl}`)}`;
+    const body = `${inviteText}\n${inviteUrl}`;
+    // Web Share API 지원 시 사용, 미지원 시 sms: 프로토콜 시도
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "챌리 친구 초대", text: body });
+        return;
+      } catch {
+        // 사용자 취소 등은 무시
+      }
+    }
+    window.location.href = `sms:?&body=${encodeURIComponent(body)}`;
   }
 
   const invitedCount = friends.filter(f => f.invited).length;

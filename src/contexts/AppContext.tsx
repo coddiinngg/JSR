@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
-import type { VerifyTypeKey } from "../lib/verifyTypes";
+import { VERIFY_TYPE_KEYS, type VerifyTypeKey } from "../lib/verifyTypes";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 import type {
@@ -60,7 +60,9 @@ function mapDbGroup(row: DbGroup, joinedDbIds: Set<string>): Group {
     joined: joinedDbIds.has(row.id),
     rule: row.rule ?? "",
     goal: row.goal ?? "",
-    verifyType: row.verify_type as VerifyTypeKey,
+    verifyType: (VERIFY_TYPE_KEYS.includes(row.verify_type as VerifyTypeKey)
+      ? row.verify_type
+      : "step_walk") as VerifyTypeKey,
     myRank: row.my_rank,
     myRate: row.my_rate,
     myStreak: row.my_streak,
@@ -165,6 +167,7 @@ interface AppContextType {
   verificationImageUrl: string | null;
   verificationImageFile: File | null;
   verificationHistory: DbVerification[];
+  verificationLoading: boolean;
   beginVerification: (params: { verifyType?: VerifyTypeKey | null; groupId?: string | null }) => void;
   setVerificationImage: (file: File | null) => void;
   completeCurrentVerification: (serverPhotoUrl?: string | null) => void;
@@ -223,6 +226,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [verificationImageUrl, setVerificationImageUrl] = useState<string | null>(null);
   const [verificationImageFile, setVerificationImageFile] = useState<File | null>(null);
   const [verificationHistory, setVerificationHistory] = useState<DbVerification[]>([]);
+  const [verificationLoading, setVerificationLoading] = useState(true);
   const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsLoadError, setGroupsLoadError] = useState(false);
@@ -267,9 +271,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async function loadVerifications() {
       if (!user) {
         setVerificationHistory([]);
+        setVerificationLoading(false);
         return;
       }
 
+      setVerificationLoading(true);
       const { data, error } = await supabase
         .from("verifications")
         .select("*")
@@ -280,10 +286,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("Failed to load verifications", error);
         setVerificationHistory([]);
+        setVerificationLoading(false);
         return;
       }
 
       setVerificationHistory(data ?? []);
+      setVerificationLoading(false);
     }
 
     void loadVerifications();
@@ -529,7 +537,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       nickname, setNickname,
       recoveryTickets, useRecoveryTicket,
       verifyType, setVerifyType,
-      verificationGroupId, verificationImageUrl, verificationImageFile, verificationHistory, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshVerifications,
+      verificationGroupId, verificationImageUrl, verificationImageFile, verificationHistory, verificationLoading, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshVerifications,
       groups, groupsLoading, groupsLoadError, joinGroup, leaveGroup, selectedGroupId, setSelectedGroupId,
       notifications, notificationsLoading, markNotifRead, markAllNotifsRead, handleNotifAction, reloadNotifications,
     }}>

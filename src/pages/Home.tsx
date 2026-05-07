@@ -215,7 +215,7 @@ export function Home() {
         setChats(messages.map(message => mapDbMessage(message, message.myReaction)));
         setReactions(Object.fromEntries(
           messages
-            .filter(message => message.myReaction)
+            .filter(message => message.myReaction && EMOJI_REACTIONS.includes(message.myReaction as MessageEmoji))
             .map(message => [message.id, message.myReaction as MessageEmoji])
         ));
       } catch (error) {

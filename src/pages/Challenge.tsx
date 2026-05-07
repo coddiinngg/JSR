@@ -69,7 +69,7 @@ export function Challenge() {
     .filter((g) => filterMode === "전체" || g.joined)
     .filter((g) => activeCat === "전체" || g.category === activeCat)
     .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery))
-    .sort((a, b) => Number(a.joined) - Number(b.joined));
+    .sort((a, b) => Number(b.joined) - Number(a.joined)); // 참여 중인 그룹 먼저
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden bg-[#F8F8FA]" onClick={() => setShowDropdown(false)}>
