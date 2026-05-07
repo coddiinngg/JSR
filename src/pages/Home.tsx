@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Bell, BellRing, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb, SmilePlus, Trophy, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -32,6 +32,10 @@ const SLIDE_COUNT = 3;
 let lastAnimatedGroupId: string | null = null;
 // 피드 캐시 — 뒤로가기 시 깜박임 방지
 let feedCache: ActivityFeedItem[] | null = null;
+// 리더보드 캐시 — 뒤로가기 시 flash 방지
+let leaderboardCacheMap: Record<string, LeaderboardItem[]> = {};
+// 스크롤 위치 저장 — 뒤로가기 시 복원
+let savedScrollTop = 0;
 
 interface FeedItem {
   id: string;
@@ -64,10 +68,13 @@ export function Home() {
   const [reactions, setReactions]           = useState<Record<string, MessageEmoji>>({});
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>(feedCache ?? []);
-  const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>([]);
+  const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>(
+    selectedGroupId ? (leaderboardCacheMap[selectedGroupId] ?? []) : []
+  );
   const [chatAtBottom, setChatAtBottom]     = useState(true);
   const [lastReadMsgId, setLastReadMsgId]   = useState<string | null>(null);
 
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef      = useRef<HTMLDivElement>(null);
   const chatScrollRef   = useRef<HTMLDivElement>(null);
   const lastReadSetRef  = useRef(false);
@@ -91,7 +98,16 @@ export function Home() {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
       if (btnFlashTimer.current)  clearTimeout(btnFlashTimer.current);
       if (animFrameRef.current)   cancelAnimationFrame(animFrameRef.current);
+      // 언마운트 시 스크롤 위치 저장
+      if (scrollContainerRef.current) savedScrollTop = scrollContainerRef.current.scrollTop;
     };
+  }, []);
+
+  // 마운트 시 스크롤 위치 복원 (paint 전 동기 실행)
+  useLayoutEffect(() => {
+    if (savedScrollTop > 0 && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = savedScrollTop;
+    }
   }, []);
 
   useEffect(() => {
@@ -258,7 +274,10 @@ export function Home() {
       }
       try {
         const rows = await loadGroupLeaderboard(selectedGroup.dbId, 10);
-        if (!cancelled) setLeaderboardRows(rows);
+        if (!cancelled) {
+          setLeaderboardRows(rows);
+          if (selectedGroupId) leaderboardCacheMap[selectedGroupId] = rows;
+        }
       } catch (error) {
         console.error("Failed to load home leaderboard", error);
         if (!cancelled) setLeaderboardRows([]);
@@ -480,7 +499,7 @@ export function Home() {
       </header>
 
       {/* 본문 */}
-      <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
         <div className="px-4 pt-2 shrink-0">
 
           {/* ── 슬라이드 카드 ── */}
@@ -899,7 +918,7 @@ export function Home() {
                         {isReadMarker && (
                           <div className="flex items-center gap-2 my-1">
                             <div className="flex-1 h-px bg-slate-200" />
-                            <span className="text-[10px] text-slate-400 font-semibold shrink-0 px-1">여기까지 읽음</span>
+                            <span className="text-[10px] text-slate-400 shrink-0 px-1">여기까지 보셨습니다</span>
                             <div className="flex-1 h-px bg-slate-200" />
                           </div>
                         )}
@@ -983,14 +1002,18 @@ export function Home() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* 스크롤 아래로 버튼 */}
+              {/* 스크롤 아래로 버튼 — 채팅 영역 중앙 */}
               {!chatAtBottom && (
                 <button
-                  className="absolute bottom-3 right-3 w-9 h-9 rounded-full bg-white shadow-lg border border-slate-100 flex items-center justify-center active:scale-90 transition-transform z-20"
+                  className="absolute left-1/2 -translate-x-1/2 bottom-1/2 translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform z-20"
+                  style={{ background: "linear-gradient(135deg,#FF3355,#CC0030)", boxShadow: "0 4px 12px rgba(255,51,85,0.35)" }}
                   onTouchStart={e => e.stopPropagation()}
-                  onClick={() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  onClick={() => {
+                    const el = chatScrollRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                  }}
                 >
-                  <ArrowRight className="w-4 h-4 text-slate-500 rotate-90" />
+                  <ArrowRight className="w-3.5 h-3.5 text-white rotate-90" />
                 </button>
               )}
               </div>{/* relative wrapper 닫기 */}

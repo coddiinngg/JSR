@@ -305,7 +305,15 @@ export function Login() {
       await signInWithEmail(email.trim(), password);
       const { data: { user: loggedInUser } } = await supabase.auth.getUser();
       const uid = loggedInUser?.id;
-      const onboardingDone = uid ? localStorage.getItem(`ob_done_${uid}`) : null;
+      const localDone = uid ? localStorage.getItem(`ob_done_${uid}`) : null;
+      let onboardingDone = localDone;
+      if (!onboardingDone && uid) {
+        const { data: profileData } = await supabase.from("profiles").select("username").eq("id", uid).single();
+        if (profileData?.username) {
+          localStorage.setItem(`ob_done_${uid}`, "1");
+          onboardingDone = "1";
+        }
+      }
       navigate(onboardingDone ? "/" : "/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "로그인에 실패했어요.");
