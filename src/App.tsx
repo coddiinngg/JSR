@@ -70,11 +70,10 @@ function AuthOnlyRoute() {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* preview=1 파라미터 → guestMode 자동 활성화 (모든 경로에서 동작) */}
+      <PreviewModeInit />
       <GuestGuardProvider>
         <Routes>
-          {/* preview=1 파라미터 → guestMode 자동 활성화 */}
-          <Route path="*" element={<PreviewModeInit />} />
-
           {/* UI 갤러리 — 인증 불필요 */}
           <Route path="/ui-gallery" element={<UIGallery />} />
 

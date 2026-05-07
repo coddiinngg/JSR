@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Share2, Flame, Crown, Copy, Check, X, Camera, MoreHorizontal, LogOut, AlertTriangle } from "lucide-react";
+import { ChevronLeft, Share2, Flame, Crown, Copy, Check, X, Camera, MoreHorizontal, LogOut, AlertTriangle, ShieldCheck, ShieldOff, Clock } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { useApp } from "../../../contexts/AppContext";
 import { useAuth } from "../../../contexts/AuthContext";
+import { supabase } from "../../../lib/supabase";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../../lib/verifyTypes";
 import { formatActivityTime, loadActivityFeed, type ActivityFeedItem } from "../../../lib/activity";
 import { getPhase, getBenefitGrade } from "../../../lib/challengeUtils";
 import { loadGroupLeaderboard, type LeaderboardItem } from "../../../lib/leaderboard";
+
+interface CrewStatus {
+  crew_rate: number;
+  crew_grade: string;
+  contributor_count: number;
+  active_count: number;
+  removed_count: number;
+  my_status: string | null;
+  my_is_contributor: boolean;
+  my_exit_deadline: string | null;
+}
 
 type ActivityItem = {
   id?: string;
@@ -28,17 +40,21 @@ const PS = "0 8px 24px -4px rgba(255,51,85,0.4)";
 const rateColor = (r: number) =>
   r >= 80 ? "#10B981" : r >= 50 ? "#F59E0B" : "#FF3355";
 
+const gradeColor = (g: string) =>
+  g === "A" ? "#10B981" : g === "B" ? "#F59E0B" : g === "C" ? "#3B82F6" : "#94A3B8";
+
 export function GroupDetailUI() {
   const navigate = useNavigate();
   const { groupId = "1" } = useParams<{ groupId: string }>();
-  const { groups, joinGroup, leaveGroup, beginVerification, verificationHistory } = useApp();
+  const { groups, groupsLoading, joinGroup, leaveGroup, beginVerification, verificationHistory } = useApp();
   const { user } = useAuth();
   const { state: locState } = useLocation() as { state: { tab?: "leaderboard" | "activity" | "gallery"; skipAnimation?: boolean; fromActivityPhoto?: boolean } | null };
 
-  const group  = groups.find(g => g.id === groupId) ?? groups[0];
+  const group = groups.find(g => g.id === groupId);
   const [activityPosts, setActivityPosts] = useState<ActivityFeedItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>([]);
+  const [crewStatus, setCrewStatus] = useState<CrewStatus | null>(null);
 
   const skipAnim = locState?.skipAnimation ?? false;
   const [mounted, setMounted]                   = useState(skipAnim);
@@ -82,32 +98,32 @@ export function GroupDetailUI() {
   }, []);
 
   const groupDbId = group?.dbId ?? null;
-  const phase = getPhase(group.challengeStart, group.challengeEnd, group.recruitEnd);
+  const phase = getPhase(group?.challengeStart ?? null, group?.challengeEnd ?? null, group?.recruitEnd ?? null);
 
   // 챌린지 시작 안내 배너: 참여중이고 오늘이 챌린지 시작일인 경우
   useEffect(() => {
-    if (!group.joined || !group.challengeStart) return;
-    const start = new Date(group.challengeStart);
+    if (!group?.joined || !group?.challengeStart) return;
+    const start = new Date(group!.challengeStart!);
     const now = new Date();
     const isStartDay = start.toDateString() === now.toDateString();
     const bannerKey = `start-banner-${groupId}`;
     if (isStartDay && !sessionStorage.getItem(bannerKey)) {
       setShowStartBanner(true);
     }
-  }, [group.joined, group.challengeStart, groupId]);
+  }, [group?.joined, group?.challengeStart, groupId]);
 
   // 저조한 크루 알림: 달성률 39% 이하이고 참여중인 경우
   useEffect(() => {
-    if (!group.joined || group.rate > 39) return;
+    if (!group?.joined || (group?.crewRate ?? 100) > 39) return;
     const alertKey = `low-rate-alert-${groupId}-${new Date().toDateString()}`;
     if (!sessionStorage.getItem(alertKey)) {
       setShowLowRateAlert(true);
     }
-  }, [group.joined, group.rate, groupId]);
+  }, [group?.joined, group?.crewRate, groupId]);
 
   // 72시간 미인증 체크: 이 그룹의 마지막 인증이 72시간 초과인 경우
   useEffect(() => {
-    if (!group.joined || !groupDbId) return;
+    if (!group?.joined || !groupDbId) return;
     const groupVerifs = verificationHistory.filter(
       v => v.group_id === groupDbId && v.status === "completed"
     );
@@ -119,7 +135,7 @@ export function GroupDetailUI() {
     if (elapsed >= hours72 && !sessionStorage.getItem(popup72Key)) {
       setShowLeave72h(true);
     }
-  }, [group.joined, groupDbId, verificationHistory, groupId]);
+  }, [group?.joined, groupDbId, verificationHistory, groupId]);
 
   const inviteLink = `${INVITE_BASE}${groupId.padStart(4, "0")}`;
   const handleCopy = () => {
@@ -184,6 +200,35 @@ export function GroupDetailUI() {
     void loadLeaderboard();
     return () => { cancelled = true; };
   }, [groupDbId, user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCrewStatus() {
+      if (!groupDbId || !user) { setCrewStatus(null); return; }
+      const { data, error } = await supabase.rpc("get_crew_status", { p_group_id: groupDbId });
+      if (cancelled) return;
+      if (error || !data?.length) { setCrewStatus(null); return; }
+      setCrewStatus(data[0] as CrewStatus);
+    }
+    void loadCrewStatus();
+    return () => { cancelled = true; };
+  }, [groupDbId, user?.id]);
+
+  if (groupsLoading && !group) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#090B10]">
+        <div className="w-8 h-8 rounded-full border-2 border-[#FF3355] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+  if (!group) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 bg-white dark:bg-[#090B10]">
+        <p className="text-[15px] font-bold text-slate-500">그룹을 찾을 수 없어요</p>
+        <button onClick={() => navigate("/challenge")} className="text-[13px] text-[#FF3355] font-semibold">챌린지 목록으로</button>
+      </div>
+    );
+  }
 
   const dbActivity: ActivityItem[] = activityPosts.map((post, index) => ({
     id: post.id,
@@ -260,7 +305,7 @@ export function GroupDetailUI() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-white font-black text-[15px] leading-tight truncate">{group.title}</p>
-            <p className="text-white/45 text-[10px] font-semibold mt-0.5">달성률 {group.rate}%</p>
+            <p className="text-white/45 text-[10px] font-semibold mt-0.5">크루 달성률 {group.crewRate}%</p>
           </div>
           {group.joined ? (
             <button onClick={startVerification}
@@ -352,7 +397,13 @@ export function GroupDetailUI() {
               <div className="w-px h-8 bg-slate-100 shrink-0" />
               <div className="text-right shrink-0">
                 <p className="text-[10px] text-slate-400 font-medium">크루 달성률</p>
-                <p className="text-[18px] font-black leading-none" style={{ color: rateColor(group.rate) }}>{group.rate}%</p>
+                <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                  <p className="text-[18px] font-black leading-none" style={{ color: rateColor(group.crewRate) }}>{group.crewRate}%</p>
+                  <span className="text-[11px] font-black px-1.5 py-0.5 rounded-lg leading-none"
+                    style={{ background: gradeColor(group.crewGrade) + "22", color: gradeColor(group.crewGrade) }}>
+                    {group.crewGrade}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="bg-slate-50 rounded-xl px-3.5 py-3 flex items-center gap-2.5">
@@ -398,7 +449,7 @@ export function GroupDetailUI() {
             <div className="px-4 py-3.5 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="text-red-600 font-black text-[13px] mb-0.5">크루 달성률이 낮아요 ({group.rate}%)</p>
+                <p className="text-red-600 font-black text-[13px] mb-0.5">크루 달성률이 낮아요 ({group.crewRate}%)</p>
                 <p className="text-red-500 text-[12px] leading-relaxed">앞으로 매일 인증해야 챌린지를 달성할 수 있어요!</p>
               </div>
               <button
@@ -476,24 +527,91 @@ export function GroupDetailUI() {
               </div>
             )}
 
+            {/* ── 내 크루 멤버 상태 ── */}
+            {crewStatus && (
+              <div className="mt-2 bg-white rounded-2xl overflow-hidden"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", animation: "noti-drop 0.2s ease both" }}>
+                <div className="px-4 py-3.5">
+                  <p className="text-[11px] font-black text-slate-400 mb-2.5">내 크루 상태</p>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {/* 멤버 상태 pill */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
+                      style={{
+                        background: crewStatus.my_status === "ACTIVE" ? "#ECFDF5"
+                          : crewStatus.my_status === "EXIT_ELIGIBLE" ? "#FFFBEB"
+                          : "#FFF1F2",
+                      }}>
+                      {crewStatus.my_status === "ACTIVE"
+                        ? <ShieldCheck className="w-3.5 h-3.5" style={{ color: "#10B981" }} />
+                        : crewStatus.my_status === "EXIT_ELIGIBLE"
+                        ? <Clock className="w-3.5 h-3.5" style={{ color: "#F59E0B" }} />
+                        : <ShieldOff className="w-3.5 h-3.5" style={{ color: "#FF3355" }} />
+                      }
+                      <span className="text-[11px] font-black"
+                        style={{
+                          color: crewStatus.my_status === "ACTIVE" ? "#059669"
+                            : crewStatus.my_status === "EXIT_ELIGIBLE" ? "#D97706"
+                            : "#FF3355",
+                        }}>
+                        {crewStatus.my_status === "ACTIVE" ? "활성"
+                          : crewStatus.my_status === "EXIT_ELIGIBLE" ? "퇴장 예정"
+                          : "퇴장됨"}
+                      </span>
+                    </div>
+                    {/* 기여자 여부 */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
+                      style={{ background: crewStatus.my_is_contributor ? "#EFF6FF" : "#F8FAFC" }}>
+                      <span className="text-[11px] font-black"
+                        style={{ color: crewStatus.my_is_contributor ? "#3B82F6" : "#94A3B8" }}>
+                        {crewStatus.my_is_contributor ? "🎯 기여자" : "비기여자"}
+                      </span>
+                    </div>
+                    {/* 퇴장 유예 시 남은 시간 */}
+                    {crewStatus.my_status === "EXIT_ELIGIBLE" && crewStatus.my_exit_deadline && (
+                      <ExitDeadlineCountdown deadline={crewStatus.my_exit_deadline} />
+                    )}
+                  </div>
+                  {/* 크루 전체 통계 */}
+                  <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-50">
+                    <div className="flex-1 text-center">
+                      <p className="text-[15px] font-black text-slate-900">{crewStatus.active_count}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">활성 멤버</p>
+                    </div>
+                    <div className="w-px h-8 bg-slate-100" />
+                    <div className="flex-1 text-center">
+                      <p className="text-[15px] font-black text-slate-900">{crewStatus.contributor_count}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">기여자</p>
+                    </div>
+                    <div className="w-px h-8 bg-slate-100" />
+                    <div className="flex-1 text-center">
+                      <p className="text-[15px] font-black" style={{ color: gradeColor(crewStatus.crew_grade) }}>
+                        {Math.round(crewStatus.crew_rate * 100)}%
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">크루 달성률</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── 베네핏 등급 안내 ── */}
             <div className="mt-2 bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3"
               style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               <div className="w-10 h-10 rounded-xl bg-slate-50 flex flex-col items-center justify-center shrink-0">
-                <span className="text-[16px] font-black" style={{ color: ["#FF3355","#F59E0B","#10B981","#94a3b8"][["A","B","C","D"].indexOf(getBenefitGrade(myRank.rate, group.rate))] }}>
-                  {getBenefitGrade(myRank.rate, group.rate)}
+                <span className="text-[16px] font-black" style={{ color: ["#FF3355","#F59E0B","#10B981","#94a3b8"][["A","B","C","D"].indexOf(getBenefitGrade(myRank.rate, group.crewRate))] }}>
+                  {getBenefitGrade(myRank.rate, group.crewRate)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-black text-slate-900">예상 베네핏 등급</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {getBenefitGrade(myRank.rate, group.rate) === "A" && "내 달성률 100% — 특별 보상 3개"}
-                  {getBenefitGrade(myRank.rate, group.rate) === "B" && "내 달성률 80%+ — 보상 2개"}
-                  {getBenefitGrade(myRank.rate, group.rate) === "C" && "내 달성률 50%+ — 보상 1개"}
-                  {getBenefitGrade(myRank.rate, group.rate) === "D" && (group.rate < 50 ? "크루 달성률 부족 (50% 미만)" : "내 달성률 50% 미만")}
+                  {getBenefitGrade(myRank.rate, group.crewRate) === "A" && "내 달성률 100% — 특별 보상 3개"}
+                  {getBenefitGrade(myRank.rate, group.crewRate) === "B" && "내 달성률 80%+ — 보상 2개"}
+                  {getBenefitGrade(myRank.rate, group.crewRate) === "C" && "내 달성률 50%+ — 보상 1개"}
+                  {getBenefitGrade(myRank.rate, group.crewRate) === "D" && (group.crewRate < 50 ? "크루 달성률 부족 (50% 미만)" : "내 달성률 50% 미만")}
                 </p>
               </div>
-              <div className="text-[10px] text-slate-400 shrink-0">크루 {group.rate}%</div>
+              <div className="text-[10px] text-slate-400 shrink-0">크루 {group.crewRate}%</div>
             </div>
           </div>
         )}
@@ -666,7 +784,7 @@ export function GroupDetailUI() {
                 {restList.length > 0 && (
                   <div className="bg-white">
                     {restList.map(({ rank, name, seed, avatarUrl, streak, rate: r, isMe }, i) => (
-                      <div key={name}>
+                      <div key={seed}>
                         {i > 0 && <div className="h-px bg-slate-50 mx-4" />}
                         <div
                           className={cn("flex items-center gap-3 px-4 py-3.5 active:opacity-70 cursor-pointer",
@@ -993,6 +1111,29 @@ export function GroupDetailUI() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ExitDeadlineCountdown({ deadline }: { deadline: string }) {
+  const [remaining, setRemaining] = useState("");
+
+  useEffect(() => {
+    function update() {
+      const ms = new Date(deadline).getTime() - Date.now();
+      if (ms <= 0) { setRemaining("만료"); return; }
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      setRemaining(h > 0 ? `${h}시간 ${m}분 남음` : `${m}분 남음`);
+    }
+    update();
+    const t = setInterval(update, 30000);
+    return () => clearInterval(t);
+  }, [deadline]);
+
+  return (
+    <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-red-50">
+      <span className="text-[11px] font-black text-red-500">⏰ {remaining}</span>
     </div>
   );
 }

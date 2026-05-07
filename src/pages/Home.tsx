@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import { Bell, BellRing, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb, SmilePlus, Trophy, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -15,6 +15,12 @@ import { getBenefitGrade } from "../lib/challengeUtils";
 const MEDAL = ["🥇", "🥈", "🥉"];
 const rateColor = (r: number) => r >= 80 ? "#10B981" : r >= 50 ? "#F59E0B" : "#FF3355";
 
+interface InAppToastItem {
+  id: string;
+  emoji: string;
+  text: string;
+}
+
 interface ChatMsg {
   id: string; sender: string; text: string;
   seed: string; time: string; isMe?: boolean;
@@ -28,7 +34,7 @@ const EMOJI_REACTIONS: MessageEmoji[] = ["❤️", "😂", "🔥", "👍", "😮
 
 const SLIDE_COUNT = 3;
 
-// 컴포넌트 외부 — 리마운트 시에도 유지되어 중복 애니메이션 방지
+// 컴포넌트 외부 — 리마운트 시에도 유지되어 중복 재로드·애니메이션 방지
 let lastAnimatedGroupId: string | null = null;
 // 피드 캐시 — 뒤로가기 시 깜박임 방지
 let feedCache: ActivityFeedItem[] | null = null;
@@ -38,6 +44,11 @@ let leaderboardCacheMap: Record<string, LeaderboardItem[]> = {};
 let savedScrollTop = 0;
 // 그룹별 읽지 않은 채팅 카운트 — 세션 내 유지
 let chatUnreadCountMap: Record<string, number> = {};
+// 채팅 메시지 캐시 — 뒤로가기 시 빈 화면 방지
+type ChatCacheEntry = { messages: ChatMsg[]; reactions: Record<string, MessageEmoji> };
+let chatMessagesCache: Record<string, ChatCacheEntry> = {};
+// 최초 마운트 여부 — 헤더 진입 애니메이션 재생 방지
+let homeMountedOnce = false;
 
 interface FeedItem {
   id: string;
@@ -56,18 +67,26 @@ interface FeedItem {
 }
 
 export function Home() {
+  // 뒤로가기 복귀 시 헤더 애니메이션 재생 방지
+  const isReturnVisit = homeMountedOnce;
+
   const navigate = useNavigate();
-  const { nickname, beginVerification, groups, groupsLoading, groupsLoadError, selectedGroupId, setSelectedGroupId, notifications } = useApp();
+  const { nickname, beginVerification, groups, groupsLoading, groupsLoadError, selectedGroupId, setSelectedGroupId, notifications, latestNotification } = useApp();
   const { user } = useAuth();
   const myGroups = groups.filter(g => g.joined);
+
+  // 뒤로가기 복귀 시 채팅 캐시에서 초기화 (빈 화면 방지)
+  const initGroupDbId = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.dbId;
+  const initChatCache = initGroupDbId ? chatMessagesCache[initGroupDbId] : undefined;
+
   const [slideIdx, setSlideIdx]               = useState(0);
-  const [chats, setChats]                     = useState<ChatMsg[]>([]);
+  const [chats, setChats]                     = useState<ChatMsg[]>(() => initChatCache?.messages ?? []);
   const [chatInput, setChatInput]             = useState("");
   const [showGroupPicker, setShowGroupPicker] = useState(false);
   const [btnFlash, setBtnFlash]               = useState(false);
   const [notifMode, setNotifMode]             = useState(false);
   const { guardAction } = useGuestGuard();
-  const [reactions, setReactions]           = useState<Record<string, MessageEmoji>>({});
+  const [reactions, setReactions]           = useState<Record<string, MessageEmoji>>(() => initChatCache?.reactions ?? {});
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>(feedCache ?? []);
   const [leaderboardRows, setLeaderboardRows] = useState<LeaderboardItem[]>(
@@ -76,6 +95,12 @@ export function Home() {
   const [chatAtBottom, setChatAtBottom]     = useState(true);
   const [lastReadMsgId, setLastReadMsgId]   = useState<string | null>(null);
   const [, setUnreadTick]                   = useState(0);
+  const [chatSendError, setChatSendError]   = useState(false);
+  const chatSendErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [inAppToasts, setInAppToasts]       = useState<InAppToastItem[]>([]);
+  const toastTimers                         = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // 그룹별 1위 userId 추적 — 변경 시 인앱 토스트
+  const prevRank1Ref = useRef<Record<string, string>>({});
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef      = useRef<HTMLDivElement>(null);
@@ -101,13 +126,26 @@ export function Home() {
 
   // 타이머 cleanup (unmount 시)
   useEffect(() => {
+    homeMountedOnce = true; // 최초 마운트 완료 — 이후 복귀 시 헤더 애니메이션 스킵
     return () => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-      if (btnFlashTimer.current)  clearTimeout(btnFlashTimer.current);
-      if (animFrameRef.current)   cancelAnimationFrame(animFrameRef.current);
+      if (longPressTimer.current)   clearTimeout(longPressTimer.current);
+      if (btnFlashTimer.current)    clearTimeout(btnFlashTimer.current);
+      if (animFrameRef.current)     cancelAnimationFrame(animFrameRef.current);
+      if (chatSendErrTimer.current) clearTimeout(chatSendErrTimer.current);
+      toastTimers.current.forEach(t => clearTimeout(t));
       // 언마운트 시 스크롤 위치 저장
       if (scrollContainerRef.current) savedScrollTop = scrollContainerRef.current.scrollTop;
     };
+  }, []);
+
+  const showInAppToast = useCallback((emoji: string, text: string) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setInAppToasts(prev => [...prev.slice(-2), { id, emoji, text }]);
+    const t = setTimeout(() => {
+      setInAppToasts(prev => prev.filter(n => n.id !== id));
+      toastTimers.current.delete(id);
+    }, 4200);
+    toastTimers.current.set(id, t);
   }, []);
 
   // 마운트 시 스크롤 위치 복원 (paint 전 동기 실행)
@@ -116,6 +154,14 @@ export function Home() {
       scrollContainerRef.current.scrollTop = savedScrollTop;
     }
   }, []);
+
+  // 서버 알림 도착 → 인앱 토스트 (챌린지 관련 타입만)
+  useEffect(() => {
+    if (!latestNotification) return;
+    if (!["group", "streak", "rank"].includes(latestNotification.type)) return;
+    showInAppToast(latestNotification.emoji ?? "🔔", latestNotification.body);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestNotification?.id]);
 
   useEffect(() => {
     if (feedCache) return; // 캐시 있으면 재요청 생략 — 뒤로가기 시 깜박임 방지
@@ -134,7 +180,7 @@ export function Home() {
   }, [user?.id]);
 
   // 앱 시작·그룹 변경 시 퍼센트 카운트업 — DOM 직접 조작으로 re-render 없이 60fps
-  const groupRate = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.rate ?? 0;
+  const groupRate = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.crewRate ?? 0;
   useEffect(() => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     const el = rateDisplayRef.current;
@@ -183,7 +229,6 @@ export function Home() {
 
   useEffect(() => {
     setChatInput("");
-    setReactions({});
     let cancelled = false;
     const selectedDbId = selectedGroup?.dbId ?? null;
 
@@ -208,16 +253,16 @@ export function Home() {
       try {
         const messages = await loadGroupMessages({ groupId: selectedDbId, userId: user.id, limit: 50 });
         if (cancelled) return;
-        if (!messages.length) {
-          setChats([]);
-          return;
-        }
-        setChats(messages.map(message => mapDbMessage(message, message.myReaction)));
-        setReactions(Object.fromEntries(
+        const mappedMessages = messages.length ? messages.map(m => mapDbMessage(m, m.myReaction)) : [];
+        const mappedReactions: Record<string, MessageEmoji> = Object.fromEntries(
           messages
-            .filter(message => message.myReaction && EMOJI_REACTIONS.includes(message.myReaction as MessageEmoji))
-            .map(message => [message.id, message.myReaction as MessageEmoji])
-        ));
+            .filter(m => m.myReaction && EMOJI_REACTIONS.includes(m.myReaction as MessageEmoji))
+            .map(m => [m.id, m.myReaction as MessageEmoji])
+        );
+        setChats(mappedMessages);
+        setReactions(mappedReactions);
+        // 로드 완료 후 캐시 저장 — 뒤로가기 복귀 시 즉시 표시
+        if (selectedDbId) chatMessagesCache[selectedDbId] = { messages: mappedMessages, reactions: mappedReactions };
       } catch (error) {
         console.error("Failed to load group messages", error);
         if (!cancelled) setChats([]);
@@ -311,6 +356,15 @@ export function Home() {
         if (!cancelled) {
           setLeaderboardRows(rows);
           if (selectedGroupId) leaderboardCacheMap[selectedGroupId] = rows;
+          // 1위 변경 감지 → 인앱 토스트
+          if (rows.length > 0 && selectedGroup.dbId) {
+            const newTop = rows[0];
+            const prev   = prevRank1Ref.current[selectedGroup.dbId];
+            if (prev && prev !== newTop.userId) {
+              showInAppToast("👑", `${newTop.name}님이 1위에 올랐어요!`);
+            }
+            prevRank1Ref.current[selectedGroup.dbId] = newTop.userId;
+          }
         }
       } catch (error) {
         console.error("Failed to load home leaderboard", error);
@@ -429,7 +483,7 @@ export function Home() {
     if (!selectedGroup?.dbId || !user) return;
     const now = new Date();
     const hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0");
-    const tempId = `local-${Date.now()}`;
+    const tempId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setChats(p => [...p, { id: tempId, sender: nickname, text, seed: user.id, time: `${hh}:${mm}`, isMe: true }]);
     setChatInput("");
     setTimeout(() => {
@@ -452,6 +506,9 @@ export function Home() {
       console.error("Failed to send group message", error);
       setChats(prev => prev.filter(msg => msg.id !== tempId));
       setChatInput(text);
+      setChatSendError(true);
+      if (chatSendErrTimer.current) clearTimeout(chatSendErrTimer.current);
+      chatSendErrTimer.current = setTimeout(() => setChatSendError(false), 3000);
       return;
     }
 
@@ -504,11 +561,15 @@ export function Home() {
           0%, 100% { transform: scale(1); }
           50%      { transform: scale(1.12); }
         }
+        @keyframes toast-slide-in {
+          from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0)     scale(1); }
+        }
       `}</style>
 
       {/* 헤더 */}
       <header className="shrink-0 bg-white z-10 px-6 pt-4 pb-1.5 relative"
-        style={{ animation: "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+        style={{ animation: isReturnVisit ? "none" : "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#FF3355] flex items-center justify-center text-white font-black text-[16px] shrink-0 shadow-[0_4px_12px_rgba(255,51,85,0.35)]">
@@ -518,13 +579,6 @@ export function Home() {
               <p className="text-slate-900 font-black text-[17px] leading-none">{nickname} 님</p>
             </div>
           </div>
-          {/* 헤더 중앙 챌리 로고 */}
-          <img
-            src="/chally-logo-nobg.png"
-            alt="Chally"
-            className="absolute left-1/2 -translate-x-1/2 h-8 w-auto object-contain opacity-75 pointer-events-none select-none"
-            draggable={false}
-          />
           <div className="flex items-center gap-2">
             <button onClick={() => navigate("/challenge/request")}
               className="relative w-9 h-9 flex items-center justify-center rounded-full bg-[#FF3355]/10 active:bg-[#FF3355]/20 transition-colors">
@@ -540,6 +594,28 @@ export function Home() {
           </div>
         </div>
       </header>
+
+      {/* 인앱 토스트 알림 */}
+      {inAppToasts.length > 0 && (
+        <div className="absolute top-[68px] left-4 right-4 z-50 flex flex-col gap-1.5 pointer-events-none">
+          {inAppToasts.map(t => (
+            <div
+              key={t.id}
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl"
+              style={{
+                background: "rgba(15,15,20,0.88)",
+                backdropFilter: "blur(16px)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
+                animation: "toast-slide-in 0.32s cubic-bezier(0.34,1.56,0.64,1) both",
+              }}
+            >
+              <span className="text-[18px] leading-none shrink-0">{t.emoji}</span>
+              <span className="text-white text-[13px] font-semibold leading-snug">{t.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 본문 */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
@@ -601,7 +677,7 @@ export function Home() {
                   draggable={false}
                 />
                 <div className="absolute inset-0" style={{
-                  background: (selectedGroup?.rate ?? 0) >= 50
+                  background: (selectedGroup?.crewRate ?? 0) >= 50
                     ? "linear-gradient(180deg,rgba(255,51,85,0.50) 0%,rgba(0,0,0,0.70) 60%,rgba(0,0,0,0.92) 100%)"
                     : "linear-gradient(180deg,rgba(30,30,40,0.60) 0%,rgba(0,0,0,0.75) 60%,rgba(0,0,0,0.92) 100%)",
                 }} />
@@ -615,17 +691,17 @@ export function Home() {
                 {/* 중앙 달성률 */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                   <span className="text-[68px] leading-none">
-                    {(selectedGroup?.rate ?? 0) >= 50 ? "🏆" : "💪"}
+                    {(selectedGroup?.crewRate ?? 0) >= 50 ? "🏆" : "💪"}
                   </span>
                   <div className="flex items-baseline gap-0.5">
                     <span className="text-white font-black text-[72px] leading-none tabular-nums italic"
                       style={{ textShadow: "0 4px 24px rgba(0,0,0,0.6)" }}>
-                      {selectedGroup?.rate ?? 0}
+                      {selectedGroup?.crewRate ?? 0}
                     </span>
                     <span className="text-white font-black text-[32px] italic opacity-80">%</span>
                   </div>
                   <p className="text-white font-black text-[20px]">
-                    챌린지 {(selectedGroup?.rate ?? 0) >= 50 ? "달성 🎉" : "미달성 😢"}
+                    챌린지 {(selectedGroup?.crewRate ?? 0) >= 50 ? "달성 🎉" : "미달성 😢"}
                   </p>
                 </div>
 
@@ -636,10 +712,10 @@ export function Home() {
                   </h2>
                   <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl w-fit"
                     style={{
-                      background: (selectedGroup?.rate ?? 0) >= 50 ? "#FF3355" : "rgba(255,255,255,0.15)",
+                      background: (selectedGroup?.crewRate ?? 0) >= 50 ? "#FF3355" : "rgba(255,255,255,0.15)",
                       backdropFilter: "blur(8px)",
                     }}>
-                    {(selectedGroup?.rate ?? 0) >= 50
+                    {(selectedGroup?.crewRate ?? 0) >= 50
                       ? <><Trophy className="w-4 h-4 text-white" /><span className="text-white font-bold text-[13px]">결과 보기</span></>
                       : <><ArrowRight className="w-4 h-4 text-white" /><span className="text-white font-bold text-[13px]">결과 보기</span></>
                     }
@@ -1035,7 +1111,6 @@ export function Home() {
                                     {EMOJI_REACTIONS.map(emoji => (
                                       <button key={emoji}
                                         className="w-8 h-8 flex items-center justify-center text-[17px] rounded-xl active:bg-slate-100 transition-colors"
-                                        onTouchStart={e => e.stopPropagation()}
                                         onClick={() => addReaction(msg.id, emoji)}>
                                         {emoji}
                                       </button>
@@ -1078,6 +1153,12 @@ export function Home() {
               )}
               </div>{/* relative wrapper 닫기 */}
 
+              {chatSendError && (
+                <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-2xl text-white text-[13px] font-semibold pointer-events-none whitespace-nowrap"
+                  style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", animation: "picker-in 0.2s ease both" }}>
+                  메시지 전송에 실패했어요
+                </div>
+              )}
               <div className="shrink-0 px-3 py-3 flex items-center gap-2 bg-white"
                 style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
                 <input type="text" value={chatInput}

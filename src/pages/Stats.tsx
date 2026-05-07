@@ -35,7 +35,7 @@ function Ring({ pct, size = 96 }: { pct: number; size?: number }) {
   useEffect(() => {
     const t = setTimeout(() => setDash(circ * (1 - pct)), 350);
     return () => clearTimeout(t);
-  }, []);
+  }, [pct, circ]);
   return (
     <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
       <defs>

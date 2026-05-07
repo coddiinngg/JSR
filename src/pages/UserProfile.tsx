@@ -11,6 +11,7 @@ export function UserProfile() {
   const [mounted, setMounted] = useState(false);
   const [profile, setProfile] = useState<PublicProfileRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
@@ -24,10 +25,15 @@ export function UserProfile() {
 
   async function loadUserData(id: string) {
     setLoading(true);
+    setLoadError(false);
     try {
       // SECURITY DEFINER RPC — RLS 우회해서 다른 유저 데이터 접근
-      const { data } = await supabase.rpc("get_public_profile", { p_user_id: id });
+      const { data, error } = await supabase.rpc("get_public_profile", { p_user_id: id });
+      if (error) throw error;
       setProfile(data?.[0] ?? null);
+    } catch (err) {
+      console.error("Failed to load user profile", err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -52,6 +58,16 @@ export function UserProfile() {
       >
         <ChevronLeft className="w-5 h-5 text-white" />
       </button>
+
+      {loadError && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-20 bg-[#FAFAFA] dark:bg-[#090B10]">
+          <p className="text-[15px] font-bold text-slate-500">프로필을 불러오지 못했어요</p>
+          <button onClick={() => void loadUserData(userId)}
+            className="text-[13px] text-[#FF3355] font-semibold px-4 py-2 rounded-xl bg-[#FF3355]/10">
+            다시 시도
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto">
         {/* 헤더 */}

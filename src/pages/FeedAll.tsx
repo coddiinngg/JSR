@@ -6,6 +6,13 @@ import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 import { formatActivityTime, loadActivityFeed, reactionCache, type ActivityFeedItem } from "../lib/activity";
 
 let feedCache: ActivityFeedItem[] | null = null;
+let feedCacheTime = 0;
+const FEED_CACHE_TTL = 60_000; // 1분
+
+export function invalidateFeedCache() {
+  feedCache = null;
+  feedCacheTime = 0;
+}
 
 function FeedCard({ item, index, onClick }: { item: ActivityFeedItem; index: number; onClick: () => void }) {
   const vt = VERIFY_TYPES[(item.verify_type as VerifyTypeKey) ?? "step_walk"] ?? VERIFY_TYPES.step_walk;
@@ -44,16 +51,18 @@ function FeedCard({ item, index, onClick }: { item: ActivityFeedItem; index: num
 export function FeedAll() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [items, setItems] = useState<ActivityFeedItem[]>(feedCache ?? []);
-  const [loading, setLoading] = useState(!feedCache);
+  const isCacheValid = feedCache !== null && Date.now() - feedCacheTime < FEED_CACHE_TTL;
+  const [items, setItems] = useState<ActivityFeedItem[]>(isCacheValid ? feedCache! : []);
+  const [loading, setLoading] = useState(!isCacheValid);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!feedCache) setLoading(true);
+      if (!isCacheValid) setLoading(true);
       try {
         const posts = await loadActivityFeed({ userId: user?.id ?? null, limit: 100 });
         feedCache = posts;
+        feedCacheTime = Date.now();
         if (!cancelled) setItems(posts);
       } catch (error) {
         console.error("Failed to load feed", error);

@@ -84,6 +84,8 @@ export interface Database {
           recruit_end: string | null;
           challenge_start: string | null;
           challenge_end: string | null;
+          crew_rate: number;
+          crew_grade: string;
         };
         Insert: {
           id?: string;
@@ -110,6 +112,8 @@ export interface Database {
           recruit_end?: string | null;
           challenge_start?: string | null;
           challenge_end?: string | null;
+          crew_rate?: number;
+          crew_grade?: string;
         };
         Update: Partial<Omit<Database['public']['Tables']['groups']['Insert'], 'created_by' | 'id'>>;
         Relationships: [];
@@ -122,6 +126,11 @@ export interface Database {
           role: 'admin' | 'member';
           joined_at: string;
           last_verified_at: string | null;
+          is_contributor: boolean;
+          member_status: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED';
+          exit_deadline: string | null;
+          removed_at: string | null;
+          join_day: number;
         };
         Insert: {
           id?: string;
@@ -129,6 +138,11 @@ export interface Database {
           user_id: string;
           role?: 'admin' | 'member';
           last_verified_at?: string | null;
+          is_contributor?: boolean;
+          member_status?: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED';
+          exit_deadline?: string | null;
+          removed_at?: string | null;
+          join_day?: number;
         };
         Update: Pick<Database['public']['Tables']['group_members']['Insert'], 'role'>;
         Relationships: [];
@@ -405,6 +419,19 @@ export interface Database {
     };
     Views: Record<never, never>;
     Functions: {
+      get_crew_status: {
+        Args: { p_group_id: string };
+        Returns: {
+          crew_rate: number;
+          crew_grade: string;
+          contributor_count: number;
+          active_count: number;
+          removed_count: number;
+          my_status: string | null;
+          my_is_contributor: boolean;
+          my_exit_deadline: string | null;
+        }[];
+      };
       get_group_leaderboard: {
         Args: {
           p_group_id: string;

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Share2, ArrowRight } from "lucide-react";
+import { Share2, ArrowRight, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
+import { useAuth } from "../contexts/AuthContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
 import { shareOrCopy } from "../lib/share";
-import { ShareCard } from "./verify/ShareCard";
+import { ShareCard, buildShareImage } from "./verify/ShareCard";
+import { invalidateFeedCache } from "./FeedAll";
 
 const CONFETTI_COLORS = ["#FF3355", "#ff6680", "#ffb3c0", "#f97316", "#fbbf24", "#34d399", "#a78bfa"];
 
@@ -35,10 +37,11 @@ function Confetti({ dots }: { dots: Dot[] }) {
 export function Success() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyType, verificationImageUrl, groups, completeCurrentVerification } = useApp();
+  const { verifyType, verificationImageUrl, groups, completeCurrentVerification, nickname } = useApp();
+  const { profile } = useAuth();
   const serverPhotoUrl = (location.state as { photoUrl?: string | null } | null)?.photoUrl;
   const [mounted, setMounted] = useState(false);
-  const [shareState, setShareState] = useState<"idle" | "shared" | "copied">("idle");
+  const [shareState, setShareState] = useState<"idle" | "sharing" | "done">("idle");
   const [showShareCard, setShowShareCard] = useState(false);
 
   // completeCurrentVerification()이 clearVerification()을 호출해 verifyType이 null이 되므로
@@ -47,11 +50,20 @@ export function Success() {
   const [capturedImageUrl] = useState<string | null>(() => verificationImageUrl);
   const [capturedGroup] = useState(() => groups.find(g => g.verifyType === ((verifyType as VerifyTypeKey) ?? "step_walk")) ?? null);
 
+  // 공유 카드 편집 설정 — ShareCard에서 제목/다크모드 변경 시 동기화
+  const [cardTitle, setCardTitle] = useState(() => {
+    const vt0 = VERIFY_TYPES[(verifyType as VerifyTypeKey) ?? "step_walk"];
+    const grp  = groups.find(g => g.verifyType === ((verifyType as VerifyTypeKey) ?? "step_walk")) ?? null;
+    return grp?.title ?? vt0?.label ?? "";
+  });
+  const [cardIsDark, setCardIsDark] = useState(true);
+
   const vt = VERIFY_TYPES[capturedKey];
 
   // 로컬 상태 완료 처리 (한 번만) — DB 저장은 Edge Function이 이미 완료
   useEffect(() => {
     completeCurrentVerification(serverPhotoUrl);
+    invalidateFeedCache();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -83,13 +95,34 @@ export function Success() {
   });
 
   async function shareVerification() {
-    const status = await shareOrCopy({
-      title: "챌리 인증 완료",
-      text: `${vt.emoji} ${capturedGroup?.title ?? vt.label} 챌린지를 완료했어요!`,
-      url: serverPhotoUrl ?? window.location.origin,
-    });
-    setShareState(status);
-    setTimeout(() => setShareState("idle"), 1800);
+    if (shareState === "sharing") return;
+    setShareState("sharing");
+    const username = profile?.username ?? nickname ?? "챌리유저";
+    try {
+      if (capturedImageUrl) {
+        const file = await buildShareImage(capturedImageUrl, cardTitle, username, cardIsDark);
+        if (file && navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            title: `${cardTitle} 챌린지 인증`,
+            text: `${cardTitle} 챌린지를 완료했어요!`,
+            files: [file],
+          });
+          setShareState("done");
+          setTimeout(() => setShareState("idle"), 2000);
+          return;
+        }
+      }
+      // 사진 없거나 파일 공유 미지원 → URL fallback
+      await shareOrCopy({
+        title: "챌리 인증 완료",
+        text: `${vt.emoji} ${cardTitle} 챌린지를 완료했어요!`,
+        url: serverPhotoUrl ?? window.location.origin,
+      });
+      setShareState("done");
+      setTimeout(() => setShareState("idle"), 1800);
+    } catch {
+      setShareState("idle");
+    }
   }
 
   return (
@@ -209,10 +242,14 @@ export function Success() {
         </button>
         <button
           onClick={shareVerification}
-          className="w-full h-10 flex items-center justify-center gap-1.5 text-slate-400 text-[14px] font-medium active:text-slate-600 transition-colors"
+          disabled={shareState === "sharing"}
+          className="w-full h-10 flex items-center justify-center gap-1.5 text-slate-400 text-[14px] font-medium active:text-slate-600 transition-colors disabled:opacity-50"
         >
-          <Share2 className="w-4 h-4" />
-          {shareState === "copied" ? "공유 링크 복사됨" : shareState === "shared" ? "공유 완료" : "인증 사진 공유하기"}
+          {shareState === "sharing"
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Share2 className="w-4 h-4" />
+          }
+          {shareState === "sharing" ? "이미지 준비 중..." : shareState === "done" ? "공유 완료" : "인증 카드 공유하기"}
         </button>
       </div>
     </div>
@@ -221,8 +258,9 @@ export function Success() {
     {showShareCard && capturedImageUrl && (
       <ShareCard
         imageUrl={capturedImageUrl}
-        defaultTitle={capturedGroup?.title ?? vt.label}
+        defaultTitle={cardTitle}
         onClose={() => setShowShareCard(false)}
+        onSave={(t, dark) => { setCardTitle(t); setCardIsDark(dark); }}
       />
     )}
     </>

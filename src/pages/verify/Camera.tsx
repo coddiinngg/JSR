@@ -4,14 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../../contexts/AppContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../lib/verifyTypes";
 
-const TYPE_EMOJIS: Record<VerifyTypeKey, string[]> = {
-  step_walk:      ["👟", "🦶", "⌚", "📱", "👟", "🦶", "⌚"],
-  run_scenery:    ["🏃", "🌅", "🌳", "🏞️", "🌿", "🏃", "🌅"],
-  quote_photo:    ["✍️", "📝", "💭", "📖", "✒️", "✍️", "📝"],
-  book_cover:     ["📚", "📖", "🔖", "📚", "📖", "🔖", "📚"],
-  celeb_pose:     ["📸", "💪", "⚡", "🏋️", "✨", "📸", "💪"],
-  location_photo: ["📍", "🗺️", "🏙️", "🌐", "📍", "🗺️", "🏙️"],
-};
 
 export function Camera() {
   const navigate = useNavigate();
@@ -40,9 +32,8 @@ export function Camera() {
     errorTimerRef.current = setTimeout(() => setFileError(null), 3000);
   }
 
-  const key    = (verifyType as VerifyTypeKey) ?? "step_walk";
-  const vt     = VERIFY_TYPES[key] ?? VERIFY_TYPES["step_walk"];
-  const emojis = TYPE_EMOJIS[key];
+  const key = (verifyType as VerifyTypeKey) ?? "step_walk";
+  const vt  = VERIFY_TYPES[key] ?? VERIFY_TYPES["step_walk"];
 
   const PA = "#FF3355";
   const PB = "#FF6680";
@@ -67,7 +58,6 @@ export function Camera() {
   const gridLine    = d ? "rgba(255,255,255,0.04)"   : "rgba(0,0,0,0.05)";
   const logoFilter  = d ? "brightness(0) invert(1)"  : "brightness(0)";
   const logoOpacity = d ? 0.06 : 0.05;
-  const emojiOpacity = d ? 0.13 : 0.16;
   const scanBg      = d ? "rgba(0,0,0,0.6)"          : "rgba(255,255,255,0.75)";
   const scanText    = d ? "white"                    : "#0f172a";
 
@@ -142,26 +132,6 @@ export function Camera() {
 
       {/* 배경 — 타입 컬러 그라디언트 */}
       <div className="absolute inset-0" style={{ background: bgGrad }} />
-
-      {/* 이모지 패턴 */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 28 }).map((_, i) => {
-          const col = i % 4;
-          const row = Math.floor(i / 4);
-          const jitterX = ((i * 17 + 7) % 18) - 9;
-          const jitterY = ((i * 13 + 5) % 14) - 7;
-          const x = (col / 3) * 78 + 11 + jitterX;
-          const y = (row / 6) * 80 + 8 + jitterY;
-          const rot = ((i * 43) % 50) - 25;
-          const sz = 22 + (i % 4) * 6;
-          return (
-            <span key={i} className="absolute select-none"
-              style={{ left: `${x}%`, top: `${y}%`, fontSize: sz, transform: `rotate(${rot}deg)`, opacity: emojiOpacity, lineHeight: 1 }}>
-              {emojis[i % emojis.length]}
-            </span>
-          );
-        })}
-      </div>
 
       {/* Chally 로고 워터마크 */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

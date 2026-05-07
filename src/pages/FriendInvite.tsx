@@ -125,12 +125,13 @@ export function FriendInvite() {
     targetKey?: string,
   ) {
     if (!user) return;
-    await supabase.from("invite_events").insert({
+    const { error } = await supabase.from("invite_events").insert({
       user_id: user.id,
       event_type: eventType,
       invite_code: inviteCode,
       target_key: targetKey ?? null,
     });
+    if (error) console.error("Failed to record invite event", error);
   }
 
   async function invite(id: string) {

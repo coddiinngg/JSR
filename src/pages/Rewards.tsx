@@ -126,8 +126,12 @@ function computeBadges(
 function BadgeSheet({ badge, onClose }: { badge: BadgeState | null; onClose: () => void }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    if (badge) setTimeout(() => setVisible(true), 10);
-    else setVisible(false);
+    if (badge) {
+      const t = setTimeout(() => setVisible(true), 10);
+      return () => clearTimeout(t);
+    } else {
+      setVisible(false);
+    }
   }, [badge]);
 
   if (!badge) return null;
@@ -241,6 +245,7 @@ export function Rewards() {
   const [streak, setStreak] = useState(0);
   const [totalDone, setTotalDone] = useState(0);
   const [todayXp, setTodayXp] = useState(0);
+  const [dataError, setDataError] = useState(false);
 
   const xpTotal = profile?.xp_total ?? 0;
   const currentGrade = getGrade(xpTotal);
@@ -259,34 +264,42 @@ export function Rewards() {
   }, [user?.id]);
 
   async function loadData() {
+    setDataError(false);
     const today = new Date().toISOString().slice(0, 10);
-    const { data: verifications } = await supabase
-      .from("verifications")
-      .select("verified_at, status, xp_earned")
-      .eq("user_id", user!.id)
-      .order("verified_at", { ascending: false });
+    try {
+      const { data: verifications, error } = await supabase
+        .from("verifications")
+        .select("verified_at, status, xp_earned")
+        .eq("user_id", user!.id)
+        .order("verified_at", { ascending: false });
 
-    const all = verifications ?? [];
-    const completed = all.filter(v => v.status === "completed");
+      if (error) throw error;
 
-    const currentStreak = computeCurrentStreak(all);
-    setStreak(currentStreak);
-    setTotalDone(completed.length);
-    setBadges(computeBadges(all, currentStreak));
+      const all = verifications ?? [];
+      const completed = all.filter(v => v.status === "completed");
 
-    const todaySum = completed
-      .filter(v => v.verified_at.slice(0, 10) === today)
-      .reduce((s, v) => s + (v.xp_earned ?? 0), 0);
-    setTodayXp(todaySum);
+      const currentStreak = computeCurrentStreak(all);
+      setStreak(currentStreak);
+      setTotalDone(completed.length);
+      setBadges(computeBadges(all, currentStreak));
 
-    setHistory(
-      completed.slice(0, 20).map(v => ({
-        label: "챌린지 인증",
-        xp: v.xp_earned ?? 0,
-        time: formatRelativeTime(v.verified_at),
-        color: "#10B981",
-      }))
-    );
+      const todaySum = completed
+        .filter(v => v.verified_at.slice(0, 10) === today)
+        .reduce((s, v) => s + (v.xp_earned ?? 0), 0);
+      setTodayXp(todaySum);
+
+      setHistory(
+        completed.slice(0, 20).map(v => ({
+          label: "챌린지 인증",
+          xp: v.xp_earned ?? 0,
+          time: formatRelativeTime(v.verified_at),
+          color: "#10B981",
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to load rewards data", err);
+      setDataError(true);
+    }
   }
 
   const anim = (delay: number, fromY = 16): React.CSSProperties => ({
@@ -323,6 +336,15 @@ export function Rewards() {
           <span className="text-[13px] font-black text-[#FF3355]">{xpDisplay.toLocaleString()} XP</span>
         </div>
       </header>
+
+      {dataError && (
+        <div className="mx-4 mt-3 px-4 py-3 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-between">
+          <p className="text-[13px] text-red-500 font-semibold">데이터를 불러오지 못했어요</p>
+          <button onClick={() => void loadData()} className="text-[12px] text-red-500 font-bold underline">
+            다시 시도
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
 

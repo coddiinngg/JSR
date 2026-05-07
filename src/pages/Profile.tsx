@@ -47,6 +47,7 @@ export function Profile() {
   const { signOut, profile } = useAuth();
   const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
+  const [signOutError, setSignOutError] = useState(false);
   const xpTotal = profile?.xp_total ?? 0;
   const grade = getGrade(xpTotal);
   const nextGrade = getNextGrade(grade.level);
@@ -73,7 +74,13 @@ export function Profile() {
   }, []);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden bg-[#FAFAFA] dark:bg-[#090B10]">
+    <div className="flex flex-col flex-1 overflow-hidden bg-[#FAFAFA] dark:bg-[#090B10] relative">
+      {signOutError && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-white text-[13px] font-semibold pointer-events-none whitespace-nowrap"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}>
+          로그아웃에 실패했어요. 다시 시도해주세요.
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
 
       {/* 히어로 헤더 */}
@@ -286,8 +293,13 @@ export function Profile() {
           <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#12161E] border border-black/[0.04] dark:border-white/[0.07]">
             <button
               onClick={async () => {
-                try { await signOut(); } catch {}
-                navigate("/login");
+                try {
+                  await signOut();
+                  navigate("/login");
+                } catch {
+                  setSignOutError(true);
+                  setTimeout(() => setSignOutError(false), 3000);
+                }
               }}
               className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 dark:active:bg-white/[0.04] transition-colors"
             >

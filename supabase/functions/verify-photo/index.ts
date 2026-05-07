@@ -442,7 +442,7 @@ serve(async (req) => {
 
     const { data: membership, error: membershipError } = await serviceClient
       .from("group_members")
-      .select("group_id")
+      .select("group_id, member_status")
       .eq("group_id", groupId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -454,6 +454,14 @@ serve(async (req) => {
 
     if (!membership) {
       return jsonResponse({ error: "참여 중인 그룹에서만 인증할 수 있습니다." }, 403);
+    }
+
+    const memberStatus = (membership as { group_id: string; member_status: string }).member_status;
+    if (memberStatus === "REMOVED") {
+      return jsonResponse(
+        { error: "인증 기간 내에 활동이 없어 그룹에서 제외됐습니다. 새 그룹에 참여해 다시 시작해보세요." },
+        403,
+      );
     }
 
     verifiedGroupId = verifiedGroup.id;
@@ -578,6 +586,27 @@ serve(async (req) => {
 
       if (activityError) {
         console.error("Activity post insert failed:", activityError);
+      }
+
+      // 인증 성공 → 멤버 상태 초기화 + 달성률 갱신
+      const { error: memberUpdateError } = await serviceClient
+        .from("group_members")
+        .update({
+          last_verified_at: new Date().toISOString(),
+          member_status:    "ACTIVE",
+          exit_deadline:    null,
+        })
+        .eq("group_id", verifiedGroupId)
+        .eq("user_id",  user.id);
+      if (memberUpdateError) {
+        console.error("[verify-photo] Member status update failed:", memberUpdateError);
+      }
+
+      const { error: crewCacheError } = await serviceClient.rpc("update_crew_cache", {
+        p_group_id: verifiedGroupId,
+      });
+      if (crewCacheError) {
+        console.error("[verify-photo] Crew cache update failed:", crewCacheError);
       }
     }
 

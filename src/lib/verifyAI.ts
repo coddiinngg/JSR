@@ -103,8 +103,18 @@ export async function verifyPhotoWithAI(
       throw new Error(err?.error ?? `서버 오류 (${response.status})`);
     }
 
-    const data = await response.json() as Record<string, unknown>;
-    if (typeof data.passed !== "boolean") {
+    let data: Record<string, unknown>;
+    try {
+      data = await response.json() as Record<string, unknown>;
+    } catch {
+      throw new Error("서버 응답을 읽지 못했습니다. 다시 시도해주세요.");
+    }
+    if (
+      typeof data.passed !== "boolean" ||
+      typeof data.score !== "number" ||
+      typeof data.reason !== "string" ||
+      !Array.isArray(data.failedChecks)
+    ) {
       throw new Error("서버 응답 형식이 올바르지 않습니다.");
     }
     return data as unknown as VerifyResult;

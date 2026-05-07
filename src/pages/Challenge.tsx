@@ -63,7 +63,7 @@ export function Challenge() {
   const filtered = groups
     .filter((g) => {
       const phase = getPhase(g.challengeStart, g.challengeEnd, g.recruitEnd);
-      if (!g.joined && shouldHide(phase, g.rate)) return false;
+      if (!g.joined && shouldHide(phase, g.crewRate)) return false;
       return true;
     })
     .filter((g) => filterMode === "전체" || g.joined)
@@ -194,7 +194,7 @@ export function Challenge() {
               <div className="w-px h-8 bg-white/15" />
               <div className="text-center">
                 <p className="text-white text-[20px] font-black leading-none tabular-nums">
-                  {groups.length > 0 ? Math.round(groups.reduce((s, g) => s + g.rate, 0) / groups.length) : 0}%
+                  {groups.length > 0 ? Math.round(groups.reduce((s, g) => s + g.crewRate, 0) / groups.length) : 0}%
                 </p>
                 <p className="text-white/50 text-[10px] mt-0.5 font-medium">평균 달성</p>
               </div>
@@ -205,9 +205,9 @@ export function Challenge() {
         {/* 전체 그룹 리스트 */}
         <div className="px-4 pt-3 pb-6 space-y-2.5">
           {filtered.map((g, i) => {
-            const { id, title, desc, members, rate, category, joined: isJoined } = g;
+            const { id, title, desc, members, crewRate, category, joined: isJoined } = g;
             const phase = getPhase(g.challengeStart, g.challengeEnd, g.recruitEnd);
-            const joinable = canJoin(phase, rate);
+            const joinable = canJoin(phase, crewRate);
             const label = phaseLabel(phase);
             const tagStyle = STATUS_STYLE[label] ?? "text-slate-500 bg-slate-100";
             const isEnded = phase === "ended";
@@ -243,14 +243,14 @@ export function Challenge() {
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-[#FF3355] to-[#FF6680]"
                         style={{
-                          width: mounted ? `${rate}%` : "0%",
+                          width: mounted ? `${crewRate}%` : "0%",
                           transition: `width 1s cubic-bezier(0.4,0,0.2,1) ${i * 70 + 300}ms`,
                           boxShadow: "0 0 8px rgba(255,51,85,0.3)",
                           opacity: isEnded ? 0.35 : 1,
                         }}
                       />
                     </div>
-                    <span className={cn("text-[14px] font-black shrink-0 tabular-nums w-10 text-right", isEnded ? "text-slate-300" : "text-[#FF3355]")}>{rate}%</span>
+                    <span className={cn("text-[14px] font-black shrink-0 tabular-nums w-10 text-right", isEnded ? "text-slate-300" : "text-[#FF3355]")}>{crewRate}%</span>
                   </div>
 
                   {/* 멤버 수 */}
@@ -260,7 +260,7 @@ export function Challenge() {
                   </div>
 
                   {/* 저조한 크루 경고 (39% 이하) */}
-                  {rate <= 39 && phase !== "ended" && (
+                  {crewRate <= 39 && phase !== "ended" && (
                     <div className="mt-2.5 px-3 py-2 bg-red-50 rounded-xl">
                       <p className="text-[11px] text-red-500 font-semibold">앞으로 매일 인증해야 챌린지를 달성할 수 있어요!</p>
                     </div>
