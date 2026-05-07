@@ -12,7 +12,6 @@ interface Friend {
   name: string;
   handle: string;
   seed: string;
-  mutual: number;
   invited: boolean;
 }
 
@@ -109,7 +108,6 @@ export function FriendInvite() {
         name: row.username ?? "챌리 유저",
         handle: `@${row.username ?? row.id.slice(0, 8)}`,
         seed: row.id,
-        mutual: 0,
         invited: invitedKeys.has(row.id),
       }));
 
@@ -368,12 +366,6 @@ export function FriendInvite() {
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-bold text-slate-900">{friend.name}</p>
                 <p className="text-[12px] text-slate-400 font-medium">{friend.handle}</p>
-                {friend.mutual > 0 && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Users className="w-3 h-3 text-slate-300" />
-                    <span className="text-[11px] text-slate-400">공통 친구 {friend.mutual}명</span>
-                  </div>
-                )}
               </div>
               <button
                 onClick={() => invite(friend.id)}
