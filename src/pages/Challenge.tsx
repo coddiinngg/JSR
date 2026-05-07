@@ -194,7 +194,7 @@ export function Challenge() {
               <div className="w-px h-8 bg-white/15" />
               <div className="text-center">
                 <p className="text-white text-[20px] font-black leading-none tabular-nums">
-                  {Math.round(groups.reduce((s, g) => s + g.rate, 0) / groups.length)}%
+                  {groups.length > 0 ? Math.round(groups.reduce((s, g) => s + g.rate, 0) / groups.length) : 0}%
                 </p>
                 <p className="text-white/50 text-[10px] mt-0.5 font-medium">평균 달성</p>
               </div>

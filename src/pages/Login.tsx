@@ -392,13 +392,6 @@ export function Login() {
         <div className="px-6 pb-4 space-y-3">
           <button
             type="button"
-            onClick={() => window.location.href = "/onboarding.html"}
-            className="w-full h-12 rounded-2xl border border-[#FF3355]/30 bg-[#FF3355]/10 text-[#FF9DB2] text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-[#FF3355]/15"
-          >
-            온보딩 미리보기
-          </button>
-          <button
-            type="button"
             onClick={() => { setGuestMode(true); navigate("/"); }}
             className="w-full h-12 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.05] text-slate-500 dark:text-white/70 text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-slate-100 dark:hover:bg-white/[0.08]"
           >

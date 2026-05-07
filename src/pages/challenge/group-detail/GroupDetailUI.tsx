@@ -338,9 +338,11 @@ export function GroupDetailUI() {
                   <img key={i} src={p.avatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.seed}`}
                     className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 shrink-0 object-cover" />
                 ))}
-                <div className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] font-black text-slate-500">+{Math.max(0, group.members - 3)}</span>
-                </div>
+                {group.members > 3 && (
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-[9px] font-black text-slate-500">+{group.members - 3}</span>
+                  </div>
+                )}
               </div>
               <div className="flex-1" />
               <div className="text-right">
