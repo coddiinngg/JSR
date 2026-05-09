@@ -29,6 +29,7 @@ import { FriendInvite } from "./pages/FriendInvite";
 import { UserProfile } from "./pages/UserProfile";
 import { FeedAll } from "./pages/FeedAll";
 import { ChallengeRequest } from "./pages/ChallengeRequest";
+import { ChallengeHistory } from "./pages/ChallengeHistory";
 import { UIGallery } from "./pages/UIGallery";
 
 export function setGuestMode(on: boolean) {
@@ -117,6 +118,7 @@ export default function App() {
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/stats/weekly-report" element={<WeeklyReport />} />
+              <Route path="/stats/challenge-history" element={<ChallengeHistory />} />
               <Route path="/friends/invite" element={<FriendInvite />} />
               <Route path="/challenge/group/:groupId" element={<GroupDetail />} />
               <Route path="/challenge/group/:groupId/activity" element={<ActivityPhoto />} />

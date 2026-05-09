@@ -209,6 +209,7 @@ export function Stats() {
 
   // 참여 중인 챌린지 수
   const joinedCount = groups.filter(g => g.joined).length;
+  const totalParticipated = groups.filter(g => g.joined || g.isRemoved).length;
 
   const MONTH_NAMES = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
   const calMonth = `${calYear}년 ${MONTH_NAMES[calMonthIndex]}`;
@@ -309,6 +310,45 @@ export function Stats() {
           )}
         </div>
 
+        {/* 인증 히스토리 — 주간 차트 바로 아래 */}
+        <div
+          onClick={() => navigate("/gallery")}
+          className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150 cursor-pointer"
+          style={{ animation: "st-fade 0.45s ease 80ms both" }}
+        >
+          <div className="shrink-0">
+            {recentPhotoThumbs.length > 0 ? (
+              <div className="flex -space-x-2">
+                {recentPhotoThumbs.map(thumb => (
+                  <button
+                    key={thumb.id}
+                    onClick={e => { e.stopPropagation(); navigate("/gallery", { state: { openId: thumb.id } }); }}
+                    className="rounded-xl overflow-hidden border-2 border-white shrink-0 active:scale-90 transition-transform"
+                  >
+                    <img src={thumb.src} alt="최근 인증" className="w-10 h-10 object-cover" referrerPolicy="no-referrer" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <ImageIcon className="w-5 h-5 text-slate-400" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <ImageIcon className="w-3.5 h-3.5 text-[#FF3355]" />
+              <p className="text-[14px] font-black text-slate-900">인증 히스토리</p>
+            </div>
+            <p className="text-[12px] text-slate-400">
+              {photoCount > 0 ? `총 ${photoCount}장 · 갤러리에서 확인` : "아직 저장된 인증 사진이 없어요"}
+            </p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
+            <ChevronRight className="w-4 h-4 text-[#FF3355]" />
+          </div>
+        </div>
+
         {/* 달성률 + 연속 */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-3xl p-4 flex flex-col items-center justify-center bg-white border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
@@ -361,6 +401,29 @@ export function Stats() {
               <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
             </div>
           ))}
+        </div>
+
+        {/* 참여했던 챌린지 */}
+        <div
+          onClick={() => navigate("/stats/challenge-history")}
+          className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150 cursor-pointer"
+          style={{ animation: "st-fade 0.45s ease 420ms both" }}
+        >
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-[22px]"
+            style={{ background: "linear-gradient(135deg,#FF3355,#ff5570)", boxShadow: "0 4px 14px rgba(255,51,85,0.3)" }}
+          >
+            🏆
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-black text-slate-900">참여했던 챌린지</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">
+              {totalParticipated > 0 ? `총 ${totalParticipated}개 참여 · 이전 기록 보기` : "아직 참여한 챌린지가 없어요"}
+            </p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
+            <ChevronRight className="w-4 h-4 text-[#FF3355]" />
+          </div>
         </div>
 
         {/* 월간 히트맵 달력 */}
@@ -440,47 +503,6 @@ export function Stats() {
             <ChevronRight className="w-4 h-4 text-[#FF3355]" />
           </div>
         </Link>
-
-        {/* 인증 갤러리 */}
-        <div
-          onClick={() => navigate("/gallery")}
-          className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-black/[0.05] shadow-[0_2px_14px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-transform duration-150 cursor-pointer"
-          style={slide(520)}
-        >
-          <div className="shrink-0">
-            {recentPhotoThumbs.length > 0 ? (
-              <div className="flex -space-x-2">
-                {recentPhotoThumbs.map(thumb => (
-                  <button
-                    key={thumb.id}
-                    onClick={e => { e.stopPropagation(); navigate("/gallery", { state: { openId: thumb.id } }); }}
-                    className="rounded-xl overflow-hidden border-2 border-white shrink-0 active:scale-90 transition-transform"
-                  >
-                    <img src={thumb.src} alt="최근 인증"
-                      className="w-10 h-10 object-cover"
-                      referrerPolicy="no-referrer" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                <ImageIcon className="w-5 h-5 text-slate-400" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <ImageIcon className="w-3.5 h-3.5 text-[#FF3355]" />
-              <p className="text-[14px] font-black text-slate-900">인증 히스토리</p>
-            </div>
-            <p className="text-[12px] text-slate-400">
-              {photoCount > 0 ? `총 ${photoCount}장 · 갤러리에서 확인` : "아직 저장된 인증 사진이 없어요"}
-            </p>
-          </div>
-          <div className="w-8 h-8 rounded-full bg-[#FFE8EC] flex items-center justify-center shrink-0">
-            <ChevronRight className="w-4 h-4 text-[#FF3355]" />
-          </div>
-        </div>
 
         <div className="h-4" />
       </div>

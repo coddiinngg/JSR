@@ -90,6 +90,7 @@ export function Gallery() {
   const wheelAcc = useRef(0);
   const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
 
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [swiping, setSwiping]         = useState(false);
@@ -101,6 +102,7 @@ export function Gallery() {
 
   // 처음 열 때만 scale 애니메이션 적용 (탐색 시 제외)
   const lightboxJustOpenedRef = useRef(false);
+  const lightboxJustOpenedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const touch = useRef({
     startX: 0, startY: 0,
@@ -229,9 +231,10 @@ export function Gallery() {
   const gap = cols >= 4 ? 1 : cols === 3 ? 2 : 3;
 
   function openLightbox(idx: number) {
+    if (lightboxJustOpenedTimer.current) clearTimeout(lightboxJustOpenedTimer.current);
     lightboxJustOpenedRef.current = true;
     setLightbox(idx); setScale(1); setPanX(0); setPanY(0); setSwipeOffset(0);
-    setTimeout(() => { lightboxJustOpenedRef.current = false; }, 400);
+    lightboxJustOpenedTimer.current = setTimeout(() => { lightboxJustOpenedRef.current = false; }, 400);
   }
 
   // Stats 페이지 썸네일 탭 → 특정 사진 자동 오픈
@@ -241,6 +244,19 @@ export function Gallery() {
     if (idx !== -1) openLightbox(idx);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, locationState?.openId]);
+  // 라이트박스 변경 시 썸네일 스트립 자동 스크롤
+  useEffect(() => {
+    if (lightbox === null || !thumbsRef.current) return;
+    const container = thumbsRef.current;
+    const thumbs = container.querySelectorAll<HTMLButtonElement>("button");
+    const thumb = thumbs[lightbox];
+    if (!thumb) return;
+    const containerRect = container.getBoundingClientRect();
+    const thumbRect = thumb.getBoundingClientRect();
+    const thumbRelLeft = thumbRect.left - containerRect.left + container.scrollLeft;
+    container.scrollTo({ left: thumbRelLeft - containerRect.width / 2 + thumbRect.width / 2, behavior: "smooth" });
+  }, [lightbox]);
+
   function closeLightbox() {
     setLightbox(null); setScale(1); setPanX(0); setPanY(0);
   }
@@ -569,6 +585,7 @@ export function Gallery() {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
+          {/* 헤더 */}
           <div
             className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-10 pb-3 z-20"
             style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)" }}
@@ -595,13 +612,15 @@ export function Gallery() {
             </button>
           </div>
 
-          <div className="absolute inset-0 top-[72px] bottom-[160px] flex items-center justify-center overflow-hidden">
-            {/* 이전 이미지 — 항상 왼쪽에 위치, 드래그 시 따라옴 */}
+          {/* 메인 이미지 영역 — bottom-[178px] = 썸네일 68px + 컨트롤 100px + 여백 10px */}
+          <div className="absolute inset-0 top-[72px] bottom-[178px] flex items-center justify-center overflow-hidden">
+            {/* 이전 이미지 */}
             {lightbox > 0 && (
               <div className="absolute inset-0 flex items-center justify-center"
                 style={{
-                  transform: `translateX(calc(-100% + ${swipeOffset}px))`,
+                  transform: `translate3d(calc(-100% + ${swipeOffset}px), 0, 0)`,
                   transition: swiping ? "none" : "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+                  willChange: "transform",
                 }}>
                 <div className="w-[88%] aspect-square rounded-3xl overflow-hidden opacity-70">
                   <PhotoCard grad={filtered[lightbox - 1].grad} label={filtered[lightbox - 1].label} photoUrl={filtered[lightbox - 1].photoUrl} size="lg" />
@@ -612,8 +631,9 @@ export function Gallery() {
             <div
               className="absolute inset-0 flex items-center justify-center"
               style={{
-                transform: `translateX(${swipeOffset}px)`,
+                transform: `translate3d(${swipeOffset}px, 0, 0)`,
                 transition: swiping ? "none" : "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+                willChange: "transform",
               }}
             >
               <div
@@ -622,6 +642,7 @@ export function Gallery() {
                   transform: `scale(${scale}) translate(${panX / scale}px, ${panY / scale}px)`,
                   transition: scale === 1 && !swiping ? "transform 0.3s cubic-bezier(0.34,1.2,0.64,1)" : "none",
                   boxShadow: "0 30px 80px rgba(0,0,0,0.7)",
+                  willChange: "transform",
                   ...(lightboxJustOpenedRef.current ? { animation: "gl-lb 0.35s cubic-bezier(0.34,1.2,0.64,1) both" } : {}),
                 }}
               >
@@ -638,12 +659,13 @@ export function Gallery() {
                 )}
               </div>
             </div>
-            {/* 다음 이미지 — 항상 오른쪽에 위치, 드래그 시 따라옴 */}
+            {/* 다음 이미지 */}
             {lightbox < filtered.length - 1 && (
               <div className="absolute inset-0 flex items-center justify-center"
                 style={{
-                  transform: `translateX(calc(100% + ${swipeOffset}px))`,
+                  transform: `translate3d(calc(100% + ${swipeOffset}px), 0, 0)`,
                   transition: swiping ? "none" : "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+                  willChange: "transform",
                 }}>
                 <div className="w-[88%] aspect-square rounded-3xl overflow-hidden opacity-70">
                   <PhotoCard grad={filtered[lightbox + 1].grad} label={filtered[lightbox + 1].label} photoUrl={filtered[lightbox + 1].photoUrl} size="lg" />
@@ -652,56 +674,73 @@ export function Gallery() {
             )}
           </div>
 
+          {/* 썸네일 스트립 — 가로 스크롤, 현재 사진 하이라이트 */}
           <div
-            className="absolute bottom-0 left-0 right-0 pb-14 pt-4 z-20"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)" }}
+            ref={thumbsRef}
+            className="absolute left-0 right-0 overflow-x-auto no-scrollbar z-20"
+            style={{ bottom: 104, height: 68 }}
+            onTouchStart={e => e.stopPropagation()}
+            onTouchMove={e => e.stopPropagation()}
+            onTouchEnd={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-8 mb-5">
+            <div className="flex items-center gap-1.5 px-4 h-full">
+              {filtered.map((photo, i) => (
+                <button
+                  key={photo.id}
+                  onClick={() => openLightbox(i)}
+                  className="shrink-0 rounded-xl overflow-hidden transition-all duration-200"
+                  style={{
+                    width: 52,
+                    height: 52,
+                    opacity: i === lightbox ? 1 : 0.38,
+                    transform: i === lightbox ? "scale(1.12)" : "scale(1)",
+                    outline: i === lightbox ? "2px solid rgba(255,255,255,0.85)" : "2px solid transparent",
+                    outlineOffset: "2px",
+                  }}
+                >
+                  {photo.photoUrl
+                    ? <img src={photo.photoUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    : <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${photo.grad[0]}, ${photo.grad[1]})` }} />
+                  }
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 하단 컨트롤 */}
+          <div
+            className="absolute bottom-0 left-0 right-0 pt-3 pb-10 z-20"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)" }}
+          >
+            <div className="flex items-center justify-between px-5">
               <button
                 onClick={goPrev}
                 disabled={lightbox === 0}
-                className="w-12 h-12 rounded-full bg-white/10 border border-white/10 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-20"
+                className="w-11 h-11 rounded-full bg-white/10 border border-white/10 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-20"
               >
                 <ChevronLeft className="w-5 h-5 text-white" />
               </button>
-              <div className="flex items-center gap-1.5 overflow-hidden max-w-[160px]">
-                {filtered.map((_, i) => {
-                  const dist = Math.abs(i - lightbox);
-                  if (dist > 4) return null;
-                  return (
-                    <button key={i} onClick={() => openLightbox(i)} style={{
-                      width: i === lightbox ? 22 : dist <= 1 ? 6 : 4,
-                      height: i === lightbox ? 6 : dist <= 1 ? 6 : 4,
-                      borderRadius: 999,
-                      background: i === lightbox ? "#FF3355" : "rgba(255,255,255,0.25)",
-                      transition: "all 0.25s cubic-bezier(0.34,1.2,0.64,1)",
-                      flexShrink: 0,
-                    }} />
-                  );
-                })}
+              <div className="flex items-center gap-3">
+                <p className="text-white/40 text-[12px] font-semibold tabular-nums">
+                  {lightbox + 1} / {filtered.length}
+                </p>
+                <button
+                  onClick={shareCurrentPhoto}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-95 transition-all"
+                  style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)", backdropFilter: "blur(8px)" }}
+                >
+                  <Share2 className="w-3.5 h-3.5 text-white/70" />
+                  <span className="text-white/70 text-[11px] font-semibold">
+                    {shareState === "copied" ? "복사됨" : shareState === "shared" ? "완료" : "공유"}
+                  </span>
+                </button>
               </div>
               <button
                 onClick={goNext}
                 disabled={lightbox === filtered.length - 1}
-                className="w-12 h-12 rounded-full bg-white/10 border border-white/10 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-20"
+                className="w-11 h-11 rounded-full bg-white/10 border border-white/10 flex items-center justify-center active:bg-white/20 transition-colors disabled:opacity-20"
               >
                 <ChevronRight className="w-5 h-5 text-white" />
-              </button>
-            </div>
-            <p className="text-center text-white/30 text-[12px] font-semibold">
-              {lightbox + 1} / {filtered.length}
-            </p>
-            {/* 공유 버튼 */}
-            <div className="flex justify-center mt-3">
-              <button
-                onClick={shareCurrentPhoto}
-                className="flex items-center gap-2 px-5 py-2 rounded-2xl active:scale-95 transition-all"
-                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(8px)" }}
-              >
-                <Share2 className="w-4 h-4 text-white/70" />
-                <span className="text-white/70 text-[13px] font-semibold">
-                  {shareState === "copied" ? "링크 복사됨" : shareState === "shared" ? "공유 완료" : "공유하기"}
-                </span>
               </button>
             </div>
           </div>

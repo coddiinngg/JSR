@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
 import { Bell, BellRing, Camera, Flame, Send, Crown, ChevronRight, Zap, Lightbulb, SmilePlus, Trophy, ArrowRight, X, ChevronLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
 import { useAuth } from "../contexts/AuthContext";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../lib/verifyTypes";
@@ -49,9 +49,6 @@ type ChatCacheEntry = { messages: ChatMsg[]; reactions: Record<string, MessageEm
 let chatMessagesCache: Record<string, ChatCacheEntry> = {};
 // 최초 마운트 여부 — 헤더 진입 애니메이션 재생 방지
 let homeMountedOnce = false;
-// FeedViewer 상태 — 유저 프로필 등에서 뒤로가기 시 복원
-let savedFeedViewerOpen = false;
-let savedFeedViewerIdx  = 0;
 // 종료 확인된 그룹 — 홈 카드에서 숨김 (세션 내 유지)
 const dismissedEndedGroupIds = new Set<string>();
 
@@ -76,6 +73,7 @@ export function Home() {
   const isReturnVisit = homeMountedOnce;
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { nickname, beginVerification, groups, groupsLoading, groupsLoadError, selectedGroupId, setSelectedGroupId, notifications, latestNotification } = useApp();
   const { user } = useAuth();
   const [dismissedTick, setDismissedTick] = useState(0);
@@ -102,8 +100,9 @@ export function Home() {
   const [lastReadMsgId, setLastReadMsgId]   = useState<string | null>(null);
   const [, setUnreadTick]                   = useState(0);
   const [chatSendError, setChatSendError]   = useState(false);
-  const [feedViewerOpen, setFeedViewerOpen]   = useState(savedFeedViewerOpen);
-  const [feedViewerIdx, setFeedViewerIdx]     = useState(savedFeedViewerIdx);
+  // FeedViewer — location.state 기반: 히스토리 엔트리로 관리하여 뒤로가기가 자연스럽게 닫힘
+  const feedViewerOpen = typeof location.state?.feedViewer === "number";
+  const feedViewerIdx  = (location.state?.feedViewer as number | undefined) ?? 0;
   const chatSendErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [inAppToasts, setInAppToasts]       = useState<InAppToastItem[]>([]);
   const toastTimers                         = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -1304,7 +1303,7 @@ export function Home() {
                   <FeedCard
                     key={item.id}
                     item={item}
-                    onTap={() => { savedFeedViewerIdx = idx; savedFeedViewerOpen = true; setFeedViewerIdx(idx); setFeedViewerOpen(true); }}
+                    onTap={() => navigate(".", { state: { feedViewer: idx }, replace: feedViewerOpen })}
                   />
                 ) : (
                   <div key={`empty-${idx}`} className="aspect-square rounded-2xl bg-slate-100" />
@@ -1322,7 +1321,7 @@ export function Home() {
           items={recentFeed}
           startIdx={feedViewerIdx}
           userId={user?.id ?? null}
-          onClose={() => { savedFeedViewerOpen = false; setFeedViewerOpen(false); }}
+          onClose={() => navigate(-1)}
         />
       )}
 
