@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { VERIFY_TYPE_KEYS, type VerifyTypeKey } from "../lib/verifyTypes";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
@@ -20,7 +20,8 @@ export interface Group {
   statusColor: string;
   category: string;
   joined: boolean;
-  isRemoved: boolean;
+  isRemoved: boolean;  // 강제 퇴장 (REMOVED)
+  isLeft: boolean;     // 자발적 탈퇴 (LEFT) — 재참여 불가
   rule: string;
   goal: string;
   verifyType: VerifyTypeKey;
@@ -37,19 +38,24 @@ export interface Group {
 }
 
 const DEFAULT_GROUPS: Group[] = [
-  { id: "1", title: "매일 5,000보 걷기",  desc: "걸음 수 인증으로 함께 건강해져요",    members: 38, rate: 72, status: "인기",    statusColor: "#FF3355", category: "운동", joined: false, isRemoved: false, verifyType: "step_walk",      rule: "매일 5,000보 이상 만보기 스크린샷 인증",         goal: "오늘 5,000보 달성",   myRank: 4,  myRate: 75, myStreak: 8,  cover: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "2", title: "러닝 크루",       desc: "러닝하며 최애 풍경을 함께 공유해요",  members: 24, rate: 80, status: "진행중",  statusColor: "#10B981", category: "운동", joined: false, isRemoved: false, verifyType: "run_scenery",    rule: "러닝 중 찍은 풍경 사진 인증",                   goal: "러닝 풍경 사진 찍기", myRank: 12, myRate: 50, myStreak: 2,  cover: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "3", title: "일일 독서 클럽", desc: "매일 읽는 책 표지를 함께 모아요",     members: 15, rate: 65, status: "진행중",  statusColor: "#10B981", category: "학습", joined: false, isRemoved: false, verifyType: "book_cover",     rule: "매일 읽는 책 표지 사진 인증",                   goal: "책 30분 읽기",        myRank: 3,  myRate: 75, myStreak: 5,  cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "4", title: "필사 챌린지",    desc: "곱씹게 되는 문장을 함께 모아요",     members: 11, rate: 58, status: "마감임박", statusColor: "#F59E0B", category: "학습", joined: false, isRemoved: false, verifyType: "quote_photo",    rule: "오늘의 인상 깊은 문장 사진 인증",               goal: "인상 문장 필사",      myRank: 6,  myRate: 60, myStreak: 3,  cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "5", title: "포즈 챌린지",    desc: "오늘의 지정 포즈에 도전해요",        members: 42, rate: 88, status: "인기",    statusColor: "#FF3355", category: "생활", joined: false, isRemoved: false, verifyType: "celeb_pose",     rule: "오늘의 지정 포즈로 셀카 인증",                  goal: "오늘의 포즈 찍기",    myRank: 20, myRate: 40, myStreak: 1,  cover: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, isRemoved: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4,  cover: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "1", title: "매일 5,000보 걷기",  desc: "걸음 수 인증으로 함께 건강해져요",    members: 38, rate: 72, status: "인기",    statusColor: "#FF3355", category: "운동", joined: false, isRemoved: false, isLeft: false, verifyType: "step_walk",      rule: "매일 5,000보 이상 만보기 스크린샷 인증",         goal: "오늘 5,000보 달성",   myRank: 4,  myRate: 75, myStreak: 8,  cover: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "2", title: "러닝 크루",       desc: "러닝하며 최애 풍경을 함께 공유해요",  members: 24, rate: 80, status: "진행중",  statusColor: "#10B981", category: "운동", joined: false, isRemoved: false, isLeft: false, verifyType: "run_scenery",    rule: "러닝 중 찍은 풍경 사진 인증",                   goal: "러닝 풍경 사진 찍기", myRank: 12, myRate: 50, myStreak: 2,  cover: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "3", title: "일일 독서 클럽", desc: "매일 읽는 책 표지를 함께 모아요",     members: 15, rate: 65, status: "진행중",  statusColor: "#10B981", category: "학습", joined: false, isRemoved: false, isLeft: false, verifyType: "book_cover",     rule: "매일 읽는 책 표지 사진 인증",                   goal: "책 30분 읽기",        myRank: 3,  myRate: 75, myStreak: 5,  cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "4", title: "필사 챌린지",    desc: "곱씹게 되는 문장을 함께 모아요",     members: 11, rate: 58, status: "마감임박", statusColor: "#F59E0B", category: "학습", joined: false, isRemoved: false, isLeft: false, verifyType: "quote_photo",    rule: "오늘의 인상 깊은 문장 사진 인증",               goal: "인상 문장 필사",      myRank: 6,  myRate: 60, myStreak: 3,  cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "5", title: "포즈 챌린지",    desc: "오늘의 지정 포즈에 도전해요",        members: 42, rate: 88, status: "인기",    statusColor: "#FF3355", category: "생활", joined: false, isRemoved: false, isLeft: false, verifyType: "celeb_pose",     rule: "오늘의 지정 포즈로 셀카 인증",                  goal: "오늘의 포즈 찍기",    myRank: 20, myRate: 40, myStreak: 1,  cover: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
+  { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, isRemoved: false, isLeft: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4,  cover: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
 ];
 
 function legacyGroupId(row: DbGroup) {
   return row.legacy_id ?? row.id;
 }
 
-function mapDbGroup(row: DbGroup, joinedDbIds: Set<string>, removedDbIds: Set<string>): Group {
+function mapDbGroup(
+  row: DbGroup,
+  joinedDbIds: Set<string>,
+  removedDbIds: Set<string>,
+  leftDbIds: Set<string>,
+): Group {
   return {
     id: legacyGroupId(row),
     dbId: row.id,
@@ -62,6 +68,7 @@ function mapDbGroup(row: DbGroup, joinedDbIds: Set<string>, removedDbIds: Set<st
     category: row.category ?? "기타",
     joined: joinedDbIds.has(row.id),
     isRemoved: removedDbIds.has(row.id),
+    isLeft: leftDbIds.has(row.id),
     rule: row.rule ?? "",
     goal: row.goal ?? "",
     verifyType: (VERIFY_TYPE_KEYS.includes(row.verify_type as VerifyTypeKey)
@@ -81,7 +88,7 @@ function mapDbGroup(row: DbGroup, joinedDbIds: Set<string>, removedDbIds: Set<st
 }
 
 /* ── 알림 타입 ── */
-export type NotifType = "goal" | "badge" | "group" | "rank" | "streak" | "member_warning" | "member_removed";
+export type NotifType = "goal" | "badge" | "group" | "rank" | "streak" | "member_warning" | "member_removed" | "challenge_start" | "challenge_end" | "challenge_dday" | "daily_reminder";
 
 export interface AppNotification {
   id: string;
@@ -159,6 +166,17 @@ function computeCurrentStreak(verifications: DbVerification[]) {
   return streak;
 }
 
+/* ── 종료 확인 localStorage 헬퍼 ── */
+const CONFIRMED_ENDED_KEY = "chally-confirmed-ended";
+
+function loadConfirmedEnded(): Set<string> {
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(CONFIRMED_ENDED_KEY) ?? "[]") as string[]);
+  } catch {
+    return new Set<string>();
+  }
+}
+
 interface AppContextType {
   theme: "light" | "dark" | "system";
   setTheme: (t: "light" | "dark" | "system") => void;
@@ -183,11 +201,15 @@ interface AppContextType {
   groups: Group[];
   groupsLoading: boolean;
   groupsLoadError: boolean;
+  refreshGroups: () => Promise<void>;
   joinGroup: (id: string) => void;
   leaveGroup: (id: string) => void;
   markGroupLeft: (dbId: string) => void;
   selectedGroupId: string;
   setSelectedGroupId: (id: string) => void;
+  // 종료 확인
+  confirmedEndedIds: Set<string>;
+  confirmEndedGroup: (id: string) => void;
   // Notifications
   notifications: AppNotification[];
   notificationsLoading: boolean;
@@ -227,6 +249,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       apply(theme === "dark");
     }
   }, [theme]);
+
   const [nickname, setNickname] = useState("이름");
   const [recoveryTickets, setRecoveryTickets] = useState(2);
   const [verifyType, setVerifyType] = useState<VerifyTypeKey | null>(null);
@@ -239,11 +262,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsLoadError, setGroupsLoadError] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [confirmedEndedIds, setConfirmedEndedIds] = useState<Set<string>>(loadConfirmedEnded);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [latestNotification, setLatestNotification] = useState<AppNotification | null>(null);
   const verificationImageUrlRef = useRef<string | null>(null);
-  const pendingGroupOps = useRef(new Set<string>()); // 진행 중인 그룹 가입/탈퇴 요청 중복 방지
+  const pendingGroupOps = useRef(new Set<string>());
 
   useEffect(() => {
     return () => {
@@ -267,7 +291,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setRecoveryTickets(profile.recovery_tickets);
       return;
     }
-
     if (!user) {
       setNickname("이름");
       setRecoveryTickets(2);
@@ -283,7 +306,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setVerificationLoading(false);
         return;
       }
-
       setVerificationLoading(true);
       const { data, error } = await supabase
         .from("verifications")
@@ -291,14 +313,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .order("verified_at", { ascending: false });
 
       if (cancelled) return;
-
       if (error) {
         console.error("Failed to load verifications", error);
         setVerificationHistory([]);
         setVerificationLoading(false);
         return;
       }
-
       setVerificationHistory(data ?? []);
       setVerificationLoading(false);
     }
@@ -312,7 +332,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  // 새 알림 Realtime 구독 — DB 트리거가 삽입하면 즉시 반영
+  // 새 알림 Realtime 구독
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -341,7 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .eq("id", user.id)
           .then(({ error }) => {
             if (error) console.error("Failed to update recovery tickets", error);
-            void refreshProfile(); // 성공/실패 모두 DB값으로 동기화
+            void refreshProfile();
           });
       }
       return nextValue;
@@ -370,7 +390,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function completeCurrentVerification(serverPhotoUrl?: string | null) {
     const localImageUrl = verificationImageUrl;
-
     setVerificationHistory(prev => [
       {
         id: `local-${Date.now()}`,
@@ -382,19 +401,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       ...prev,
     ]);
-
     clearVerification();
     void refreshVerifications();
   }
 
   async function refreshVerifications() {
     if (!user) return;
-
     const { data, error } = await supabase
       .from("verifications")
       .select("*")
       .order("verified_at", { ascending: false });
-
     if (error) {
       console.error("Failed to refresh verifications", error);
       return;
@@ -465,120 +481,123 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  useEffect(() => {
-    let cancelled = false;
+  /* ── 그룹 로드 (refreshGroups) ── */
+  const refreshGroups = useCallback(async () => {
+    setGroupsLoading(true);
+    const { data: dbGroups, error: groupsError } = await supabase
+      .from("groups")
+      .select("*")
+      .order("legacy_id", { ascending: true, nullsFirst: false });
 
-    async function loadGroups() {
-      setGroupsLoading(true);
-      const { data: dbGroups, error: groupsError } = await supabase
-        .from("groups")
-        .select("*")
-        .order("legacy_id", { ascending: true, nullsFirst: false });
-
-      if (cancelled) return;
-
-      if (groupsError) {
-        console.error("Failed to load groups", groupsError);
-        setGroupsLoadError(true);
-        setGroups([]);
-        setGroupsLoading(false);
-        return;
-      }
-      if (!dbGroups?.length) {
-        setGroups([]);
-        setGroupsLoading(false);
-        return;
-      }
-
-      const joinedDbIds  = new Set<string>();
-      const removedDbIds = new Set<string>();
-
-      if (user) {
-        const { data: memberships, error: membershipsError } = await supabase
-          .from("group_members")
-          .select("group_id, member_status")
-          .eq("user_id", user.id);
-
-        if (cancelled) return;
-
-        if (membershipsError) {
-          console.error("Failed to load group memberships", membershipsError);
-          setGroupsLoadError(true);
-          setGroups([]);
-          setGroupsLoading(false);
-          return;
-        }
-        memberships?.forEach(item => {
-          if (item.member_status === "REMOVED") {
-            removedDbIds.add(item.group_id);
-          } else {
-            joinedDbIds.add(item.group_id);
-          }
-        });
-      }
-
-      setGroupsLoadError(false);
-      setGroups(dbGroups.map(row => mapDbGroup(row, joinedDbIds, removedDbIds)));
+    if (groupsError) {
+      console.error("Failed to load groups", groupsError);
+      setGroupsLoadError(true);
       setGroupsLoading(false);
+      return;
+    }
+    if (!dbGroups?.length) {
+      setGroups([]);
+      setGroupsLoading(false);
+      return;
     }
 
-    void loadGroups();
-    return () => { cancelled = true; };
+    const joinedDbIds  = new Set<string>();
+    const removedDbIds = new Set<string>();
+    const leftDbIds    = new Set<string>();
+
+    if (user) {
+      const { data: memberships, error: membershipsError } = await supabase
+        .from("group_members")
+        .select("group_id, member_status")
+        .eq("user_id", user.id);
+
+      if (membershipsError) {
+        console.error("Failed to load group memberships", membershipsError);
+        setGroupsLoadError(true);
+        setGroupsLoading(false);
+        return;
+      }
+      memberships?.forEach(item => {
+        if (item.member_status === "REMOVED") {
+          removedDbIds.add(item.group_id);
+        } else if (item.member_status === "LEFT") {
+          leftDbIds.add(item.group_id);
+        } else {
+          joinedDbIds.add(item.group_id);
+        }
+      });
+    }
+
+    setGroupsLoadError(false);
+    setGroups(dbGroups.map(row => mapDbGroup(row, joinedDbIds, removedDbIds, leftDbIds)));
+    setGroupsLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  useEffect(() => {
+    void refreshGroups();
+  }, [refreshGroups]);
+
+  /* ── 그룹 가입 ── */
   function joinGroup(id: string) {
     const target = groups.find(g => g.id === id || g.dbId === id);
     const appId = target?.id ?? id;
     const dbId = target?.dbId;
 
-    if (pendingGroupOps.current.has(appId)) return; // 중복 요청 방지
+    // REMOVED(강퇴됨)는 재가입 불가 / LEFT(탈퇴됨)는 챌린지 재시작 시 재가입 허용
+    if (target?.isRemoved) return;
+    if (pendingGroupOps.current.has(appId)) return;
 
     setGroups(prev => {
       if (prev.some(g => (g.id === appId || g.dbId === id) && g.joined)) return prev;
-      return prev.map(g => (g.id === appId || g.dbId === id) ? { ...g, joined: true, members: g.members + 1 } : g);
+      return prev.map(g => (g.id === appId || g.dbId === id)
+        ? { ...g, joined: true, isLeft: false, members: g.members + 1 }
+        : g
+      );
     });
 
     if (!user || !dbId) return;
 
     pendingGroupOps.current.add(appId);
-    void supabase
-      .from("group_members")
-      .insert({ group_id: dbId, user_id: user.id })
-      .then(({ error }) => {
-        pendingGroupOps.current.delete(appId);
-        if (!error) return;
-        if (error.code === "23505") {
-          // 기존 레코드 있음 — REMOVED 상태인지 확인 후 revert
-          setGroups(prev => prev.map(g => {
-            if (g.id !== appId) return g;
-            // REMOVED 상태면 재가입 불가 → optimistic 되돌리기
-            if (g.isRemoved) return { ...g, joined: false, members: Math.max(0, g.members - 1) };
-            // 이미 실제로 가입됨 → 카운트만 보정
-            return { ...g, joined: true, members: Math.max(0, g.members - 1) };
-          }));
-          return;
-        }
-        console.error("Failed to join group", error);
-        setGroups(prev => prev.map(g => g.id === appId ? { ...g, joined: false, members: Math.max(0, g.members - 1) } : g));
-      });
+    const isRejoin = target?.isLeft === true;
+    const dbOp = isRejoin
+      ? supabase.from("group_members").update({ member_status: "ACTIVE" }).eq("group_id", dbId).eq("user_id", user.id)
+      : supabase.from("group_members").insert({ group_id: dbId, user_id: user.id });
+
+    void dbOp.then(({ error }) => {
+      pendingGroupOps.current.delete(appId);
+      if (!error) { void refreshGroups(); return; }
+      console.error("Failed to join group", error);
+      setGroups(prev => prev.map(g => g.id === appId
+        ? { ...g, joined: false, isLeft: isRejoin, members: Math.max(0, g.members - 1) }
+        : g
+      ));
+    });
   }
 
+  /* ── 강퇴 처리 (시스템) ── */
   function markGroupLeft(dbId: string) {
     setGroups(prev => prev.map(g => g.dbId === dbId
       ? { ...g, joined: false, isRemoved: true, members: Math.max(0, g.members - 1) }
       : g));
   }
 
+  /* ── 그룹 탈퇴 (자발적 → LEFT 상태) ── */
   function leaveGroup(id: string) {
     const target = groups.find(g => g.id === id || g.dbId === id);
     const appId = target?.id ?? id;
     const dbId = target?.dbId;
 
-    if (pendingGroupOps.current.has(appId)) return; // 중복 요청 방지
+    if (pendingGroupOps.current.has(appId)) return;
 
+    // 낙관적 업데이트: joined → false, isLeft → true
     setGroups(prev => {
       if (!prev.some(g => (g.id === appId || g.dbId === id) && g.joined)) return prev;
-      return prev.map(g => (g.id === appId || g.dbId === id) ? { ...g, joined: false, members: Math.max(0, g.members - 1) } : g);
+      return prev.map(g =>
+        (g.id === appId || g.dbId === id)
+          ? { ...g, joined: false, isLeft: true, members: Math.max(0, g.members - 1) }
+          : g
+      );
     });
 
     if (!user || !dbId) return;
@@ -586,15 +605,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     pendingGroupOps.current.add(appId);
     void supabase
       .from("group_members")
-      .delete()
+      .update({ member_status: "LEFT" })
       .eq("group_id", dbId)
       .eq("user_id", user.id)
       .then(({ error }) => {
         pendingGroupOps.current.delete(appId);
-        if (!error) return;
+        if (!error) {
+          void refreshGroups();
+          return;
+        }
         console.error("Failed to leave group", error);
-        setGroups(prev => prev.map(g => g.id === appId ? { ...g, joined: true, members: g.members + 1 } : g));
+        // 롤백
+        setGroups(prev => prev.map(g =>
+          g.id === appId ? { ...g, joined: true, isLeft: false, members: g.members + 1 } : g
+        ));
       });
+  }
+
+  /* ── 종료 챌린지 확인 완료 ── */
+  function confirmEndedGroup(id: string) {
+    setConfirmedEndedIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem(CONFIRMED_ENDED_KEY, JSON.stringify([...next]));
+      } catch { /* ignore */ }
+      return next;
+    });
   }
 
   return (
@@ -603,9 +640,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       nickname, setNickname,
       recoveryTickets, useRecoveryTicket,
       verifyType, setVerifyType,
-      verificationGroupId, verificationImageUrl, verificationImageFile, verificationHistory, verificationLoading, beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshVerifications,
-      groups, groupsLoading, groupsLoadError, joinGroup, leaveGroup, markGroupLeft, selectedGroupId, setSelectedGroupId,
-      notifications, notificationsLoading, latestNotification, markNotifRead, markAllNotifsRead, handleNotifAction, reloadNotifications,
+      verificationGroupId, verificationImageUrl, verificationImageFile, verificationHistory, verificationLoading,
+      beginVerification, setVerificationImage, completeCurrentVerification, clearVerification, refreshVerifications,
+      groups, groupsLoading, groupsLoadError, refreshGroups,
+      joinGroup, leaveGroup, markGroupLeft, selectedGroupId, setSelectedGroupId,
+      confirmedEndedIds, confirmEndedGroup,
+      notifications, notificationsLoading, latestNotification,
+      markNotifRead, markAllNotifsRead, handleNotifAction, reloadNotifications,
     }}>
       {children}
     </AppContext.Provider>

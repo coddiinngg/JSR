@@ -49,8 +49,6 @@ type ChatCacheEntry = { messages: ChatMsg[]; reactions: Record<string, MessageEm
 let chatMessagesCache: Record<string, ChatCacheEntry> = {};
 // 최초 마운트 여부 — 헤더 진입 애니메이션 재생 방지
 let homeMountedOnce = false;
-// 종료 확인된 그룹 — 홈 카드에서 숨김 (세션 내 유지)
-const dismissedEndedGroupIds = new Set<string>();
 
 interface FeedItem {
   id: string;
@@ -74,10 +72,9 @@ export function Home() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { nickname, beginVerification, groups, groupsLoading, groupsLoadError, selectedGroupId, setSelectedGroupId, notifications, latestNotification } = useApp();
+  const { nickname, beginVerification, groups, groupsLoading, groupsLoadError, selectedGroupId, setSelectedGroupId, notifications, latestNotification, confirmedEndedIds, confirmEndedGroup } = useApp();
   const { user } = useAuth();
-  const [dismissedTick, setDismissedTick] = useState(0);
-  const myGroups = groups.filter(g => g.joined && !dismissedEndedGroupIds.has(g.id));
+  const myGroups = groups.filter(g => g.joined && !confirmedEndedIds.has(g.id));
 
   // 뒤로가기 복귀 시 채팅 캐시에서 초기화 (빈 화면 방지)
   const initGroupDbId = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.dbId;
@@ -232,6 +229,10 @@ export function Home() {
   const isChallengeEnded = !!(
     selectedGroup?.challengeEnd &&
     new Date(selectedGroup.challengeEnd) < new Date()
+  );
+  const isChallengeRecruit = !!(
+    selectedGroup?.recruitEnd &&
+    new Date(selectedGroup.recruitEnd) > new Date()
   );
 
   useEffect(() => {
@@ -576,7 +577,7 @@ export function Home() {
       `}</style>
 
       {/* 헤더 */}
-      <header className="shrink-0 bg-white z-10 px-6 pt-4 pb-1.5 relative"
+      <header className="shrink-0 bg-white z-10 px-6 pt-3 pb-1 relative"
         style={{ animation: isReturnVisit ? "none" : "hm-in 0.4s ease both", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -677,7 +678,7 @@ export function Home() {
               <div
                 className="absolute inset-0 overflow-hidden cursor-pointer"
                 onClick={() => {
-                  if (selectedGroup) { dismissedEndedGroupIds.add(selectedGroup.id); setDismissedTick(t => t + 1); }
+                  if (selectedGroup) { if (selectedGroup) confirmEndedGroup(selectedGroup.id); }
                   navigate(`/challenge/group/${selectedGroupId}/result`);
                 }}
               >
@@ -1213,10 +1214,25 @@ export function Home() {
 
         {/* 인증하기 / 확인하기 버튼 */}
         <div className="px-4 pb-3 pt-2 shrink-0">
-          {isChallengeEnded ? (
+          {isChallengeRecruit ? (
+            <div
+              className="relative w-full h-[68px] rounded-[20px] flex items-center px-5 gap-4 overflow-hidden"
+              style={{ background: "linear-gradient(115deg,#3B82F6,#6366F1)", boxShadow: "0 8px 24px rgba(99,102,241,0.22)" }}>
+              <div className="shrink-0 w-10 h-10 rounded-[14px] flex items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                <span className="text-[18px] leading-none">⏳</span>
+              </div>
+              <div className="flex flex-col gap-0.5 flex-1">
+                <span className="text-white font-black text-[16px] leading-none tracking-tight">챌린지 시작을 기다리는 중이에요</span>
+                <span className="text-white/55 text-[12px] font-medium leading-none truncate">
+                  {selectedGroup?.title} · 모집중
+                </span>
+              </div>
+            </div>
+          ) : isChallengeEnded ? (
             <button
               onClick={() => {
-                if (selectedGroup) { dismissedEndedGroupIds.add(selectedGroup.id); setDismissedTick(t => t + 1); }
+                if (selectedGroup) { if (selectedGroup) confirmEndedGroup(selectedGroup.id); }
                 navigate(`/challenge/group/${selectedGroupId}/result`);
               }}
               className="relative w-full h-[68px] rounded-[20px] flex items-center px-5 gap-4 text-white active:scale-[0.97] transition-all duration-200 overflow-hidden"

@@ -100,7 +100,7 @@ export function ShareCard({ imageUrl, defaultTitle, onClose, onSave }: Props) {
       style={{ background: isDark ? "#111111" : "#F8F8FA" }}
     >
       {/* ── top bar ── */}
-      <div className="shrink-0 flex items-center justify-between px-5 pt-10 pb-2 z-10">
+      <div className="shrink-0 flex items-center justify-between px-5 pt-4 pb-2 z-10">
         <button
           onClick={handleClose}
           className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"

@@ -215,7 +215,7 @@ export function FriendInvite() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center gap-3 px-4 pt-10 pb-3 bg-white border-b border-black/[0.05]"
+        className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-3 bg-white border-b border-black/[0.05]"
         style={{ animation: "fi-in 0.4s ease both" }}
       >
         <button

@@ -40,9 +40,9 @@ export function shouldHide(phase: ChallengePhase, crewRate: number): boolean {
 
 /** 참가 가능 여부 */
 export function canJoin(phase: ChallengePhase, crewRate: number): boolean {
-  if (phase === "ended" || phase === "recruit") return false;
+  if (phase === "ended") return false;
   if (phase === "closing") return crewRate >= 40 && crewRate <= 69;
-  return true;
+  return true; // recruit(모집중) + active: 항상 참여 가능
 }
 
 /** 마감임박 시작일 이후에 합류한 늦은 참가자 여부 */
@@ -89,4 +89,10 @@ export function phaseColor(phase: ChallengePhase): string {
   if (phase === "ended")   return "#94A3B8"; // slate
   if (phase === "recruit") return "#3B82F6"; // blue
   return "#10B981"; // green (진행중)
+}
+
+/** 종료 후 경과 일수 */
+export function daysSinceEnd(challengeEnd: string | null): number {
+  if (!challengeEnd) return 0;
+  return Math.floor((Date.now() - new Date(challengeEnd).getTime()) / 86_400_000);
 }

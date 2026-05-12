@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { TrendingUp, Flame, Calendar, Trophy, CheckCircle2, ChevronRight, ImageIcon, ChevronLeft } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -126,6 +126,17 @@ export function Stats() {
   const [mounted, setMounted] = useState(false);
   const [calOffset, setCalOffset] = useState(0);
   const calendarRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const SCROLL_KEY = "st-scroll";
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) el.scrollTop = Number(saved);
+    const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(el.scrollTop));
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
   const completedVerifications = verificationHistory.filter(item => item.status === "completed");
   const now = new Date();
   const calendarDate = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
@@ -265,7 +276,7 @@ export function Stats() {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
 
         {/* 주간 차트 */}
         <div className="rounded-3xl p-5 relative overflow-hidden bg-white border border-black/[0.04] shadow-[0_4px_20px_rgba(0,0,0,0.05)]"

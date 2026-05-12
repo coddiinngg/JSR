@@ -28,11 +28,12 @@ export function ChallengeHistory() {
   }, []);
 
   const participated = groups
-    .filter(g => g.joined || g.isRemoved)
+    .filter(g => g.joined || g.isRemoved || g.isLeft)
     .sort((a, b) => {
-      // 진행중 먼저 → 종료 → 퇴장
+      // 진행중 먼저 → 종료 → 탈퇴됨 → 퇴장됨
       const rank = (g: typeof a) => {
-        if (g.isRemoved) return 3;
+        if (g.isRemoved) return 4;
+        if (g.isLeft)    return 3;
         const p = getPhase(g.challengeStart, g.challengeEnd);
         if (p === "active") return 0;
         if (p === "upcoming") return 1;
@@ -72,12 +73,18 @@ export function ChallengeHistory() {
           <div className="space-y-3">
             {participated.map((group, i) => {
               const phase = getPhase(group.challengeStart, group.challengeEnd);
-              const verifyCount = verificationHistory.filter(
-                v => v.group_id === group.dbId && v.status === "completed"
-              ).length;
+              const verifyCount = verificationHistory.filter(v => {
+                if (v.group_id !== group.dbId || v.status !== "completed") return false;
+                const t = new Date(v.verified_at).getTime();
+                if (group.challengeStart && t < new Date(group.challengeStart).getTime()) return false;
+                if (group.challengeEnd   && t > new Date(group.challengeEnd).getTime())   return false;
+                return true;
+              }).length;
 
               const statusLabel = group.isRemoved
                 ? "퇴장됨"
+                : group.isLeft
+                ? "탈퇴됨"
                 : phase === "ended"
                 ? "종료됨"
                 : phase === "upcoming"
@@ -85,6 +92,8 @@ export function ChallengeHistory() {
                 : "진행중";
 
               const statusStyle = group.isRemoved
+                ? "text-slate-400 bg-slate-100"
+                : group.isLeft
                 ? "text-slate-400 bg-slate-100"
                 : phase === "ended"
                 ? "text-slate-500 bg-slate-100"
@@ -95,13 +104,13 @@ export function ChallengeHistory() {
               return (
                 <div
                   key={group.id}
-                  onClick={() => !group.isRemoved && navigate(`/challenge/group/${group.id}`)}
+                  onClick={() => { if (!group.isRemoved && !group.isLeft) navigate(`/challenge/group/${group.id}`); }}
                   className={cn(
                     "bg-white rounded-2xl p-4 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
-                    group.isRemoved ? "cursor-default" : "active:scale-[0.99] cursor-pointer transition-transform"
+                    (group.isRemoved || group.isLeft) ? "cursor-default" : "active:scale-[0.99] cursor-pointer transition-transform"
                   )}
                   style={{
-                    opacity: mounted ? (group.isRemoved ? 0.62 : 1) : 0,
+                    opacity: mounted ? ((group.isRemoved || group.isLeft) ? 0.62 : 1) : 0,
                     transform: mounted ? "translateY(0)" : "translateY(14px)",
                     transition: `opacity 0.4s ease ${i * 55}ms, transform 0.4s ease ${i * 55}ms`,
                   }}
@@ -149,7 +158,7 @@ export function ChallengeHistory() {
                       </div>
                     </div>
 
-                    {!group.isRemoved && (
+                    {!group.isRemoved && !group.isLeft && (
                       <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1.5" />
                     )}
                   </div>

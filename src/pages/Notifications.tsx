@@ -1,37 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, CheckCircle2, Trophy, Users, Star, Flame, Bell, Check, X, AlertTriangle, LogOut } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Trophy, Users, Star, Flame, Bell, Check, X, AlertTriangle, LogOut, Zap, Flag, Timer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { useApp, type NotifType, type AppNotification } from "../contexts/AppContext";
 
 const TYPE_ICON: Record<NotifType, React.ElementType> = {
-  goal:           CheckCircle2,
-  badge:          Star,
-  group:          Users,
-  rank:           Trophy,
-  streak:         Flame,
-  member_warning: AlertTriangle,
-  member_removed: LogOut,
+  goal:            CheckCircle2,
+  badge:           Star,
+  group:           Users,
+  rank:            Trophy,
+  streak:          Flame,
+  member_warning:  AlertTriangle,
+  member_removed:  LogOut,
+  challenge_start: Zap,
+  challenge_end:   Flag,
+  challenge_dday:  Timer,
+  daily_reminder:  Bell,
 };
 
 const TYPE_COLOR: Record<NotifType, string> = {
-  goal:           "#10B981",
-  badge:          "#F59E0B",
-  group:          "#6366F1",
-  rank:           "#F97316",
-  streak:         "#FB923C",
-  member_warning: "#D97706",
-  member_removed: "#FF3355",
+  goal:            "#10B981",
+  badge:           "#F59E0B",
+  group:           "#6366F1",
+  rank:            "#F97316",
+  streak:          "#FB923C",
+  member_warning:  "#D97706",
+  member_removed:  "#FF3355",
+  challenge_start: "#FF3355",
+  challenge_end:   "#6366F1",
+  challenge_dday:  "#F97316",
+  daily_reminder:  "#0EA5E9",
 };
 
 const TYPE_BG: Record<NotifType, string> = {
-  goal:           "#ECFDF5",
-  badge:          "#FFFBEB",
-  group:          "#EEF2FF",
-  rank:           "#FFF7ED",
-  streak:         "#FFF7ED",
-  member_warning: "#FFFBEB",
-  member_removed: "#FFF1F2",
+  goal:            "#ECFDF5",
+  badge:           "#FFFBEB",
+  group:           "#EEF2FF",
+  rank:            "#FFF7ED",
+  streak:          "#FFF7ED",
+  member_warning:  "#FFFBEB",
+  member_removed:  "#FFF1F2",
+  challenge_start: "#FFF0F3",
+  challenge_end:   "#EEF2FF",
+  challenge_dday:  "#FFF7ED",
+  daily_reminder:  "#F0F9FF",
 };
 
 export function Notifications() {
@@ -53,7 +65,7 @@ export function Notifications() {
       <style>{`@keyframes nf-in { from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);} }`}</style>
 
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-10 pb-3 bg-white border-b border-black/[0.05]">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 bg-white border-b border-black/[0.05]">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 active:bg-slate-200 transition-colors"

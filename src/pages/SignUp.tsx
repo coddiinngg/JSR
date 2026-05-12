@@ -78,7 +78,7 @@ export function SignUp() {
       </div>
 
       {/* 헤더 */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-10 pb-3 relative z-10">
+      <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 relative z-10">
         <button
           onClick={() => step === 2 ? setStep(1) : navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"

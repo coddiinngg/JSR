@@ -127,7 +127,7 @@ export interface Database {
           joined_at: string;
           last_verified_at: string | null;
           is_contributor: boolean;
-          member_status: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED';
+          member_status: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED' | 'LEFT';
           exit_deadline: string | null;
           removed_at: string | null;
           join_day: number;
@@ -139,12 +139,12 @@ export interface Database {
           role?: 'admin' | 'member';
           last_verified_at?: string | null;
           is_contributor?: boolean;
-          member_status?: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED';
+          member_status?: 'ACTIVE' | 'EXIT_ELIGIBLE' | 'REMOVED' | 'LEFT';
           exit_deadline?: string | null;
           removed_at?: string | null;
           join_day?: number;
         };
-        Update: Pick<Database['public']['Tables']['group_members']['Insert'], 'role'>;
+        Update: Pick<Database['public']['Tables']['group_members']['Insert'], 'role' | 'member_status'>;
         Relationships: [];
       };
       notifications: {

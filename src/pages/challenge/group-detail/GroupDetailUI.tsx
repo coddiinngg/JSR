@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Share2, Flame, Crown, Copy, Check, X, Camera, MoreHorizontal, LogOut, AlertTriangle, ShieldCheck, ShieldOff, Clock } from "lucide-react";
+import { ChevronLeft, Share2, Flame, Crown, Copy, Check, X, Camera, MoreHorizontal, LogOut, AlertTriangle, ShieldCheck, ShieldOff, Clock, Trophy } from "lucide-react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { useApp } from "../../../contexts/AppContext";
@@ -121,30 +121,34 @@ export function GroupDetailUI() {
     }
   }, [group?.joined, group?.challengeStart, groupId]);
 
-  // 저조한 크루 알림: 달성률 39% 이하이고 참여중인 경우
+  // 저조한 크루 알림: 챌린지 진행 중이고 달성률 39% 이하인 경우
   useEffect(() => {
-    if (!group?.joined || (group?.crewRate ?? 100) > 39) return;
+    if (!group?.joined || (phase !== "active" && phase !== "closing") || (group?.crewRate ?? 100) > 39) return;
     const alertKey = `low-rate-alert-${groupId}-${new Date().toDateString()}`;
     if (!sessionStorage.getItem(alertKey)) {
       setShowLowRateAlert(true);
     }
   }, [group?.joined, group?.crewRate, groupId]);
 
-  // 72시간 미인증 체크: 이 그룹의 마지막 인증이 72시간 초과인 경우
+  // 48시간 미인증 체크: 진행 중 챌린지 + 현재 챌린지 기간 인증만 확인
   useEffect(() => {
     if (!group?.joined || !groupDbId) return;
+    if (phase !== "active" && phase !== "closing") return;
+    const challengeStart = group.challengeStart ? new Date(group.challengeStart) : null;
     const groupVerifs = verificationHistory.filter(
-      v => v.group_id === groupDbId && v.status === "completed"
+      v => v.group_id === groupDbId &&
+           v.status === "completed" &&
+           (!challengeStart || new Date(v.verified_at) >= challengeStart)
     );
     if (!groupVerifs.length) return;
-    const lastVerif = groupVerifs[0]; // already sorted by desc
+    const lastVerif = groupVerifs[0];
     const elapsed = Date.now() - new Date(lastVerif.verified_at).getTime();
-    const hours72 = 72 * 60 * 60 * 1000;
-    const popup72Key = `leave72-${groupId}-${lastVerif.id}`;
-    if (elapsed >= hours72 && !sessionStorage.getItem(popup72Key)) {
+    const hours48 = 48 * 60 * 60 * 1000;
+    const popup48Key = `leave48-${groupId}-${lastVerif.id}`;
+    if (elapsed >= hours48 && !sessionStorage.getItem(popup48Key)) {
       setShowLeave72h(true);
     }
-  }, [group?.joined, groupDbId, verificationHistory, groupId]);
+  }, [group?.joined, groupDbId, verificationHistory, groupId, phase, group?.challengeStart]);
 
   const inviteLink = `${INVITE_BASE}${groupId.padStart(4, "0")}`;
   const handleCopy = () => {
@@ -268,7 +272,15 @@ export function GroupDetailUI() {
     time: formatActivityTime(post.created_at),
   }));
   const visibleGalleryItems = galleryItems;
-  const myPhotos = verificationHistory.filter(v => v.photo_url && v.status === "completed");
+  const challengeStart = group?.challengeStart ? new Date(group.challengeStart) : null;
+  const challengeEnd   = group?.challengeEnd   ? new Date(group.challengeEnd)   : null;
+  const myPhotos = verificationHistory.filter(v =>
+    v.photo_url &&
+    v.status === "completed" &&
+    v.group_id === groupDbId &&
+    (!challengeStart || new Date(v.verified_at) >= challengeStart) &&
+    (!challengeEnd   || new Date(v.verified_at) <= challengeEnd)
+  );
 
   // 포디엄 순서: 2위(좌) - 1위(중앙) - 3위(우)
   const podium = [
@@ -319,21 +331,22 @@ export function GroupDetailUI() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="text-white font-black text-[15px] leading-tight truncate">{group.title}</p>
-            <p className="text-white/45 text-[10px] font-semibold mt-0.5">크루 달성률 {group.crewRate}%</p>
+            {phase !== "recruit" && <p className="text-white/45 text-[10px] font-semibold mt-0.5">크루 달성률 {group.crewRate}%</p>}
           </div>
-          {group.joined ? (
-            <button onClick={startVerification}
-              className="w-9 h-9 flex items-center justify-center rounded-full shrink-0 active:scale-95 transition-transform"
+          {group.joined && phase === "ended" ? (
+            <button onClick={() => navigate(`/challenge/group/${groupId}/result`)}
+              className="h-9 px-3 rounded-full text-[12px] font-black text-white shrink-0 active:scale-95 transition-transform flex items-center gap-1"
               style={{ background: PG }}>
-              <Camera className="w-4 h-4 text-white" />
+              <Trophy className="w-3.5 h-3.5" />
+              결과
             </button>
-          ) : (
+          ) : (!group.isLeft && !group.isRemoved) || (group.isLeft && (phase === "recruit" || phase === "active" || phase === "closing")) ? (
             <button onClick={() => setShowJoinConfirm(true)}
               className="h-9 px-3 rounded-full text-[12px] font-black text-white shrink-0 active:scale-95 transition-transform"
               style={{ background: PG }}>
-              참여
+              {group.isLeft ? "재참여" : "참여"}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -490,8 +503,8 @@ export function GroupDetailUI() {
           </div>
         )}
 
-        {/* ── 내 진행 상태 (토글) ── */}
-        {group.joined && myRank && (
+        {/* ── 내 진행 상태 (토글) — 챌린지 시작 후에만 ── */}
+        {group.joined && myRank && (phase === "active" || phase === "closing" || phase === "ended") && (
           <div className="mx-4 mt-4">
             <button
               onClick={() => setShowMyRate(v => !v)}
@@ -855,16 +868,54 @@ export function GroupDetailUI() {
 
       {/* ── FAB: 단일 주요 액션 ── */}
       <div className="shrink-0 px-4 pb-8 pt-3 bg-[#F2F2F7] border-t border-black/[0.04]">
-        {phase === "ended" ? (
-          <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
-            <span className="text-[15px]">🏁</span>
-            <span className="text-[15px] font-black text-slate-400">챌린지가 종료됐어요</span>
-          </div>
+        {/* 참여중 + 종료됨 → 결과 확인하기 */}
+        {group.joined && phase === "ended" ? (
+          <button
+            onClick={() => navigate(`/challenge/group/${groupId}/result`)}
+            className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl text-white font-black text-[16px] active:scale-[0.98] transition-transform"
+            style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: PS }}>
+            <Trophy className="w-5 h-5" />
+            결과 확인하기
+          </button>
+
+        /* 강퇴됨 */
         ) : crewStatus?.my_status === "REMOVED" ? (
           <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
             <span className="text-[15px]">🚪</span>
             <span className="text-[15px] font-black text-slate-400">퇴장된 그룹이에요</span>
           </div>
+
+        /* 탈퇴됨 → 재시작 챌린지면 다시 참여 가능 */
+        ) : group.isLeft ? (
+          (phase === "recruit" || phase === "active" || phase === "closing") ? (
+            <button
+              onClick={() => setShowJoinConfirm(true)}
+              className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl font-black text-[16px] active:scale-[0.98] transition-transform"
+              style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: PS, color: "#fff" }}>
+              다시 참여하기
+            </button>
+          ) : (
+            <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
+              <span className="text-[15px]">👋</span>
+              <span className="text-[15px] font-black text-slate-400">탈퇴한 그룹이에요</span>
+            </div>
+          )
+
+        /* 비참여 + 종료됨 */
+        ) : phase === "ended" ? (
+          <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
+            <span className="text-[15px]">🏁</span>
+            <span className="text-[15px] font-black text-slate-400">챌린지가 종료됐어요</span>
+          </div>
+
+        /* 참여중 + 모집중 → 아직 시작 전 */
+        ) : group.joined && phase === "recruit" ? (
+          <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-blue-50 border border-blue-100">
+            <span className="text-[15px]">⏳</span>
+            <span className="text-[15px] font-black text-blue-400">챌린지 시작을 기다리는 중이에요</span>
+          </div>
+
+        /* 참여중 → 인증하기 */
         ) : group.joined ? (
           <button
             onClick={startVerification}
@@ -873,6 +924,8 @@ export function GroupDetailUI() {
             <Camera className="w-5 h-5" />
             {vt.emoji} 오늘의 인증하기
           </button>
+
+        /* 미참여 → 참여하기 */
         ) : (
           <button
             onClick={() => setShowJoinConfirm(true)}
@@ -924,7 +977,7 @@ export function GroupDetailUI() {
               <Share2 className="w-4 h-4 text-slate-500" />
               <span className="text-[13px] font-bold text-slate-700">그룹 초대</span>
             </button>
-            {group.joined && (
+            {group.joined && phase !== "ended" && (
               <>
                 <div className="h-px bg-slate-100 mx-4" />
                 <button onClick={() => { setShowActionMenu(false); setShowLeaveConfirm(true); }}
@@ -999,7 +1052,7 @@ export function GroupDetailUI() {
         </div>
       )}
 
-      {/* ── 72시간 미인증 탈퇴 여부 팝업 ── */}
+      {/* ── 48시간 미인증 탈퇴 여부 팝업 ── */}
       {showLeave72h && (
         <div className="absolute inset-0 z-50 flex items-end"
           style={{ background: "rgba(0,0,0,0.5)", animation: "fade-in 0.2s ease both" }}>
@@ -1010,16 +1063,17 @@ export function GroupDetailUI() {
               <span className="text-[40px]">😥</span>
               <h3 className="text-[18px] font-black text-slate-900 mt-2">챌린지에 참여하고 있나요?</h3>
               <p className="text-[13px] text-slate-400 mt-2 leading-relaxed">
-                72시간 동안 인증이 없었어요.<br />계속 참여하시겠어요?
+                48시간 동안 인증이 없었어요.<br />계속 참여하시겠어요?
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  const lastVerif = verificationHistory.filter(v => v.group_id === groupDbId && v.status === "completed")[0];
-                  if (lastVerif) sessionStorage.setItem(`leave72-${groupId}-${lastVerif.id}`, "1");
+                  const lastVerif = verificationHistory.filter(v => v.group_id === groupDbId && v.status === "completed" && (!challengeStart || new Date(v.verified_at) >= challengeStart))[0];
+                  if (lastVerif) sessionStorage.setItem(`leave48-${groupId}-${lastVerif.id}`, "1");
                   setShowLeave72h(false);
                   leaveGroup(groupId);
+                  sessionStorage.removeItem("ch-scroll");
                   navigate("/challenge");
                 }}
                 className="flex-1 h-12 rounded-2xl bg-slate-100 text-slate-500 font-bold text-[14px]">
@@ -1027,8 +1081,8 @@ export function GroupDetailUI() {
               </button>
               <button
                 onClick={() => {
-                  const lastVerif = verificationHistory.filter(v => v.group_id === groupDbId && v.status === "completed")[0];
-                  if (lastVerif) sessionStorage.setItem(`leave72-${groupId}-${lastVerif.id}`, "1");
+                  const lastVerif = verificationHistory.filter(v => v.group_id === groupDbId && v.status === "completed" && (!challengeStart || new Date(v.verified_at) >= challengeStart))[0];
+                  if (lastVerif) sessionStorage.setItem(`leave48-${groupId}-${lastVerif.id}`, "1");
                   setShowLeave72h(false);
                   startVerification();
                 }}
@@ -1059,7 +1113,7 @@ export function GroupDetailUI() {
             <div className="flex gap-2">
               <button onClick={() => setShowLeaveConfirm(false)}
                 className="flex-1 h-12 rounded-2xl bg-slate-100 text-slate-500 font-bold text-[14px]">취소</button>
-              <button onClick={() => { leaveGroup(groupId); setShowLeaveConfirm(false); }}
+              <button onClick={() => { leaveGroup(groupId); setShowLeaveConfirm(false); sessionStorage.removeItem("ch-scroll"); navigate("/challenge"); }}
                 className="flex-1 h-12 rounded-2xl text-white font-black text-[14px] active:scale-95 transition-all"
                 style={{ background: PG, boxShadow: "0 8px 20px -4px rgba(255,51,85,0.5)" }}>
                 탈퇴하기

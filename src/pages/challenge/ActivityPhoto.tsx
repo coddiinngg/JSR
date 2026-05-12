@@ -106,7 +106,7 @@ export function ActivityPhoto() {
       </div>
 
       {/* 상단 뒤로가기 */}
-      <div className="relative z-10 flex items-center px-4 pt-10 pb-2 shrink-0">
+      <div className="relative z-10 flex items-center px-4 pt-4 pb-2 shrink-0">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm active:bg-black/50 transition-colors"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Bell, LogOut, Ticket, Pencil, ChevronRight, Star, UserPlus, Moon, Sun, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../contexts/AppContext";
@@ -48,6 +48,17 @@ export function Profile() {
   const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const SCROLL_KEY = "pf-scroll";
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    if (saved) el.scrollTop = Number(saved);
+    const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(el.scrollTop));
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
   const xpTotal = profile?.xp_total ?? 0;
   const grade = getGrade(xpTotal);
   const nextGrade = getNextGrade(grade.level);
@@ -81,15 +92,15 @@ export function Profile() {
           로그아웃에 실패했어요. 다시 시도해주세요.
         </div>
       )}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
 
       {/* 히어로 헤더 */}
       <div
         className="relative overflow-hidden"
         style={{
           background: "linear-gradient(155deg, #FF5570 0%, #FF3355 35%, #C8002B 70%, #8B001F 100%)",
-          paddingTop: 32,
-          paddingBottom: 24,
+          paddingTop: 20,
+          paddingBottom: 20,
         }}
       >
         {/* 배경 장식 */}

@@ -17,8 +17,14 @@ interface Stats {
 export function ChallengeResult() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate    = useNavigate();
-  const { groups }  = useApp();
+  const { groups, confirmEndedGroup } = useApp();
   const { user }    = useAuth();
+
+  // 페이지 진입 시 바로 확인 완료 처리 (홈 카드 제거, Challenge 카드 3일 타이머 시작)
+  useEffect(() => {
+    if (groupId) confirmEndedGroup(groupId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId]);
 
   const group = groups.find(g => g.id === groupId);
 
@@ -110,7 +116,7 @@ export function ChallengeResult() {
       </div>
 
       {/* ── top bar ── */}
-      <div className="relative z-10 shrink-0 flex items-center justify-between px-5 pt-10 pb-2">
+      <div className="relative z-10 shrink-0 flex items-center justify-between px-5 pt-4 pb-2">
         <button
           onClick={() => navigate(-1)}
           className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all"

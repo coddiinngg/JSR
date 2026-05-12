@@ -370,7 +370,7 @@ export function Gallery() {
 
       {/* 헤더 */}
       <div
-        className="shrink-0 flex items-center justify-between px-4 pt-10 pb-2 border-b border-slate-100 dark:border-white/[0.06]"
+        className="shrink-0 flex items-center justify-between px-4 pt-4 pb-2 border-b border-slate-100 dark:border-white/[0.06]"
         style={{ animation: "gl-down 0.4s ease both" }}
       >
         <button
@@ -587,7 +587,7 @@ export function Gallery() {
         >
           {/* 헤더 */}
           <div
-            className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-10 pb-3 z-20"
+            className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 pt-4 pb-3 z-20"
             style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)" }}
           >
             <div>
