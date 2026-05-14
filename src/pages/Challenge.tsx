@@ -16,14 +16,10 @@ function fmtDate(d: string): string {
 }
 
 function sortPriority(g: Group): number {
+  // LEFT/REMOVED는 영구 — 항상 최하단 비활성 카드
   if (g.isRemoved) return 6;
+  if (g.isLeft)    return 6;
   const phase = getPhase(g.challengeStart, g.challengeEnd, g.recruitEnd);
-  if (g.isLeft) {
-    // 재참여 가능한 챌린지는 일반 미참여와 같은 위치에 유지
-    if (phase === "active" || phase === "closing") return 1;
-    if (phase === "recruit") return 2;
-    return 5; // 종료됨
-  }
   if (g.joined) {
     if (phase === "ended") return 3;
     return 0;
@@ -128,7 +124,7 @@ export function Challenge() {
   const [activeCat, setActiveCat] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [filterMode, setFilterMode] = useState<"전체" | "참여중">("전체");
+  const [filterMode, setFilterMode] = useState<"전체" | "참여중" | "지난">("전체");
   const [showDropdown, setShowDropdown] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [joinTarget, setJoinTarget] = useState<{ id: string; title: string; desc: string; members: number; challengeStart: string | null; challengeEnd: string | null } | null>(null);
@@ -178,7 +174,18 @@ export function Challenge() {
     .filter((g) => {
       const phase = getPhase(g.challengeStart, g.challengeEnd, g.recruitEnd);
 
-      // 강퇴/탈퇴됨 → 항상 목록에 표시 (하단 고정)
+      // "지난 챌린지" 모드: ACTIVE로 끝까지 참여한 ended 그룹만 (LEFT/REMOVED 제외)
+      if (filterMode === "지난") {
+        return g.joined && phase === "ended" && !g.isRemoved && !g.isLeft;
+      }
+
+      // "참여중" 모드: 현재 active/closing/recruit인 내 그룹만 (ended/LEFT/REMOVED 제외)
+      if (filterMode === "참여중") {
+        return g.joined && phase !== "ended" && !g.isRemoved && !g.isLeft;
+      }
+
+      // "전체" 모드:
+      // 강퇴/탈퇴됨 → 항상 표시 (하단 고정)
       if (g.isRemoved || g.isLeft) return true;
 
       if (phase === "ended") {
@@ -195,7 +202,6 @@ export function Challenge() {
 
       return true;
     })
-    .filter((g) => filterMode === "전체" || g.joined)
     .filter((g) => activeCat === "전체" || g.category === activeCat)
     .filter((g) => !searchQuery || g.title.includes(searchQuery) || g.desc.includes(searchQuery))
     .sort((a, b) => sortPriority(a) - sortPriority(b));
@@ -240,7 +246,7 @@ export function Challenge() {
               className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
             >
               <h1 className="text-[20px] font-black text-slate-900 tracking-tight">
-                {filterMode === "전체" ? "전체 챌린지" : "참여중인 챌린지"}
+                {filterMode === "전체" ? "전체 챌린지" : filterMode === "참여중" ? "참여중인 챌린지" : "지난 챌린지"}
               </h1>
               <ChevronDown
                 className="w-5 h-5 text-slate-400 mt-0.5 transition-transform duration-200"
@@ -252,7 +258,7 @@ export function Challenge() {
                 className="absolute top-full left-0 mt-2 w-44 rounded-2xl bg-white overflow-hidden z-50"
                 style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.12)", animation: "ch-down 0.18s ease both" }}
               >
-                {(["전체", "참여중"] as const).map((mode) => (
+                {(["전체", "참여중", "지난"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => { setFilterMode(mode); setShowDropdown(false); }}
@@ -261,7 +267,7 @@ export function Challenge() {
                       filterMode === mode ? "text-[#FF3355] bg-[#FFF0F3]" : "text-slate-700 active:bg-slate-50"
                     )}
                   >
-                    {mode === "전체" ? "전체 챌린지" : "참여중인 챌린지"}
+                    {mode === "전체" ? "전체 챌린지" : mode === "참여중" ? "참여중인 챌린지" : "지난 챌린지"}
                   </button>
                 ))}
               </div>
@@ -471,23 +477,11 @@ export function Challenge() {
                       🚪 퇴장된 그룹
                     </div>
 
-                  /* 탈퇴됨 → 챌린지 재시작 시 다시 참여 가능 */
+                  /* 탈퇴됨 (영구 — 재참여 불가) */
                   ) : g.isLeft ? (
-                    joinable ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          guardAction(() => setJoinTarget({ id, title, desc, members, challengeStart: g.challengeStart, challengeEnd: g.challengeEnd }));
-                        }}
-                        className="w-full py-2.5 rounded-xl text-[13px] font-bold text-[#FF3355] bg-[#FFF0F3] transition-all duration-200 active:scale-[0.98] border border-[#FF3355]/20"
-                      >
-                        다시 참여하기
-                      </button>
-                    ) : (
-                      <div className="w-full py-2.5 rounded-xl text-[13px] font-bold bg-slate-100 text-slate-300 text-center">
-                        탈퇴됨
-                      </div>
-                    )
+                    <div className="w-full py-2.5 rounded-xl text-[13px] font-bold bg-slate-100 text-slate-300 text-center">
+                      🚪 탈퇴됨
+                    </div>
 
                   /* 참여 가능 → 참여하기 */
                   ) : joinable ? (
@@ -528,7 +522,7 @@ export function Challenge() {
             <div className="mb-5">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">그룹 탈퇴</p>
               <h2 className="text-[20px] font-black text-slate-900 leading-snug mb-1">{leaveTarget.title}</h2>
-              <p className="text-[13px] text-slate-400 leading-relaxed">탈퇴하면 다시 참여할 수 없어요.</p>
+              <p className="text-[13px] font-bold text-red-500 leading-relaxed">탈퇴 후 다시 참여할 수 없어요.</p>
             </div>
             <div className="h-px bg-slate-100 mb-5" />
             <p className="text-[14px] text-slate-500 text-center mb-5">정말 탈퇴할까요?</p>

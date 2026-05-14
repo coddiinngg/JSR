@@ -226,6 +226,7 @@ export function Home() {
   }, [groupRate]);
 
   const selectedGroup = myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0];
+  const isExitEligible = !!selectedGroup?.isExitEligible;
   const isChallengeEnded = !!(
     selectedGroup?.challengeEnd &&
     new Date(selectedGroup.challengeEnd) < new Date()
@@ -574,6 +575,23 @@ export function Home() {
           from { opacity: 0; transform: translateY(-10px) scale(0.95); }
           to   { opacity: 1; transform: translateY(0)     scale(1); }
         }
+        @keyframes ee-flame-rise {
+          0%   { transform: translateY(0) scale(1) rotate(-2deg); opacity: 0.9; }
+          50%  { transform: translateY(-8px) scale(1.08) rotate(2deg); opacity: 1; }
+          100% { transform: translateY(0) scale(1) rotate(-2deg); opacity: 0.9; }
+        }
+        @keyframes ee-border-pulse {
+          0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 0 0 2px rgba(255,80,40,0.85), 0 0 24px rgba(255,80,40,0.35); }
+          50%      { box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 0 0 3px rgba(255,140,40,1), 0 0 36px rgba(255,80,40,0.6); }
+        }
+        @keyframes ee-button-glow {
+          0%, 100% { box-shadow: 0 8px 24px rgba(255,80,40,0.45), 0 0 0 0 rgba(255,140,40,0.6), 0 1px 0 rgba(255,255,255,0.12) inset; }
+          50%      { box-shadow: 0 12px 32px rgba(255,80,40,0.65), 0 0 0 4px rgba(255,140,40,0), 0 1px 0 rgba(255,255,255,0.18) inset; }
+        }
+        @keyframes ee-ribbon-shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
       `}</style>
 
       {/* 헤더 */}
@@ -633,7 +651,14 @@ export function Home() {
           {/* ── 슬라이드 카드 ── */}
           <div
             className="relative w-full overflow-hidden select-none rounded-2xl"
-            style={{ aspectRatio: "2/3", boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 0 0 1.5px rgba(255,51,85,0.25)", outline: "none" }}
+            style={{
+              aspectRatio: "2/3",
+              boxShadow: isExitEligible
+                ? undefined
+                : "0 4px 24px rgba(0,0,0,0.08), 0 0 0 1.5px rgba(255,51,85,0.25)",
+              outline: "none",
+              animation: isExitEligible ? "ee-border-pulse 1.4s ease-in-out infinite" : undefined,
+            }}
             onTouchStart={e => touchBegin(e.touches[0].clientX, e.touches[0].clientY)}
             onTouchMove={e  => touchMove(e.touches[0].clientX,  e.touches[0].clientY)}
             onTouchEnd={e   => touchEnd(e.changedTouches[0].clientX)}
@@ -642,6 +667,39 @@ export function Home() {
             onMouseUp={e    => touchEnd(e.clientX)}
             onMouseLeave={() => { dragging.current = false; isHoriz.current = null; }}
           >
+
+            {/* ─── EXIT_ELIGIBLE 경고 오버레이 (48h 미인증 — 불꽃 + 리본) ─── */}
+            {isExitEligible && (
+              <>
+                {/* 상단 리본 */}
+                <div className="absolute top-0 left-0 right-0 z-30 px-4 pt-3 pointer-events-none">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{
+                      background: "linear-gradient(90deg, rgba(255,80,40,0.95) 0%, rgba(255,140,40,0.95) 50%, rgba(255,80,40,0.95) 100%)",
+                      backgroundSize: "200% 100%",
+                      animation: "ee-ribbon-shimmer 2.4s linear infinite",
+                      boxShadow: "0 4px 16px rgba(255,80,40,0.5)",
+                    }}>
+                    <span className="text-[18px] leading-none"
+                      style={{ animation: "ee-flame-rise 1.2s ease-in-out infinite", display: "inline-block" }}>🔥</span>
+                    <div className="flex-1">
+                      <p className="text-white font-black text-[12px] leading-tight">48시간 미인증 경고</p>
+                      <p className="text-white/85 text-[10px] leading-tight">지금 인증하지 않으면 자동 퇴장돼요</p>
+                    </div>
+                  </div>
+                </div>
+                {/* 하단 좌측 큰 불꽃 */}
+                <span className="absolute bottom-4 left-4 z-30 text-[44px] leading-none pointer-events-none"
+                  style={{ animation: "ee-flame-rise 1.1s ease-in-out infinite", filter: "drop-shadow(0 0 12px rgba(255,140,40,0.8))" }}>
+                  🔥
+                </span>
+                {/* 하단 우측 작은 불꽃 */}
+                <span className="absolute bottom-6 right-6 z-30 text-[28px] leading-none pointer-events-none"
+                  style={{ animation: "ee-flame-rise 1.4s ease-in-out infinite", animationDelay: "0.3s", filter: "drop-shadow(0 0 10px rgba(255,80,40,0.7))" }}>
+                  🔥
+                </span>
+              </>
+            )}
 
             {/* ─── 슬라이드 1 ─── */}
             <div className="absolute inset-0 overflow-hidden"
@@ -873,7 +931,7 @@ export function Home() {
                             minWidth: 130,
                           }}>
                           <p className="text-white font-black text-[13px] leading-tight truncate w-full">{g.title}</p>
-                          <p className="text-white/60 text-[10px] mt-0.5">{g.members}명 · #{g.myRank}위</p>
+                          <p className="text-white/60 text-[10px] mt-0.5">{g.members}명 참여 중</p>
                           {groupUnread > 0 && (
                             <div className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center"
                               style={{ background: "#FF3355", boxShadow: "0 2px 6px rgba(255,51,85,0.55)" }}>
@@ -1261,20 +1319,39 @@ export function Home() {
                 }
               })}
               className="relative w-full h-[68px] rounded-[20px] flex items-center px-5 gap-4 text-white active:scale-[0.97] transition-all duration-200 overflow-hidden"
-              style={{ background: "linear-gradient(115deg, #FF5C7A 0%, #FF3355 45%, #C8002B 100%)", boxShadow: "0 8px 24px rgba(255,51,85,0.22), 0 1px 0 rgba(255,255,255,0.12) inset", animation: btnFlash ? "btn-flash 0.6s cubic-bezier(0.4,0,0.2,1) both" : undefined }}>
-              <div className="shrink-0 w-10 h-10 rounded-[14px] flex items-center justify-center"
+              style={{
+                background: isExitEligible
+                  ? "linear-gradient(115deg, #FF8A40 0%, #FF5020 50%, #C8002B 100%)"
+                  : "linear-gradient(115deg, #FF5C7A 0%, #FF3355 45%, #C8002B 100%)",
+                boxShadow: isExitEligible
+                  ? undefined
+                  : "0 8px 24px rgba(255,51,85,0.22), 0 1px 0 rgba(255,255,255,0.12) inset",
+                animation: isExitEligible
+                  ? "ee-button-glow 1.4s ease-in-out infinite"
+                  : btnFlash ? "btn-flash 0.6s cubic-bezier(0.4,0,0.2,1) both" : undefined,
+              }}>
+              <div className="shrink-0 w-10 h-10 rounded-[14px] flex items-center justify-center relative"
                 style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.2)" }}>
-                <Camera className="w-5 h-5 text-white" strokeWidth={2} />
+                {isExitEligible ? (
+                  <span className="text-[20px] leading-none"
+                    style={{ animation: "ee-flame-rise 1.0s ease-in-out infinite", display: "inline-block" }}>🔥</span>
+                ) : (
+                  <Camera className="w-5 h-5 text-white" strokeWidth={2} />
+                )}
               </div>
               <div className="flex flex-col gap-0.5 flex-1">
-                <span className="font-black text-[16px] leading-none tracking-tight">오늘 인증하기</span>
-                <span className="text-white/55 text-[12px] font-medium leading-none truncate">
-                  {selectedGroup
-                    ? `${VERIFY_TYPES[(selectedGroup.verifyType as VerifyTypeKey) ?? "step_walk"]?.emoji} ${selectedGroup.goal}`
-                    : "챌린지에 참여하고 인증해보세요"}
+                <span className="font-black text-[16px] leading-none tracking-tight">
+                  {isExitEligible ? "지금 인증하기!" : "오늘 인증하기"}
+                </span>
+                <span className="text-white/85 text-[12px] font-medium leading-none truncate">
+                  {isExitEligible
+                    ? "48시간 안에 인증하지 않으면 퇴장돼요"
+                    : selectedGroup
+                      ? `${VERIFY_TYPES[(selectedGroup.verifyType as VerifyTypeKey) ?? "step_walk"]?.emoji} ${selectedGroup.goal}`
+                      : "챌린지에 참여하고 인증해보세요"}
                 </span>
               </div>
-              <ChevronRight className="w-5 h-5 text-white/40 shrink-0" strokeWidth={2.5} />
+              <ChevronRight className="w-5 h-5 text-white/60 shrink-0" strokeWidth={2.5} />
             </button>
           )}
         </div>

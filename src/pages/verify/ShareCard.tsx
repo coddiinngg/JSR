@@ -138,12 +138,10 @@ export function ShareCard({ imageUrl, defaultTitle, onClose, onSave }: Props) {
         ) : (
           <button
             onClick={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 60); }}
-            className="flex items-center gap-1.5 active:opacity-70 transition-opacity"
+            className="font-black text-[20px] active:opacity-70 transition-opacity"
+            style={{ color: isDark ? "#FFFFFF" : "#111111" }}
           >
-            <span className="font-black text-[20px]" style={{ color: isDark ? "#FFFFFF" : "#111111" }}>
-              {title}
-            </span>
-            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#FF3355", color: "#fff" }}>편집</span>
+            {title}
           </button>
         )}
       </div>

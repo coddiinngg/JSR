@@ -7,7 +7,14 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { supabase } from "../../../lib/supabase";
 import { VERIFY_TYPES, type VerifyTypeKey } from "../../../lib/verifyTypes";
 import { formatActivityTime, loadActivityFeed, type ActivityFeedItem } from "../../../lib/activity";
-import { getPhase, getBenefitGrade } from "../../../lib/challengeUtils";
+import { getPhase, getBenefitGrade, phaseLabel } from "../../../lib/challengeUtils";
+
+const PHASE_COLORS: Record<string, string> = {
+  "모집중":   "#3B82F6",
+  "진행중":   "#10B981",
+  "마감임박": "#F59E0B",
+  "종료":     "#94A3B8",
+};
 
 function fmtPeriod(start: string | null, end: string | null): string | null {
   if (!start || !end) return null;
@@ -333,20 +340,14 @@ export function GroupDetailUI() {
             <p className="text-white font-black text-[15px] leading-tight truncate">{group.title}</p>
             {phase !== "recruit" && <p className="text-white/45 text-[10px] font-semibold mt-0.5">크루 달성률 {group.crewRate}%</p>}
           </div>
-          {group.joined && phase === "ended" ? (
+          {group.joined && phase === "ended" && (
             <button onClick={() => navigate(`/challenge/group/${groupId}/result`)}
               className="h-9 px-3 rounded-full text-[12px] font-black text-white shrink-0 active:scale-95 transition-transform flex items-center gap-1"
               style={{ background: PG }}>
               <Trophy className="w-3.5 h-3.5" />
               결과
             </button>
-          ) : (!group.isLeft && !group.isRemoved) || (group.isLeft && (phase === "recruit" || phase === "active" || phase === "closing")) ? (
-            <button onClick={() => setShowJoinConfirm(true)}
-              className="h-9 px-3 rounded-full text-[12px] font-black text-white shrink-0 active:scale-95 transition-transform"
-              style={{ background: PG }}>
-              {group.isLeft ? "재참여" : "참여"}
-            </button>
-          ) : null}
+          )}
         </div>
       </div>
 
@@ -376,11 +377,17 @@ export function GroupDetailUI() {
 
           <div className="absolute bottom-0 left-0 right-0 px-6 pb-14 z-10">
             <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: `${group.statusColor}CC`, color: "white" }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                {group.status}
-              </span>
+              {(() => {
+                const phaseText = phaseLabel(phase);
+                const phaseColor = PHASE_COLORS[phaseText] ?? "#94A3B8";
+                return (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold"
+                    style={{ background: `${phaseColor}CC`, color: "white" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                    {phaseText}
+                  </span>
+                );
+              })()}
               <span className="px-3 py-1 rounded-full text-[11px] font-bold text-white/80 bg-white/15 backdrop-blur-sm">
                 {vt.emoji} {vt.label}
               </span>
@@ -885,21 +892,12 @@ export function GroupDetailUI() {
             <span className="text-[15px] font-black text-slate-400">퇴장된 그룹이에요</span>
           </div>
 
-        /* 탈퇴됨 → 재시작 챌린지면 다시 참여 가능 */
+        /* 탈퇴됨 (영구 — 재참여 불가) */
         ) : group.isLeft ? (
-          (phase === "recruit" || phase === "active" || phase === "closing") ? (
-            <button
-              onClick={() => setShowJoinConfirm(true)}
-              className="w-full h-14 flex items-center justify-center gap-2.5 rounded-2xl font-black text-[16px] active:scale-[0.98] transition-transform"
-              style={{ background: "linear-gradient(115deg,#FF5C7A,#FF3355)", boxShadow: PS, color: "#fff" }}>
-              다시 참여하기
-            </button>
-          ) : (
-            <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
-              <span className="text-[15px]">👋</span>
-              <span className="text-[15px] font-black text-slate-400">탈퇴한 그룹이에요</span>
-            </div>
-          )
+          <div className="w-full h-14 flex items-center justify-center gap-2 rounded-2xl bg-slate-100 border border-black/[0.06]">
+            <span className="text-[15px]">👋</span>
+            <span className="text-[15px] font-black text-slate-400">탈퇴한 그룹이에요</span>
+          </div>
 
         /* 비참여 + 종료됨 */
         ) : phase === "ended" ? (
@@ -1106,8 +1104,9 @@ export function GroupDetailUI() {
             <div className="text-center mb-5">
               <span className="text-[40px]">🚪</span>
               <h3 className="text-[18px] font-black text-slate-900 mt-2">탈퇴 하시겠습니까?</h3>
-              <p className="text-[13px] text-slate-400 mt-1 leading-relaxed">
-                <span className="font-bold text-slate-600">{group.title}</span>에서 나가면<br />달성 기록이 초기화될 수 있어요.
+              <p className="text-[13px] text-slate-500 mt-2 leading-relaxed">
+                <span className="font-bold text-red-500">탈퇴 후 다시 참여할 수 없어요.</span><br />
+                <span className="font-bold text-slate-600">{group.title}</span>에서 정말 나가시겠어요?
               </p>
             </div>
             <div className="flex gap-2">

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Eye, EyeOff, ArrowRight, X } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { setGuestMode } from "../App";
 import { supabase } from "../lib/supabase";
 
 const TERMS_CONTENT = `챌리(Chally) 서비스 이용약관
@@ -397,15 +396,7 @@ export function Login() {
           <Link to="/signup" className="text-[#FF3355] font-bold hover:text-[#ff5570] transition-colors">회원가입</Link>
         </div>
 
-        <div className="px-6 pb-4 space-y-3">
-          <button
-            type="button"
-            onClick={() => { setGuestMode(true); navigate("/"); }}
-            className="w-full h-12 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.05] text-slate-500 dark:text-white/70 text-[14px] font-semibold transition-all active:scale-[0.98] hover:bg-slate-100 dark:hover:bg-white/[0.08]"
-          >
-            로그인 없이 둘러보기
-          </button>
-        </div>
+
 
         <p className="text-center text-[11px] text-slate-400 dark:text-white/15 pb-8 px-8">
           계속 진행 시 챌리의{" "}

@@ -47,7 +47,7 @@ export function Success() {
   // completeCurrentVerification()이 clearVerification()을 호출해 verifyType이 null이 되므로
   // 마운트 시점의 값을 미리 캡처
   const [capturedKey] = useState<VerifyTypeKey>(() => (verifyType as VerifyTypeKey) ?? "step_walk");
-  const [capturedImageUrl] = useState<string | null>(() => verificationImageUrl);
+  const [capturedImageUrl] = useState<string | null>(() => serverPhotoUrl ?? verificationImageUrl);
   const [capturedGroup] = useState(() => groups.find(g => g.verifyType === ((verifyType as VerifyTypeKey) ?? "step_walk")) ?? null);
 
   // 공유 카드 편집 설정 — ShareCard에서 제목/다크모드 변경 시 동기화

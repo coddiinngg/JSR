@@ -218,9 +218,10 @@ export function Stats() {
   // 달성률: 이번 달 오늘까지 중 인증 있는 날 비율
   const successRate = calToday > 0 ? Math.round((doneDays / calToday) * 100) : 0;
 
-  // 참여 중인 챌린지 수
+  // 참여 중인 챌린지 수 (ACTIVE/EXIT_ELIGIBLE) — LEFT/REMOVED는 제외
   const joinedCount = groups.filter(g => g.joined).length;
-  const totalParticipated = groups.filter(g => g.joined || g.isRemoved).length;
+  // 참여했던 챌린지: ACTIVE로 끝까지 참여한 그룹만 (LEFT/REMOVED 제외)
+  const totalParticipated = groups.filter(g => g.joined && !g.isRemoved && !g.isLeft).length;
 
   const MONTH_NAMES = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
   const calMonth = `${calYear}년 ${MONTH_NAMES[calMonthIndex]}`;

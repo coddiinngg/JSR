@@ -27,17 +27,15 @@ export function ChallengeHistory() {
     return () => clearTimeout(t);
   }, []);
 
+  // LEFT/REMOVED는 "참여했던 챌린지"에 기록되지 않음 (스펙: ACTIVE로 끝까지만)
   const participated = groups
-    .filter(g => g.joined || g.isRemoved || g.isLeft)
+    .filter(g => g.joined && !g.isRemoved && !g.isLeft)
     .sort((a, b) => {
-      // 진행중 먼저 → 종료 → 탈퇴됨 → 퇴장됨
       const rank = (g: typeof a) => {
-        if (g.isRemoved) return 4;
-        if (g.isLeft)    return 3;
         const p = getPhase(g.challengeStart, g.challengeEnd);
         if (p === "active") return 0;
         if (p === "upcoming") return 1;
-        return 2;
+        return 2; // ended
       };
       return rank(a) - rank(b);
     });
@@ -81,36 +79,30 @@ export function ChallengeHistory() {
                 return true;
               }).length;
 
-              const statusLabel = group.isRemoved
-                ? "퇴장됨"
-                : group.isLeft
-                ? "탈퇴됨"
-                : phase === "ended"
+              const statusLabel = phase === "ended"
                 ? "종료됨"
                 : phase === "upcoming"
                 ? "시작 전"
                 : "진행중";
 
-              const statusStyle = group.isRemoved
-                ? "text-slate-400 bg-slate-100"
-                : group.isLeft
-                ? "text-slate-400 bg-slate-100"
-                : phase === "ended"
+              const statusStyle = phase === "ended"
                 ? "text-slate-500 bg-slate-100"
                 : phase === "upcoming"
                 ? "text-amber-600 bg-amber-50"
                 : "text-emerald-600 bg-emerald-50";
 
+              // 종료된 그룹은 결과 페이지로, 그 외는 그룹 상세로
+              const goToTarget = phase === "ended"
+                ? `/challenge/group/${group.id}/result`
+                : `/challenge/group/${group.id}`;
+
               return (
                 <div
                   key={group.id}
-                  onClick={() => { if (!group.isRemoved && !group.isLeft) navigate(`/challenge/group/${group.id}`); }}
-                  className={cn(
-                    "bg-white rounded-2xl p-4 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)]",
-                    (group.isRemoved || group.isLeft) ? "cursor-default" : "active:scale-[0.99] cursor-pointer transition-transform"
-                  )}
+                  onClick={() => navigate(goToTarget)}
+                  className="bg-white rounded-2xl p-4 border border-black/[0.04] shadow-[0_2px_12px_rgba(0,0,0,0.04)] active:scale-[0.99] cursor-pointer transition-transform"
                   style={{
-                    opacity: mounted ? ((group.isRemoved || group.isLeft) ? 0.62 : 1) : 0,
+                    opacity: mounted ? 1 : 0,
                     transform: mounted ? "translateY(0)" : "translateY(14px)",
                     transition: `opacity 0.4s ease ${i * 55}ms, transform 0.4s ease ${i * 55}ms`,
                   }}
@@ -152,15 +144,13 @@ export function ChallengeHistory() {
                             <span className="text-[11px] text-[#FF3355] font-bold">내 인증 {verifyCount}회</span>
                           </div>
                         )}
-                        {!group.isRemoved && group.crewRate != null && phase !== "upcoming" && (
+                        {group.crewRate != null && phase !== "upcoming" && (
                           <span className="text-[11px] text-slate-400">크루 {group.crewRate}%</span>
                         )}
                       </div>
                     </div>
 
-                    {!group.isRemoved && !group.isLeft && (
-                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1.5" />
-                    )}
+                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1.5" />
                   </div>
                 </div>
               );

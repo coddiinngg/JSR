@@ -21,7 +21,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
-          onboarding: path.resolve(__dirname, 'onboarding.html'),
         },
       },
     },

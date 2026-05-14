@@ -12,7 +12,6 @@ export interface Database {
           streak_count: number;
           recovery_tickets: number;
           xp_total: number;
-          joined_group_ids: string[];
           invite_code: string | null;
           referred_by: string | null;
           created_at: string;
@@ -26,7 +25,6 @@ export interface Database {
           streak_count?: number;
           recovery_tickets?: number;
           xp_total?: number;
-          joined_group_ids?: string[];
           invite_code?: string | null;
           referred_by?: string | null;
         };
@@ -66,15 +64,9 @@ export interface Database {
           description: string | null;
           category: string | null;
           member_count: number;
-          rate: number;
-          status: string;
-          status_color: string;
           rule: string | null;
           goal: string | null;
           verify_type: string;
-          my_rank: number;
-          my_rate: number;
-          my_streak: number;
           cover: string | null;
           max_members: number;
           is_public: boolean;
@@ -95,15 +87,9 @@ export interface Database {
           description?: string | null;
           category?: string | null;
           member_count?: number;
-          rate?: number;
-          status?: string;
-          status_color?: string;
           rule?: string | null;
           goal?: string | null;
           verify_type?: string;
-          my_rank?: number;
-          my_rate?: number;
-          my_streak?: number;
           cover?: string | null;
           max_members?: number;
           is_public?: boolean;

@@ -15,19 +15,14 @@ export interface Group {
   title: string;
   desc: string;
   members: number;
-  rate: number;
-  status: string;
-  statusColor: string;
   category: string;
   joined: boolean;
-  isRemoved: boolean;  // 강제 퇴장 (REMOVED)
-  isLeft: boolean;     // 자발적 탈퇴 (LEFT) — 재참여 불가
+  isRemoved: boolean;       // 강제 퇴장 (REMOVED)
+  isLeft: boolean;          // 자발적 탈퇴 (LEFT) — 재참여 불가
+  isExitEligible: boolean;  // 48h 미인증 경고 (EXIT_ELIGIBLE) — 인증하면 ACTIVE 복귀
   rule: string;
   goal: string;
   verifyType: VerifyTypeKey;
-  myRank: number;
-  myRate: number;
-  myStreak: number;
   cover: string;
   recruitStart: string | null;
   recruitEnd: string | null;
@@ -37,14 +32,6 @@ export interface Group {
   crewGrade: string;
 }
 
-const DEFAULT_GROUPS: Group[] = [
-  { id: "1", title: "매일 5,000보 걷기",  desc: "걸음 수 인증으로 함께 건강해져요",    members: 38, rate: 72, status: "인기",    statusColor: "#FF3355", category: "운동", joined: false, isRemoved: false, isLeft: false, verifyType: "step_walk",      rule: "매일 5,000보 이상 만보기 스크린샷 인증",         goal: "오늘 5,000보 달성",   myRank: 4,  myRate: 75, myStreak: 8,  cover: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "2", title: "러닝 크루",       desc: "러닝하며 최애 풍경을 함께 공유해요",  members: 24, rate: 80, status: "진행중",  statusColor: "#10B981", category: "운동", joined: false, isRemoved: false, isLeft: false, verifyType: "run_scenery",    rule: "러닝 중 찍은 풍경 사진 인증",                   goal: "러닝 풍경 사진 찍기", myRank: 12, myRate: 50, myStreak: 2,  cover: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "3", title: "일일 독서 클럽", desc: "매일 읽는 책 표지를 함께 모아요",     members: 15, rate: 65, status: "진행중",  statusColor: "#10B981", category: "학습", joined: false, isRemoved: false, isLeft: false, verifyType: "book_cover",     rule: "매일 읽는 책 표지 사진 인증",                   goal: "책 30분 읽기",        myRank: 3,  myRate: 75, myStreak: 5,  cover: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "4", title: "필사 챌린지",    desc: "곱씹게 되는 문장을 함께 모아요",     members: 11, rate: 58, status: "마감임박", statusColor: "#F59E0B", category: "학습", joined: false, isRemoved: false, isLeft: false, verifyType: "quote_photo",    rule: "오늘의 인상 깊은 문장 사진 인증",               goal: "인상 문장 필사",      myRank: 6,  myRate: 60, myStreak: 3,  cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&fit=crop", recruitStart: "2026-04-22T00:00:00+09:00", recruitEnd: "2026-04-24T23:59:59+09:00", challengeStart: "2026-04-25T00:00:00+09:00", challengeEnd: "2026-05-08T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "5", title: "포즈 챌린지",    desc: "오늘의 지정 포즈에 도전해요",        members: 42, rate: 88, status: "인기",    statusColor: "#FF3355", category: "생활", joined: false, isRemoved: false, isLeft: false, verifyType: "celeb_pose",     rule: "오늘의 지정 포즈로 셀카 인증",                  goal: "오늘의 포즈 찍기",    myRank: 20, myRate: 40, myStreak: 1,  cover: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&fit=crop", recruitStart: "2026-05-08T00:00:00+09:00", recruitEnd: "2026-05-08T23:59:59+09:00", challengeStart: "2026-05-09T00:00:00+09:00", challengeEnd: "2026-05-15T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-  { id: "6", title: "장소 탐험대",    desc: "목표 장소에서 인증샷을 찍어요",      members: 19, rate: 63, status: "진행중",  statusColor: "#10B981", category: "생활", joined: false, isRemoved: false, isLeft: false, verifyType: "location_photo", rule: "목표 장소 방문 인증 사진",                       goal: "장소 방문 인증",      myRank: 9,  myRate: 55, myStreak: 4,  cover: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&fit=crop", recruitStart: "2026-04-25T00:00:00+09:00", recruitEnd: "2026-04-27T23:59:59+09:00", challengeStart: "2026-04-28T00:00:00+09:00", challengeEnd: "2026-05-11T23:59:59+09:00", crewRate: 0, crewGrade: "D" },
-];
 
 function legacyGroupId(row: DbGroup) {
   return row.legacy_id ?? row.id;
@@ -55,6 +42,7 @@ function mapDbGroup(
   joinedDbIds: Set<string>,
   removedDbIds: Set<string>,
   leftDbIds: Set<string>,
+  exitEligibleDbIds: Set<string>,
 ): Group {
   return {
     id: legacyGroupId(row),
@@ -62,21 +50,17 @@ function mapDbGroup(
     title: row.name,
     desc: row.description ?? "",
     members: row.member_count,
-    rate: row.rate,
-    status: row.status,
-    statusColor: row.status_color,
     category: row.category ?? "기타",
     joined: joinedDbIds.has(row.id),
     isRemoved: removedDbIds.has(row.id),
     isLeft: leftDbIds.has(row.id),
+    isExitEligible: exitEligibleDbIds.has(row.id),
     rule: row.rule ?? "",
     goal: row.goal ?? "",
     verifyType: (VERIFY_TYPE_KEYS.includes(row.verify_type as VerifyTypeKey)
       ? row.verify_type
       : "step_walk") as VerifyTypeKey,
-    myRank: row.my_rank,
-    myRate: row.my_rate,
-    myStreak: row.my_streak,
+
     cover: row.cover ?? "",
     recruitStart: row.recruit_start ?? null,
     recruitEnd: row.recruit_end ?? null,
@@ -258,7 +242,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [verificationImageFile, setVerificationImageFile] = useState<File | null>(null);
   const [verificationHistory, setVerificationHistory] = useState<DbVerification[]>([]);
   const [verificationLoading, setVerificationLoading] = useState(true);
-  const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupsLoadError, setGroupsLoadError] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -501,9 +485,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const joinedDbIds  = new Set<string>();
-    const removedDbIds = new Set<string>();
-    const leftDbIds    = new Set<string>();
+    const joinedDbIds        = new Set<string>();
+    const removedDbIds       = new Set<string>();
+    const leftDbIds          = new Set<string>();
+    const exitEligibleDbIds  = new Set<string>();
 
     if (user) {
       const { data: memberships, error: membershipsError } = await supabase
@@ -522,6 +507,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           removedDbIds.add(item.group_id);
         } else if (item.member_status === "LEFT") {
           leftDbIds.add(item.group_id);
+        } else if (item.member_status === "EXIT_ELIGIBLE") {
+          exitEligibleDbIds.add(item.group_id);
+          joinedDbIds.add(item.group_id);
         } else {
           joinedDbIds.add(item.group_id);
         }
@@ -529,7 +517,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     setGroupsLoadError(false);
-    setGroups(dbGroups.map(row => mapDbGroup(row, joinedDbIds, removedDbIds, leftDbIds)));
+    setGroups(dbGroups.map(row => mapDbGroup(row, joinedDbIds, removedDbIds, leftDbIds, exitEligibleDbIds)));
     setGroupsLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
@@ -544,14 +532,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const appId = target?.id ?? id;
     const dbId = target?.dbId;
 
-    // REMOVED(강퇴됨)는 재가입 불가 / LEFT(탈퇴됨)는 챌린지 재시작 시 재가입 허용
-    if (target?.isRemoved) return;
+    // LEFT/REMOVED는 영구 — 어떤 상황에서도 현재 챌린지 재참여 불가
+    if (target?.isRemoved || target?.isLeft) return;
     if (pendingGroupOps.current.has(appId)) return;
 
     setGroups(prev => {
       if (prev.some(g => (g.id === appId || g.dbId === id) && g.joined)) return prev;
       return prev.map(g => (g.id === appId || g.dbId === id)
-        ? { ...g, joined: true, isLeft: false, members: g.members + 1 }
+        ? { ...g, joined: true, members: g.members + 1 }
         : g
       );
     });
@@ -559,20 +547,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user || !dbId) return;
 
     pendingGroupOps.current.add(appId);
-    const isRejoin = target?.isLeft === true;
-    const dbOp = isRejoin
-      ? supabase.from("group_members").update({ member_status: "ACTIVE" }).eq("group_id", dbId).eq("user_id", user.id)
-      : supabase.from("group_members").insert({ group_id: dbId, user_id: user.id });
-
-    void dbOp.then(({ error }) => {
-      pendingGroupOps.current.delete(appId);
-      if (!error) { void refreshGroups(); return; }
-      console.error("Failed to join group", error);
-      setGroups(prev => prev.map(g => g.id === appId
-        ? { ...g, joined: false, isLeft: isRejoin, members: Math.max(0, g.members - 1) }
-        : g
-      ));
-    });
+    void supabase
+      .from("group_members")
+      .insert({ group_id: dbId, user_id: user.id })
+      .then(({ error }) => {
+        pendingGroupOps.current.delete(appId);
+        if (!error) { void refreshGroups(); return; }
+        console.error("Failed to join group", error);
+        setGroups(prev => prev.map(g => g.id === appId
+          ? { ...g, joined: false, members: Math.max(0, g.members - 1) }
+          : g
+        ));
+      });
   }
 
   /* ── 강퇴 처리 (시스템) ── */

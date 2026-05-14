@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signInWithEmail(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    setGuestMode(false);
   }
 
   async function signUpWithEmail(email: string, password: string, username: string, refCode?: string | null) {

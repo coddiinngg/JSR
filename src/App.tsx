@@ -30,7 +30,6 @@ import { UserProfile } from "./pages/UserProfile";
 import { FeedAll } from "./pages/FeedAll";
 import { ChallengeRequest } from "./pages/ChallengeRequest";
 import { ChallengeHistory } from "./pages/ChallengeHistory";
-import { UIGallery } from "./pages/UIGallery";
 
 export function setGuestMode(on: boolean) {
   if (on) sessionStorage.setItem("guestMode", "1");
@@ -83,9 +82,6 @@ export default function App() {
       <PreviewModeInit />
       <GuestGuardProvider>
         <Routes>
-          {/* UI 갤러리 — 인증 불필요 */}
-          <Route path="/ui-gallery" element={<UIGallery />} />
-
           {/* 공개 라우트 — 누구나 */}
           <Route element={<Layout showNav={false} />}>
             <Route path="/login" element={<Login />} />
