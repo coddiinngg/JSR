@@ -42,6 +42,8 @@ let feedCache: ActivityFeedItem[] | null = null;
 let leaderboardCacheMap: Record<string, LeaderboardItem[]> = {};
 // 스크롤 위치 저장 — 뒤로가기 시 복원
 let savedScrollTop = 0;
+// 슬라이드 인덱스 저장 — 뒤로가기 시 슬라이드(메인/순위/채팅) 복원
+let savedSlideIdx = 0;
 // 그룹별 읽지 않은 채팅 카운트 — 세션 내 유지
 let chatUnreadCountMap: Record<string, number> = {};
 // 채팅 메시지 캐시 — 뒤로가기 시 빈 화면 방지
@@ -80,7 +82,7 @@ export function Home() {
   const initGroupDbId = (myGroups.find(g => g.id === selectedGroupId) ?? myGroups[0])?.dbId;
   const initChatCache = initGroupDbId ? chatMessagesCache[initGroupDbId] : undefined;
 
-  const [slideIdx, setSlideIdx]               = useState(0);
+  const [slideIdx, setSlideIdx]               = useState(() => savedSlideIdx);
   const [chats, setChats]                     = useState<ChatMsg[]>(() => initChatCache?.messages ?? []);
   const [chatInput, setChatInput]             = useState("");
   const [showGroupPicker, setShowGroupPicker] = useState(false);
@@ -121,6 +123,8 @@ export function Home() {
   const selGroupIdRef   = useRef(selectedGroupId);
   slideIdxRef.current   = slideIdx;
   selGroupIdRef.current = selectedGroupId;
+  // slideIdx 변경 시 모듈 변수에 저장 — 다른 페이지 다녀와도 같은 슬라이드 유지
+  useEffect(() => { savedSlideIdx = slideIdx; }, [slideIdx]);
   const ignoreTapRef    = useRef(false);
   const startX          = useRef(0);
   const startY         = useRef(0);

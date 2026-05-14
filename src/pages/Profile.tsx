@@ -48,18 +48,30 @@ function StatBadge({ label, targetVal, suffix, delay }: { label: string; targetV
 
 export function Profile() {
   const navigate = useNavigate();
-  const { nickname, theme, setTheme, recoveryTickets, verificationHistory, groups } = useApp();
+  const { nickname, theme, setTheme, recoveryTickets, verificationHistory, groups, groupsLoading } = useApp();
   const { signOut, profile } = useAuth();
   const { guardAction } = useGuestGuard();
   const [mounted, setMounted] = useState(false);
   const [signOutError, setSignOutError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const SCROLL_KEY = "pf-scroll";
+  const scrollRestoredRef = useRef(false);
+
+  // 데이터 로드 완료 후 스크롤 복원
   useLayoutEffect(() => {
+    if (scrollRestoredRef.current) return;
+    if (groupsLoading) return;
     const el = scrollRef.current;
     if (!el) return;
     const saved = sessionStorage.getItem(SCROLL_KEY);
     if (saved) el.scrollTop = Number(saved);
+    scrollRestoredRef.current = true;
+  }, [groupsLoading]);
+
+  // 스크롤 위치 저장
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
     const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(el.scrollTop));
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);

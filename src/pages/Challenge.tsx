@@ -117,7 +117,7 @@ export function Challenge() {
   const navigate = useNavigate();
   const location = useLocation();
   const {
-    groups, joinGroup, leaveGroup, setSelectedGroupId,
+    groups, groupsLoading, joinGroup, leaveGroup, setSelectedGroupId,
     refreshGroups, confirmedEndedIds, confirmEndedGroup,
   } = useApp();
   const { guardAction } = useGuestGuard();
@@ -137,11 +137,23 @@ export function Challenge() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const SCROLL_KEY = "ch-scroll";
+  const scrollRestoredRef = useRef(false);
+
+  // groups 데이터 로드 완료 후 한 번만 스크롤 복원 (콘텐츠 높이가 확정된 뒤)
   useLayoutEffect(() => {
+    if (scrollRestoredRef.current) return;
+    if (groupsLoading) return;
     const el = scrollRef.current;
     if (!el) return;
     const saved = sessionStorage.getItem(SCROLL_KEY);
     if (saved) el.scrollTop = Number(saved);
+    scrollRestoredRef.current = true;
+  }, [groupsLoading]);
+
+  // 스크롤 위치 추적은 마운트와 동시에 등록 (저장만)
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
     const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(el.scrollTop));
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
