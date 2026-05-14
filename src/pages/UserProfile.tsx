@@ -224,12 +224,20 @@ export function UserProfile() {
           )}
 
           {/* 참여했던 챌린지 (ACTIVE로 끝까지 참여한 종료 챌린지) */}
-          {!loading && pastGroups.length > 0 && (
+          {!loading && (
             <div className="mt-6">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1">참여했던 챌린지</p>
-                <span className="text-[10px] text-slate-300 mr-1">{pastGroups.length}개</span>
+                {pastGroups.length > 0 && (
+                  <span className="text-[10px] text-slate-300 mr-1">{pastGroups.length}개</span>
+                )}
               </div>
+              {pastGroups.length === 0 ? (
+                <div className="rounded-2xl bg-white dark:bg-[#12161E] border border-black/[0.04] dark:border-white/[0.07] p-8 flex flex-col items-center">
+                  <span className="text-3xl mb-2">🏆</span>
+                  <p className="text-[13px] text-slate-400">아직 완주한 챌린지가 없어요</p>
+                </div>
+              ) : (
               <div className="space-y-3">
                 {pastGroups.map((g, i) => {
                   const ratePct = Math.round((g.crew_rate ?? 0) * 100);
@@ -281,6 +289,7 @@ export function UserProfile() {
                   );
                 })}
               </div>
+              )}
             </div>
           )}
         </div>
