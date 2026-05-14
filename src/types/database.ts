@@ -448,6 +448,15 @@ export interface Database {
           verification_total: number;
           verification_rate: number;
           joined_groups: { id: string; name: string }[];
+          past_groups: {
+            id: string;
+            name: string;
+            emoji: string;
+            cover: string | null;
+            crew_rate: number;
+            crew_grade: string;
+            challenge_end: string | null;
+          }[];
         }[];
       };
       search_public_profiles: {

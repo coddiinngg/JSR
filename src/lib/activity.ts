@@ -6,9 +6,12 @@ export const reactionCache = new Map<string, { count: number; myReaction: string
 
 export type ActivityEmoji = ActivityReactionRecord["emoji"];
 
+export type AuthorMemberStatus = "ACTIVE" | "EXIT_ELIGIBLE" | "LEFT" | "REMOVED" | null;
+
 export interface ActivityFeedItem extends ActivityPostRecord {
   reactionCount: number;
   myReaction: ActivityEmoji | null;
+  authorMemberStatus: AuthorMemberStatus;
 }
 
 export function formatActivityTime(iso: string) {
@@ -27,8 +30,24 @@ export async function loadActivityFeed(params: {
   groupId?: string | null;
   userId?: string | null;
   limit?: number;
+  /** true이면 그룹의 challenge_start ~ challenge_end 기간 내 인증만 (groupId 있을 때만 작동) */
+  withinChallengePeriod?: boolean;
 }) {
-  const { groupId = null, userId = null, limit = 30 } = params;
+  const { groupId = null, userId = null, limit = 30, withinChallengePeriod = false } = params;
+
+  // 챌린지 기간 필터를 위해 그룹 정보 조회
+  let challengeStart: string | null = null;
+  let challengeEnd:   string | null = null;
+  if (groupId && withinChallengePeriod) {
+    const { data: g } = await supabase
+      .from("groups")
+      .select("challenge_start, challenge_end")
+      .eq("id", groupId)
+      .maybeSingle();
+    challengeStart = g?.challenge_start ?? null;
+    challengeEnd   = g?.challenge_end   ?? null;
+  }
+
   let query = supabase
     .from("activity_posts")
     .select("*")
@@ -36,12 +55,30 @@ export async function loadActivityFeed(params: {
     .limit(limit);
 
   if (groupId) query = query.eq("group_id", groupId);
+  if (challengeStart) query = query.gte("created_at", challengeStart);
+  if (challengeEnd)   query = query.lte("created_at", challengeEnd);
 
   const { data: posts, error } = await query;
   if (error) throw error;
 
   const ids = (posts ?? []).map(post => post.id);
   if (!ids.length) return [] as ActivityFeedItem[];
+
+  // 작성자 멤버 상태 (그룹 컨텍스트일 때만)
+  const memberStatusMap = new Map<string, AuthorMemberStatus>();
+  if (groupId) {
+    const authorIds = Array.from(new Set((posts ?? []).map(p => p.user_id)));
+    if (authorIds.length) {
+      const { data: members } = await supabase
+        .from("group_members")
+        .select("user_id, member_status")
+        .eq("group_id", groupId)
+        .in("user_id", authorIds);
+      (members ?? []).forEach(m => {
+        memberStatusMap.set(m.user_id, m.member_status as AuthorMemberStatus);
+      });
+    }
+  }
 
   const { data: reactions, error: reactionsError } = await supabase
     .from("activity_reactions")
@@ -64,5 +101,6 @@ export async function loadActivityFeed(params: {
     ...post,
     reactionCount: countByPost.get(post.id) ?? 0,
     myReaction: myByPost.get(post.id) ?? null,
+    authorMemberStatus: groupId ? (memberStatusMap.get(post.user_id) ?? null) : null,
   }));
 }

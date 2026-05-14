@@ -63,7 +63,7 @@ export function ChallengeResult() {
       try {
         const [rows, posts] = await Promise.all([
           loadGroupLeaderboard(group!.dbId!, 100),
-          loadActivityFeed({ groupId: group!.dbId!, userId: user?.id ?? null, limit: 40 }),
+          loadActivityFeed({ groupId: group!.dbId!, userId: user?.id ?? null, limit: 40, withinChallengePeriod: true }),
         ]);
         if (cancelled) return;
         setLeaderboard(rows);
@@ -358,7 +358,11 @@ export function ChallengeResult() {
                       )}
                       <div className="absolute bottom-0 inset-x-0 px-1.5 py-1"
                         style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}>
-                        <p className="text-white text-[9px] font-bold truncate">{post.author_name ?? "유저"}</p>
+                        <p className="text-white text-[9px] font-bold truncate">
+                          {post.author_name ?? "유저"}
+                          {post.authorMemberStatus === "LEFT" && <span className="text-white/60"> · 탈퇴</span>}
+                          {post.authorMemberStatus === "REMOVED" && <span className="text-white/60"> · 퇴장</span>}
+                        </p>
                       </div>
                     </button>
                   ))}

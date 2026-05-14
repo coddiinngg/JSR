@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, Flame } from "lucide-react";
+import { ChevronLeft, Flame, Trophy, ChevronRight } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { getGrade, getNextGrade } from "../lib/grades";
 import type { PublicProfileRecord } from "../types/database";
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export function UserProfile() {
   const { seed: userId = "" } = useParams<{ seed: string }>();
@@ -49,6 +54,7 @@ export function UserProfile() {
   const verTotal = profile?.verification_total ?? 0;
   const verRate = profile?.verification_rate ?? 0;
   const joinedGroups = profile?.joined_groups ?? [];
+  const pastGroups   = profile?.past_groups   ?? [];
 
   return (
     <div className="relative flex flex-col flex-1 overflow-hidden bg-[#FAFAFA] dark:bg-[#090B10]">
@@ -214,6 +220,67 @@ export function UserProfile() {
                   <p className="flex-1 font-bold text-[14px] text-slate-800 dark:text-slate-100">{g.name}</p>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 참여했던 챌린지 (ACTIVE로 끝까지 참여한 종료 챌린지) */}
+          {!loading && pastGroups.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 ml-1">참여했던 챌린지</p>
+                <span className="text-[10px] text-slate-300 mr-1">{pastGroups.length}개</span>
+              </div>
+              <div className="space-y-3">
+                {pastGroups.map((g, i) => {
+                  const ratePct = Math.round((g.crew_rate ?? 0) * 100);
+                  const achieved = ratePct >= 50;
+                  return (
+                    <div
+                      key={g.id}
+                      onClick={() => navigate(`/challenge/group/${g.id}/result`)}
+                      className="relative rounded-2xl overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
+                      style={{
+                        opacity: mounted ? 1 : 0,
+                        transform: mounted ? "translateY(0)" : "translateY(14px)",
+                        transition: `all 0.4s ${0.4 + i * 0.06}s cubic-bezier(0.4,0,0.2,1)`,
+                        background: "#1A1D24",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      }}
+                    >
+                      {/* 커버 이미지 배경 */}
+                      {g.cover && (
+                        <img src={g.cover} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40"
+                          draggable={false} />
+                      )}
+                      <div className="absolute inset-0" style={{
+                        background: "linear-gradient(110deg, rgba(15,16,22,0.92) 0%, rgba(15,16,22,0.72) 60%, rgba(15,16,22,0.55) 100%)",
+                      }} />
+
+                      <div className="relative z-10 flex items-center gap-3 px-4 py-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-[20px] shrink-0">
+                          {g.emoji ?? "🏆"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-black text-[14px] truncate">{g.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-white/55">
+                              {g.challenge_end ? fmtDate(g.challenge_end) : ""} 종료
+                            </span>
+                            <span className="text-[10px] font-black tabular-nums"
+                              style={{ color: achieved ? "#FF6680" : "#94A3B8" }}>
+                              크루 {ratePct}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Trophy className="w-3.5 h-3.5 text-white/40" />
+                          <ChevronRight className="w-4 h-4 text-white/40" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

@@ -189,7 +189,7 @@ export function GroupDetailUI() {
       }
       setActivityLoading(true);
       try {
-        const posts = await loadActivityFeed({ groupId: groupDbId, userId: user?.id ?? null, limit: 40 });
+        const posts = await loadActivityFeed({ groupId: groupDbId, userId: user?.id ?? null, limit: 40, withinChallengePeriod: true });
         if (!cancelled) setActivityPosts(posts);
       } catch (error) {
         console.error("Failed to load group activity", error);
@@ -255,10 +255,17 @@ export function GroupDetailUI() {
     );
   }
 
+  const authorLabel = (raw: string | null, status: string | null) => {
+    const base = raw ?? "챌리 유저";
+    if (status === "LEFT")    return `${base} · 탈퇴됨`;
+    if (status === "REMOVED") return `${base} · 퇴장됨`;
+    return base;
+  };
+
   const dbActivity: ActivityItem[] = activityPosts.map((post, index) => ({
     id: post.id,
     userId: post.user_id,
-    name: post.author_name ?? "챌리 유저",
+    name: authorLabel(post.author_name, post.authorMemberStatus),
     seed: post.user_id,
     time: formatActivityTime(post.created_at),
     msg: post.message,
@@ -273,7 +280,7 @@ export function GroupDetailUI() {
 
   const galleryItems = activityPosts.filter(post => post.photo_url).map(post => ({
     url: post.photo_url ?? "",
-    name: post.author_name ?? "챌리 유저",
+    name: authorLabel(post.author_name, post.authorMemberStatus),
     seed: post.user_id,
     avatarUrl: post.author_avatar_url,
     time: formatActivityTime(post.created_at),
